@@ -1,0 +1,12 @@
+{
+  "_nota": "Coordenadas de la capital de cada departamento, usadas como proxy de la zona productora. Es una aproximacion deliberada y esta pendiente de refinar con los poligonos de produccion de UPRA/EVA. Ver TASKS.md.",
+  "_fuente_coordenadas": "capitales departamentales",
+  "zonas": [
+    {"producto": "Papa", "departamento": "Boyaca", "municipio": "Tunja", "lat": 5.54, "lon": -73.36},
+    {"producto": "Papa", "departamento": "Cundinamarca", "municipio": "Bogota", "lat": 4.65, "lon": -74.08},
+    {"producto": "Arroz", "departamento": "Tolima", "municipio": "Ibague", "lat": 4.44, "lon": -75.24},
+    {"producto": "Arroz", "departamento": "Meta", "municipio": "Villavicencio", "lat": 4.14, "lon": -73.63},
+    {"producto": "Cafe", "departamento": "Huila", "municipio": "Neiva", "lat": 2.93, "lon": -75.28},
+    {"producto": "Cafe", "departamento": "Antioquia", "municipio": "Medellin", "lat": 6.25, "lon": -75.57}
+  ]
+}

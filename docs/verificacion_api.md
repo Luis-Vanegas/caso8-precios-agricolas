@@ -149,6 +149,30 @@ Respondió 200 sin llave. Los valores llegan en `properties.parameter.<PARAM>` c
 `AAAAMM`, por ejemplo `{"202401": 0.62, "202402": 2.34}`. Los nombres de parámetro
 `PRECTOTCORR` (precipitación corregida) y `T2M` (temperatura a 2 m) están confirmados.
 
+### Corrección al supuesto de "meses cerrados" (hallada en Fase 1)
+
+El `CLAUDE.md` asumía que bastaba con pedir hasta el último mes cerrado, porque POWER publica
+con dos o tres días de rezago. **Eso vale para el endpoint diario, no para el mensual.**
+
+Pedir `start=2026&end=2026` en septiembre de 2026 devuelve **422** con este mensaje:
+
+```
+Please provide a correct end date. Your end date out of range.
+The data is available to 2025/12/31.
+```
+
+O sea que el endpoint mensual sirve solo **años calendario completos** y va con más de un año
+de rezago. El límite no hay que estimarlo: el propio servicio lo publica en
+`https://power.larc.nasa.gov/api/temporal/monthly/configuration`, en `settings.end`
+(`2025-12-31T00:00:00` al momento de la prueba). El módulo lo lee de ahí.
+
+Otros dos detalles confirmados contra la respuesta real:
+
+- Cada año trae una clave extra `<anio>13` con el promedio anual del parámetro. No es un mes y
+  se descarta.
+- El valor centinela de dato faltante viene declarado en `header.fill_value` (`-999.0`). Se lee
+  del encabezado en vez de dejarlo fijo en el código.
+
 ---
 
 ## 5. ONI — NOAA CPC ✅
