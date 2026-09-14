@@ -173,6 +173,31 @@ Otros dos detalles confirmados contra la respuesta real:
 - El valor centinela de dato faltante viene declarado en `header.fill_value` (`-999.0`). Se lee
   del encabezado en vez de dejarlo fijo en el código.
 
+### Limitación de la grilla en terreno montañoso (hallada en Fase 2)
+
+POWER devuelve, junto con cada consulta, la elevación que asigna a la celda de grilla. En
+Colombia esa elevación difiere fuerte de la real, porque la celda promedia el relieve:
+
+| Zona consultada | Elevación real aproximada | Elevación que asigna POWER | Temperatura media |
+|---|---:|---:|---:|
+| Villavicencio, Meta | 467 m | 1 392 m | 18,95 °C |
+| Bogotá, Cundinamarca | 2 640 m | 1 790 m | 18,63 °C |
+| Medellín, Antioquia | 1 495 m | 2 074 m | 16,37 °C |
+
+O sea que la serie climática **no es el clima del municipio**, es el promedio de una celda que
+mezcla valle y montaña. Para Villavicencio eso subestima la temperatura en varios grados.
+
+Consecuencias prácticas, que deben quedar dichas en el reporte:
+
+- Las temperaturas absolutas no sirven para caracterizar la zona productora.
+- Las **anomalías** sí sirven, porque comparan cada mes contra el promedio histórico del mismo
+  mes en la misma celda, y el sesgo de elevación se cancela.
+- Por eso el indicador de contexto climático usa la anomalía de precipitación, no el valor
+  absoluto.
+
+La elevación que reporta POWER se conserva como columna `elevacion_grilla_m` en la tabla de
+clima, para que la limitación sea visible en los datos y no solo en este documento.
+
 ---
 
 ## 5. ONI — NOAA CPC ✅
