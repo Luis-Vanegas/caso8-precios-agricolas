@@ -16,7 +16,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.cleaning import faostat
+from src.cleaning import faostat, homologacion
 from src.cleaning.sipsa import a_mensual
 from src.profiling.perfil import (
     _hueco_mayor,
@@ -193,3 +193,84 @@ def test_anomalia_compara_cada_mes_contra_su_propio_mes():
     r = anomalia_precipitacion(df)
     # Enero promedia 3 y julio 15: cada mes contra su propia base.
     assert list(r["PRECTOTCORR_anomalia"]) == [-1.0, 1.0, -5.0, 5.0]
+
+
+# --- Homologacion SIPSA - FAOSTAT -------------------------------------------
+
+def test_homologacion_cubre_los_33_productos_de_sipsa():
+    """El mapeo real tiene que seguir el paso de la fuente."""
+    mapeo = homologacion.cargar()
+    assert len(mapeo) == 33
+    assert mapeo["producto_sipsa"].is_unique
+
+
+def test_homologacion_solo_usa_tipos_conocidos():
+    mapeo = homologacion.cargar()
+    assert set(mapeo["tipo_correspondencia"]) <= homologacion.TIPOS_VALIDOS
+
+
+def test_homologacion_sin_equivalente_no_lleva_codigo():
+    mapeo = homologacion.cargar()
+    sin = mapeo[mapeo["tipo_correspondencia"] == "sin_equivalente"]
+    assert sin["item_codigo_fao"].isna().all()
+
+
+def _mapeo(filas) -> pd.DataFrame:
+    df = pd.DataFrame(
+        filas, columns=["producto_sipsa", "item_codigo_fao", "item_fao", "tipo_correspondencia"]
+    )
+    df["item_codigo_fao"] = df["item_codigo_fao"].astype("Int64")
+    return df
+
+
+def test_validar_detecta_producto_sin_homologar():
+    problemas = homologacion.validar(
+        _mapeo([("Papa negra*", 116, "Potatoes", "agregada")]),
+        {"Papa negra*", "Lulo"},
+        {116},
+    )
+    assert any("sin homologar" in p and "Lulo" in p for p in problemas)
+
+
+def test_validar_detecta_producto_que_la_fuente_dejo_de_publicar():
+    problemas = homologacion.validar(
+        _mapeo([("Papa negra*", 116, "Potatoes", "agregada"), ("Fantasma", 116, "Potatoes", "exacta")]),
+        {"Papa negra*"},
+        {116},
+    )
+    assert any("ya no publica" in p for p in problemas)
+
+
+def test_validar_detecta_codigo_fao_inexistente():
+    problemas = homologacion.validar(
+        _mapeo([("Papa negra*", 999, "Inventado", "exacta")]),
+        {"Papa negra*"},
+        {116},
+    )
+    assert any("no existen para Colombia" in p for p in problemas)
+
+
+def test_validar_acepta_un_mapeo_consistente():
+    assert homologacion.validar(
+        _mapeo([("Papa negra*", 116, "Potatoes", "agregada")]),
+        {"Papa negra*"},
+        {116},
+    ) == []
+
+
+def test_colisiones_marca_los_items_que_reciben_varios_productos():
+    """Guayaba y mango caen en el mismo item: ese precio no es de ninguno de los dos."""
+    choques = homologacion.colisiones(
+        _mapeo([
+            ("Guayaba*", 571, "Mangoes, guavas and mangosteens", "agregada"),
+            ("Mango tommy", 571, "Mangoes, guavas and mangosteens", "agregada"),
+            ("Tomate*", 388, "Tomatoes", "exacta"),
+        ])
+    )
+    assert list(choques["item_codigo_fao"]) == [571]
+    assert choques.iloc[0]["productos_sipsa"] == 2
+
+
+def test_colisiones_reales_son_las_seis_documentadas():
+    choques = homologacion.colisiones(homologacion.cargar())
+    assert set(choques["item_codigo_fao"]) == {116, 463, 489, 497, 571, 603}

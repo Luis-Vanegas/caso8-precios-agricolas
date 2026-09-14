@@ -22,7 +22,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.cleaning import complementarias, faostat
+from src.cleaning import complementarias, faostat, homologacion
 from src.cleaning import sipsa as limpieza_sipsa
 from src.common.rutas import RAIZ, carpeta_intermedia
 from src.profiling.perfil import (
@@ -66,7 +66,20 @@ def construir() -> dict[str, pd.DataFrame]:
     try:
         diario = limpieza_sipsa.limpiar()
         tablas["sipsa_diario"] = diario
-        tablas["sipsa_mensual"] = limpieza_sipsa.a_mensual(diario)
+        mensual = limpieza_sipsa.a_mensual(diario)
+        # La homologacion se pega aca: sin la columna del item de FAO, Power
+        # Query no tiene por donde cruzar SIPSA con FAOSTAT.
+        mapeo = homologacion.cargar()
+        tablas["sipsa_mensual"] = mensual.merge(
+            mapeo, left_on="producto", right_on="producto_sipsa", how="left"
+        ).drop(columns=["producto_sipsa"])
+        # Se valida aca y no en el reporte para que corra siempre, incluso con --solo.
+        for problema in homologacion.validar(
+            mapeo,
+            set(mensual["producto"]),
+            set(tablas.get("faostat_qcl", pd.DataFrame({"item_codigo": []}))["item_codigo"]),
+        ):
+            log.error("homologacion: %s", problema)
     except Exception as exc:
         log.error("SIPSA: %s: %s", type(exc).__name__, exc)
 
@@ -119,6 +132,28 @@ def reportar(tablas: dict[str, pd.DataFrame]) -> str:
         ignore_index=True,
     )
     partes.append(perfiles.to_markdown(index=False))
+
+    partes += ["", "## Homologacion SIPSA - FAOSTAT", ""]
+    mapeo = homologacion.cargar()
+    problemas = homologacion.validar(
+        mapeo,
+        set(tablas["sipsa_mensual"]["producto"]) if "sipsa_mensual" in tablas else set(),
+        set(tablas["faostat_qcl"]["item_codigo"]) if "faostat_qcl" in tablas else set(),
+    )
+    if problemas:
+        partes.append("**Problemas detectados:**")
+        partes += [f"- {p}" for p in problemas]
+    else:
+        partes.append("Mapeo validado sin problemas contra los datos reales.")
+    partes += ["", homologacion.resumen(mapeo).to_markdown(index=False), ""]
+    choques = homologacion.colisiones(mapeo)
+    if not choques.empty:
+        partes += [
+            "Items de FAO que reciben mas de un producto de SIPSA. En estos casos el precio "
+            "productor de FAO no corresponde a ningun producto de SIPSA por separado:",
+            "",
+            choques.to_markdown(index=False),
+        ]
 
     partes += ["", "## Inconsistencias", ""]
 

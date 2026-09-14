@@ -13,7 +13,7 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | faostat_qv | 20,820 | 15 | 0 |
 | faostat_pe | 511 | 16 | 0 |
 | sipsa_diario | 383,718 | 11 | 0 |
-| sipsa_mensual | 33,977 | 9 | 0 |
+| sipsa_mensual | 33,977 | 13 | 0 |
 | clima | 2,520 | 10 | 0 |
 | enso | 919 | 6 | 0 |
 | insumos | 56,800 | 5 | 0 |
@@ -138,6 +138,10 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | sipsa_mensual | dias_con_dato        | int64               |   33977 |       0 |        0    |       23 |      1     |     23           |
 | sipsa_mensual | precio_min           | int64               |   33977 |       0 |        0    |     3662 |    270     |  14900           |
 | sipsa_mensual | precio_max           | int64               |   33977 |       0 |        0    |     4165 |    375     |  15500           |
+| sipsa_mensual | item_codigo_fao      | Int64               |   33977 |    2153 |        6.34 |       23 |    116     |    619           |
+| sipsa_mensual | item_fao             | str                 |   33977 |    2153 |        6.34 |       23 |    nan     |    nan           |
+| sipsa_mensual | tipo_correspondencia | str                 |   33977 |       0 |        0    |        4 |    nan     |    nan           |
+| sipsa_mensual | nota                 | str                 |   33977 |   12953 |       38.12 |       14 |    nan     |    nan           |
 | clima         | producto             | str                 |    2520 |       0 |        0    |        3 |    nan     |    nan           |
 | clima         | departamento         | str                 |    2520 |       0 |        0    |        6 |    nan     |    nan           |
 | clima         | lat                  | float64             |    2520 |       0 |        0    |        6 |      2.93  |      6.25        |
@@ -159,6 +163,28 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | insumos       | commodity            | str                 |   56800 |       0 |        0    |       71 |    nan     |    nan           |
 | insumos       | unidad               | str                 |   56800 |       0 |        0    |        9 |    nan     |    nan           |
 | insumos       | valor_usd            | float64             |   56800 |    6417 |       11.3  |     9941 |      0     |  55385           |
+
+## Homologacion SIPSA - FAOSTAT
+
+Mapeo validado sin problemas contra los datos reales.
+
+| tipo_correspondencia   |   productos |
+|:-----------------------|------------:|
+| exacta                 |          13 |
+| agregada               |          10 |
+| generica               |           8 |
+| sin_equivalente        |           2 |
+
+Items de FAO que reciben mas de un producto de SIPSA. En estos casos el precio productor de FAO no corresponde a ningun producto de SIPSA por separado:
+
+|   item_codigo_fao | item_fao                        |   productos_sipsa | cuales                                         |
+|------------------:|:--------------------------------|------------------:|:-----------------------------------------------|
+|               116 | Potatoes                        |                 2 | Papa criolla + Papa negra*                     |
+|               463 | Other vegetables, fresh n.e.c.  |                 2 | Habichuela + Remolacha                         |
+|               489 | Plantains and cooking bananas   |                 2 | Plátano guineo + Plátano hartón verde          |
+|               497 | Lemons and limes                |                 2 | Limón Común + Limón Tahití                     |
+|               571 | Mangoes, guavas and mangosteens |                 2 | Guayaba* + Mango tommy                         |
+|               603 | Other tropical fruits, n.e.c.   |                 4 | Granadilla + Lulo + Maracuyá + Tomate de árbol |
 
 ## Inconsistencias
 

@@ -1,0 +1,34 @@
+producto_sipsa,item_codigo_fao,item_fao,tipo_correspondencia,nota
+Aguacate*,572,Avocados,exacta,
+Ahuyama,394,"Pumpkins, squash and gourds",exacta,
+Arracacha*,149,"Edible roots and tubers with high starch or inulin content, n.e.c., fresh",generica,FAO no tiene item propio para arracacha
+Arveja verde en vaina,417,"Peas, green",exacta,
+Banano*,486,Bananas,exacta,
+Cebolla cabezona blanca,403,"Onions and shallots, dry (excluding dehydrated)",exacta,
+Cebolla junca,,,sin_equivalente,FAO no publica cebolla en rama para Colombia (item 402 ausente)
+Chócolo mazorca,,,sin_equivalente,FAO no publica maiz dulce para Colombia (item 446 ausente); el maiz 56 es grano seco
+Coco,249,"Coconuts, in shell",exacta,
+Granadilla,603,"Other tropical fruits, n.e.c.",generica,sin precio productor en FAO
+Guayaba*,571,"Mangoes, guavas and mangosteens",agregada,FAO agrupa guayaba con mango y mangostino
+Habichuela,463,"Other vegetables, fresh n.e.c.",generica,FAO no publica frijol verde para Colombia (item 414 ausente)
+Limón Común,497,Lemons and limes,agregada,FAO agrupa limon y lima en un solo item
+Limón Tahití,497,Lemons and limes,agregada,FAO agrupa limon y lima en un solo item
+Lulo,603,"Other tropical fruits, n.e.c.",generica,sin precio productor en FAO
+Mandarina*,495,"Tangerines, mandarins, clementines",exacta,
+Mango tommy,571,"Mangoes, guavas and mangosteens",agregada,FAO agrupa mango con guayaba y mangostino
+Maracuyá,603,"Other tropical fruits, n.e.c.",generica,sin precio productor en FAO
+Mora de Castilla,619,"Other fruits, n.e.c.",generica,FAO solo publica fresa como baya
+Naranja*,490,Oranges,exacta,
+Papa criolla,116,Potatoes,agregada,FAO no distingue papa criolla de papa comun
+Papa negra*,116,Potatoes,agregada,FAO no distingue papa criolla de papa comun
+Papaya maradol,600,Papayas,exacta,
+Pepino cohombro,397,Cucumbers and gherkins,exacta,
+Pimentón,401,"Chillies and peppers, green (Capsicum spp. and Pimenta spp.)",agregada,FAO agrupa pimenton con ajies picantes
+Piña *,574,Pineapples,exacta,
+Plátano guineo,489,Plantains and cooking bananas,agregada,FAO agrupa todas las variedades de platano
+Plátano hartón verde,489,Plantains and cooking bananas,agregada,FAO agrupa todas las variedades de platano
+Remolacha,463,"Other vegetables, fresh n.e.c.",generica,FAO no publica remolacha de mesa para Colombia
+Tomate de árbol,603,"Other tropical fruits, n.e.c.",generica,sin precio productor en FAO
+Tomate*,388,Tomatoes,exacta,
+Yuca*,125,"Cassava, fresh",exacta,
+Zanahoria,426,Carrots and turnips,agregada,FAO agrupa zanahoria con nabo
