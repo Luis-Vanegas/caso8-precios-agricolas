@@ -117,6 +117,19 @@ Los dos cambios más probables que quieras hacer:
   es demasiado amplio para ser informativo.
 - Separar `Papa criolla` de `Papa negra`, si conseguís una fuente que las distinga.
 
+### 5.b Atajo: aplicar la receta ya escrita
+
+En `data/openrefine/receta_homologacion.json` está una receta de **seis operaciones** lista para
+aplicar: limpia espacios en `producto` y `mercado`, y agrega `es_variedad`, `producto_base`,
+`permite_comparar_precio` y `confianza_mes`.
+
+`Undo / Redo` → `Apply...` → pegá el contenido del archivo → `Perform Operations`.
+
+**Dos cosas importantes sobre esta receta.** Primero, la escribí pero **no la ejecuté**: no tengo
+OpenRefine instalado. Aplicala y revisá que las seis operaciones pasen. Segundo, aplicarla no
+reemplaza los pasos 2 a 5: la receta hace lo mecánico, pero revisar las correspondencias
+agregadas y genéricas producto por producto es criterio humano y es lo que el reto quiere ver.
+
 ### 6. Exportar el JSON de operaciones
 
 `Undo / Redo` → `Extract...` → seleccioná todas las operaciones → copiá el JSON.

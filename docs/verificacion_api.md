@@ -116,8 +116,38 @@ Estructura real de un registro:
 ```
 
 `precioPromedio` es **precio en COP por kilogramo**, no una cantidad: 3 500 COP/kg de guayaba y
-1 800 COP/kg de limón Tahití son valores coherentes con el mercado mayorista. Queda validar
-contra un boletín mensual publicado antes de dar esto por cerrado.
+1 800 COP/kg de limón Tahití son valores coherentes con el mercado mayorista.
+
+### Confirmación de la unidad por triangulación (hallada en Fase 3) ✅
+
+La duda quedó cerrada comparando contra FAOSTAT, que publica el precio al productor en COP por
+tonelada. Dividiendo por mil y contrastando contra el promedio anual de SIPSA:
+
+| Producto | Año | FAOSTAT (COP/kg) | SIPSA (COP/kg) | Diferencia |
+|---|---:|---:|---:|---:|
+| Papa | 2022 | 1 964,7 | 2 012 | 2,4 % |
+| Tomate | 2022 | 2 661,7 | 2 657 | 0,2 % |
+| Tomate | 2023 | 2 991,3 | 2 897 | 3,2 % |
+| Aguacate | 2023 | 7 854,0 | 6 845 | 14,7 % |
+
+Dos fuentes que caen dentro del 3 % en varios productos y años **confirman que
+`precioPromedio` es COP por kilogramo**. La unidad ya no es un supuesto.
+
+### Pero ese mismo resultado abre una pregunta que hay que decir en el reporte ⚠️
+
+Un precio mayorista debería estar **por encima** de un precio al productor: entre los dos hay
+transporte, acopio e intermediación. Acá son casi iguales.
+
+Los 6 893 registros de precio al productor de Colombia llevan flag `A`, "Official figure", o
+sea que FAO los recibe del gobierno colombiano. Lo más probable es que ambas series salgan del
+mismo sistema de captura del DANE.
+
+**Consecuencia:** para precios, SIPSA y FAOSTAT **no son fuentes independientes**. Calcular un
+"margen de intermediación" restando una de la otra no mide intermediación, mide la diferencia
+entre dos agregaciones del mismo dato. No se debe presentar como margen.
+
+Esto no invalida el cruce: sirve como validación cruzada de unidades y de consistencia, que es
+justamente para lo que se usa acá.
 
 Dato más reciente disponible: `fechaCaptura = 2026-09-10` (el día anterior a la prueba), lo que
 confirma la actualización diaria.

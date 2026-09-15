@@ -50,6 +50,7 @@ CLAVES = {
     "clima": ["producto", "departamento", "anio", "mes"],
     "enso": ["anio", "trimestre"],
     "insumos": ["commodity", "anio", "mes"],
+    "zonas_puente": ["producto_sipsa", "producto_zona", "departamento"],
 }
 
 
@@ -87,6 +88,7 @@ def construir() -> dict[str, pd.DataFrame]:
         ("clima", lambda: complementarias.anomalia_precipitacion(complementarias.limpiar_clima())),
         ("enso", complementarias.limpiar_enso),
         ("insumos", complementarias.limpiar_insumos),
+        ("zonas_puente", complementarias.puente_zona_sipsa),
     ):
         try:
             tablas[nombre] = funcion()

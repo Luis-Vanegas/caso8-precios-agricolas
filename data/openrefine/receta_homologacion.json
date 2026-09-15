@@ -1,0 +1,62 @@
+[
+  {
+    "op": "core/text-transform",
+    "description": "Quitar espacios sobrantes en producto (la fuente publica 'Pina *' con espacio antes del asterisco)",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "columnName": "producto",
+    "expression": "value.trim()",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10
+  },
+  {
+    "op": "core/text-transform",
+    "description": "Quitar espacios sobrantes en mercado",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "columnName": "mercado",
+    "expression": "value.trim()",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Marcar si la variedad lleva asterisco, que en el catalogo del DANE distingue variedades",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "producto",
+    "expression": "grel:if(value.endsWith('*'), 'si', 'no')",
+    "newColumnName": "es_variedad",
+    "columnInsertIndex": 2,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Nombre base sin el asterisco de variedad, para agrupar",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "producto",
+    "expression": "grel:value.replace('*', '').trim()",
+    "newColumnName": "producto_base",
+    "columnInsertIndex": 3,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Marcar explicitamente que filas admiten comparar precio mayorista contra precio productor: solo las de correspondencia exacta",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "tipo_correspondencia",
+    "expression": "grel:if(value == 'exacta', 'si', 'no')",
+    "newColumnName": "permite_comparar_precio",
+    "columnInsertIndex": 12,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Confianza del mes segun cuantos dias aportaron dato: un mes con 2 dias no vale lo mismo que uno con 20",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "dias_con_dato",
+    "expression": "grel:if(toNumber(value) >= 15, 'alta', if(toNumber(value) >= 5, 'media', 'baja'))",
+    "newColumnName": "confianza_mes",
+    "columnInsertIndex": 7,
+    "onError": "set-to-blank"
+  }
+]

@@ -1,12 +1,93 @@
 {
-  "_nota": "Coordenadas de la capital de cada departamento, usadas como proxy de la zona productora. Es una aproximacion deliberada y esta pendiente de refinar con los poligonos de produccion de UPRA/EVA. Ver TASKS.md.",
-  "_fuente_coordenadas": "capitales departamentales",
+  "_nota": "Coordenadas de la capital de cada departamento, usadas como proxy de la zona productora. Es una aproximacion deliberada, pendiente de refinar con poligonos de UPRA/EVA.",
+  "_nota_productos_sipsa": "`productos_sipsa` enumera los nombres EXACTOS con que el DANE publica esos productos. Sin esta lista el cruce con SIPSA no encuentra nada, porque SIPSA dice 'Papa negra*' donde aca dice 'Papa'. Una lista vacia significa que la zona aporta contexto para FAOSTAT pero no tiene contraparte en SIPSA.",
+  "_limitacion": "NASA POWER promedia el relieve dentro de su celda de grilla: a Villavicencio (467 m) le asigna 1392 m. Por eso se usan anomalias y no valores absolutos.",
   "zonas": [
-    {"producto": "Papa", "departamento": "Boyaca", "municipio": "Tunja", "lat": 5.54, "lon": -73.36},
-    {"producto": "Papa", "departamento": "Cundinamarca", "municipio": "Bogota", "lat": 4.65, "lon": -74.08},
-    {"producto": "Arroz", "departamento": "Tolima", "municipio": "Ibague", "lat": 4.44, "lon": -75.24},
-    {"producto": "Arroz", "departamento": "Meta", "municipio": "Villavicencio", "lat": 4.14, "lon": -73.63},
-    {"producto": "Cafe", "departamento": "Huila", "municipio": "Neiva", "lat": 2.93, "lon": -75.28},
-    {"producto": "Cafe", "departamento": "Antioquia", "municipio": "Medellin", "lat": 6.25, "lon": -75.57}
+    {
+      "producto": "Papa",
+      "departamento": "Boyaca",
+      "municipio": "Tunja",
+      "lat": 5.54,
+      "lon": -73.36,
+      "productos_sipsa": [
+        "Papa negra*",
+        "Papa criolla"
+      ]
+    },
+    {
+      "producto": "Papa",
+      "departamento": "Cundinamarca",
+      "municipio": "Bogota",
+      "lat": 4.65,
+      "lon": -74.08,
+      "productos_sipsa": [
+        "Papa negra*",
+        "Papa criolla"
+      ]
+    },
+    {
+      "producto": "Cebolla",
+      "departamento": "Boyaca",
+      "municipio": "Tunja",
+      "lat": 5.54,
+      "lon": -73.36,
+      "productos_sipsa": [
+        "Cebolla cabezona blanca",
+        "Cebolla junca"
+      ]
+    },
+    {
+      "producto": "Tomate",
+      "departamento": "Norte de Santander",
+      "municipio": "Cucuta",
+      "lat": 7.89,
+      "lon": -72.5,
+      "productos_sipsa": [
+        "Tomate*"
+      ]
+    },
+    {
+      "producto": "Platano",
+      "departamento": "Quindio",
+      "municipio": "Armenia",
+      "lat": 4.53,
+      "lon": -75.68,
+      "productos_sipsa": [
+        "Plátano hartón verde",
+        "Plátano guineo"
+      ]
+    },
+    {
+      "producto": "Arroz",
+      "departamento": "Tolima",
+      "municipio": "Ibague",
+      "lat": 4.44,
+      "lon": -75.24,
+      "productos_sipsa": []
+    },
+    {
+      "producto": "Arroz",
+      "departamento": "Meta",
+      "municipio": "Villavicencio",
+      "lat": 4.14,
+      "lon": -73.63,
+      "productos_sipsa": []
+    },
+    {
+      "producto": "Cafe",
+      "departamento": "Huila",
+      "municipio": "Neiva",
+      "lat": 2.93,
+      "lon": -75.28,
+      "productos_sipsa": []
+    },
+    {
+      "producto": "Cafe",
+      "departamento": "Antioquia",
+      "municipio": "Medellin",
+      "lat": 6.25,
+      "lon": -75.57,
+      "productos_sipsa": []
+    }
   ]
 }

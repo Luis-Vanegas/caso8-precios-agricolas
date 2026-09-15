@@ -57,6 +57,22 @@ def limpiar_clima(carpeta: Path | None = None) -> pd.DataFrame:
     ).reset_index().rename_axis(None, axis=1)
 
 
+def puente_zona_sipsa() -> pd.DataFrame:
+    """Une cada zona climatica con los productos de SIPSA a los que sirve.
+
+    Es una relacion de muchos a muchos: una zona alimenta varios productos
+    (papa negra y papa criolla comparten zona) y un producto puede tener varias
+    zonas. Sin esta tabla el cruce clima-SIPSA no encuentra nada, porque la
+    config dice "Papa" donde SIPSA dice "Papa negra*".
+    """
+    filas = [
+        {"producto_sipsa": nombre, "producto_zona": z["producto"], "departamento": z["departamento"]}
+        for z in zonas()
+        for nombre in z.get("productos_sipsa", [])
+    ]
+    return pd.DataFrame(filas, columns=["producto_sipsa", "producto_zona", "departamento"])
+
+
 def anomalia_precipitacion(df: pd.DataFrame, columna: str = "PRECTOTCORR") -> pd.DataFrame:
     """Agrega la desviacion de cada mes frente a su promedio historico del mismo mes.
 

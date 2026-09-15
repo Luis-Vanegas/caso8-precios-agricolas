@@ -12,11 +12,12 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | faostat_fbs | 24,399 | 16 | 0 |
 | faostat_qv | 20,820 | 15 | 0 |
 | faostat_pe | 511 | 16 | 0 |
-| sipsa_diario | 383,718 | 11 | 0 |
+| sipsa_diario | 383,887 | 11 | 0 |
 | sipsa_mensual | 33,977 | 13 | 0 |
-| clima | 2,520 | 10 | 0 |
+| clima | 3,780 | 10 | 0 |
 | enso | 919 | 6 | 0 |
 | insumos | 56,800 | 5 | 0 |
+| zonas_puente | 9 | 3 | 0 |
 
 ## Columnas
 
@@ -118,40 +119,40 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | faostat_pe    | flag                 | str                 |     511 |       0 |        0    |        1 |    nan     |    nan           |
 | faostat_pe    | dominio              | str                 |     511 |       0 |        0    |        1 |    nan     |    nan           |
 | faostat_pe    | frecuencia           | str                 |     511 |       0 |        0    |        2 |    nan     |    nan           |
-| sipsa_diario  | mercado              | str                 |  383718 |       0 |        0    |       21 |            |                  |
-| sipsa_diario  | producto_codigo      | Int64               |  383718 |       0 |        0    |       33 |      1     |     33           |
-| sipsa_diario  | fecha                | object              |  383718 |       0 |        0    |     1418 |            |                  |
-| sipsa_diario  | fecha_creacion       | datetime64[us, UTC] |  383718 |       0 |        0    |     2657 |            |                  |
-| sipsa_diario  | precio_cop_kg        | int64               |  383718 |       0 |        0    |     7328 |    270     |  15500           |
-| sipsa_diario  | producto             | str                 |  383718 |       0 |        0    |       33 |            |                  |
-| sipsa_diario  | registro_id          | Int64               |  383718 |       0 |        0    |   383718 | 310785     | 694819           |
-| sipsa_diario  | es_variedad          | bool                |  383718 |       0 |        0    |        2 |      0     |      1           |
-| sipsa_diario  | producto_base        | str                 |  383718 |       0 |        0    |       33 |            |                  |
-| sipsa_diario  | anio                 | int32               |  383718 |       0 |        0    |        6 |   2020     |   2026           |
-| sipsa_diario  | mes                  | int32               |  383718 |       0 |        0    |       12 |      1     |     12           |
+| sipsa_diario  | mercado              | str                 |  383887 |       0 |        0    |       21 |            |                  |
+| sipsa_diario  | producto_codigo      | Int64               |  383887 |       0 |        0    |       33 |      1     |     33           |
+| sipsa_diario  | fecha                | object              |  383887 |       0 |        0    |     1419 |            |                  |
+| sipsa_diario  | fecha_creacion       | datetime64[us, UTC] |  383887 |       0 |        0    |     2658 |            |                  |
+| sipsa_diario  | precio_cop_kg        | int64               |  383887 |       0 |        0    |     7329 |    270     |  15500           |
+| sipsa_diario  | producto             | str                 |  383887 |       0 |        0    |       33 |            |                  |
+| sipsa_diario  | registro_id          | Int64               |  383887 |       0 |        0    |   383887 | 310785     | 694988           |
+| sipsa_diario  | es_variedad          | bool                |  383887 |       0 |        0    |        2 |      0     |      1           |
+| sipsa_diario  | producto_base        | str                 |  383887 |       0 |        0    |       33 |            |                  |
+| sipsa_diario  | anio                 | int32               |  383887 |       0 |        0    |        6 |   2020     |   2026           |
+| sipsa_diario  | mes                  | int32               |  383887 |       0 |        0    |       12 |      1     |     12           |
 | sipsa_mensual | mercado              | str                 |   33977 |       0 |        0    |       21 |    nan     |    nan           |
 | sipsa_mensual | producto             | str                 |   33977 |       0 |        0    |       33 |    nan     |    nan           |
 | sipsa_mensual | producto_codigo      | Int64               |   33977 |       0 |        0    |       33 |      1     |     33           |
 | sipsa_mensual | anio                 | int32               |   33977 |       0 |        0    |        6 |   2020     |   2026           |
 | sipsa_mensual | mes                  | int32               |   33977 |       0 |        0    |       12 |      1     |     12           |
-| sipsa_mensual | precio_cop_kg        | float64             |   33977 |       0 |        0    |    27736 |    330.62  |  15225           |
+| sipsa_mensual | precio_cop_kg        | float64             |   33977 |       0 |        0    |    27721 |    330.62  |  15225           |
 | sipsa_mensual | dias_con_dato        | int64               |   33977 |       0 |        0    |       23 |      1     |     23           |
-| sipsa_mensual | precio_min           | int64               |   33977 |       0 |        0    |     3662 |    270     |  14900           |
-| sipsa_mensual | precio_max           | int64               |   33977 |       0 |        0    |     4165 |    375     |  15500           |
+| sipsa_mensual | precio_min           | int64               |   33977 |       0 |        0    |     3665 |    270     |  14900           |
+| sipsa_mensual | precio_max           | int64               |   33977 |       0 |        0    |     4166 |    375     |  15500           |
 | sipsa_mensual | item_codigo_fao      | Int64               |   33977 |    2153 |        6.34 |       23 |    116     |    619           |
 | sipsa_mensual | item_fao             | str                 |   33977 |    2153 |        6.34 |       23 |    nan     |    nan           |
 | sipsa_mensual | tipo_correspondencia | str                 |   33977 |       0 |        0    |        4 |    nan     |    nan           |
 | sipsa_mensual | nota                 | str                 |   33977 |   12953 |       38.12 |       14 |    nan     |    nan           |
-| clima         | producto             | str                 |    2520 |       0 |        0    |        3 |    nan     |    nan           |
-| clima         | departamento         | str                 |    2520 |       0 |        0    |        6 |    nan     |    nan           |
-| clima         | lat                  | float64             |    2520 |       0 |        0    |        6 |      2.93  |      6.25        |
-| clima         | lon                  | float64             |    2520 |       0 |        0    |        6 |    -75.57  |    -73.36        |
-| clima         | elevacion_grilla_m   | float64             |    2520 |       0 |        0    |        6 |   1118.92  |   2557.41        |
-| clima         | anio                 | int64               |    2520 |       0 |        0    |       35 |   1991     |   2025           |
-| clima         | mes                  | int64               |    2520 |       0 |        0    |       12 |      1     |     12           |
-| clima         | PRECTOTCORR          | float64             |    2520 |       0 |        0    |     1010 |      0     |     21.37        |
-| clima         | T2M                  | float64             |    2520 |       0 |        0    |      983 |     11.54  |     26.46        |
-| clima         | PRECTOTCORR_anomalia | float64             |    2520 |       0 |        0    |     2093 |     -9.733 |     14.604       |
+| clima         | producto             | str                 |    3780 |       0 |        0    |        6 |    nan     |    nan           |
+| clima         | departamento         | str                 |    3780 |       0 |        0    |        8 |    nan     |    nan           |
+| clima         | lat                  | float64             |    3780 |       0 |        0    |        8 |      2.93  |      7.89        |
+| clima         | lon                  | float64             |    3780 |       0 |        0    |        8 |    -75.68  |    -72.5         |
+| clima         | elevacion_grilla_m   | float64             |    3780 |       0 |        0    |        8 |    741.14  |   2557.41        |
+| clima         | anio                 | int64               |    3780 |       0 |        0    |       35 |   1991     |   2025           |
+| clima         | mes                  | int64               |    3780 |       0 |        0    |       12 |      1     |     12           |
+| clima         | PRECTOTCORR          | float64             |    3780 |       0 |        0    |     1085 |      0     |     21.37        |
+| clima         | T2M                  | float64             |    3780 |       0 |        0    |     1321 |     11.54  |     29.24        |
+| clima         | PRECTOTCORR_anomalia | float64             |    3780 |       0 |        0    |     2651 |     -9.733 |     14.604       |
 | enso          | trimestre            | str                 |     919 |       0 |        0    |       12 |            |                  |
 | enso          | anio                 | int64               |     919 |       0 |        0    |       77 |   1950     |   2026           |
 | enso          | mes_central          | int64               |     919 |       0 |        0    |       12 |      1     |     12           |
@@ -163,6 +164,9 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | insumos       | commodity            | str                 |   56800 |       0 |        0    |       71 |    nan     |    nan           |
 | insumos       | unidad               | str                 |   56800 |       0 |        0    |        9 |    nan     |    nan           |
 | insumos       | valor_usd            | float64             |   56800 |    6417 |       11.3  |     9941 |      0     |  55385           |
+| zonas_puente  | producto_sipsa       | str                 |       9 |       0 |        0    |        7 |            |                  |
+| zonas_puente  | producto_zona        | str                 |       9 |       0 |        0    |        4 |            |                  |
+| zonas_puente  | departamento         | str                 |       9 |       0 |        0    |        4 |            |                  |
 
 ## Homologacion SIPSA - FAOSTAT
 
