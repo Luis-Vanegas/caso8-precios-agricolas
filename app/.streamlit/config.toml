@@ -1,6 +1,11 @@
+# Tema claro: se proyecta mejor en un auditorio. Los colores coinciden con app/estilo.py.
 [theme]
-base = "dark"
-primaryColor = "#2E9E5B"
+base = "light"
+primaryColor = "#1B5E3B"
+backgroundColor = "#FAF7F0"
+secondaryBackgroundColor = "#F1ECDF"
+textColor = "#1C2521"
+font = "sans serif"
 
 [server]
 headless = true

@@ -34,11 +34,11 @@ señala los movimientos anómalos en el mes en que ocurren.
 | Precipitación y temperatura | NASA POWER | REST sin llave | Mensual por año cerrado |
 | Fase El Niño / La Niña | NOAA CPC, índice ONI | Archivo de texto | Mensual |
 | Precio de fertilizantes | Pink Sheet, Banco Mundial | Excel mensual | Mensual |
+| Lluvia y temperatura medidas por sensor | IDEAM, datos.gov.co | API Socrata | Cada 10 min / 1 h |
 
 **Fuentes descartadas y por qué.** UN Comtrade, porque homologar códigos HS contra la
 clasificación de FAO cuesta más de lo que aporta y FAOSTAT ya cubre comercio. EVA y UPRA, porque
-solo publican Excel sin servicio. IDEAM, porque entrega datos por estación meteorológica y
-agregarlos a zona productora es un proyecto en sí mismo. GIEWS FPMA, porque no se pudo confirmar
+solo publican Excel sin servicio. GIEWS FPMA, porque no se pudo confirmar
 que tuviera API.
 
 ## 3. ¿Cómo se adquieren los datos?
@@ -82,7 +82,7 @@ ENSO fuera de rango físico, exportaciones mayores a lo disponible.
 hechos que apuntan a dimensiones inexistentes, claves duplicadas, y cruces que deberían unir
 algo. Si alguna devuelve filas, el script sale con error.
 
-Además, **75 pruebas automáticas** con fixtures recortadas de respuestas reales. Ninguna toca la
+Además, **93 pruebas automáticas** con fixtures recortadas de respuestas reales. Ninguna toca la
 red, así que corren en dos segundos, y si una fuente cambia de formato son las primeras en avisar.
 
 ## 5. ¿Cómo se integran fuentes con estructuras distintas?
@@ -120,9 +120,12 @@ quedar vacío.
 **Se declaran, no se rellenan.** El criterio es que un hueco visible es información y un hueco
 tapado es una mentira.
 
-- Huecos cortos en una serie se pueden interpolar y quedan marcados con `imputado`. Huecos de
-  más de tres años se dejan vacíos: de las 145 series anuales de precios con huecos, **39** caen
-  en ese caso.
+- **El proyecto no imputa ningún valor.** La columna `imputado` existe (hoy siempre FALSE) para
+  marcarlo si algún día se interpolan huecos cortos. De las 145 series anuales de precios con
+  huecos, **39** tienen huecos de más de tres años.
+- SIPSA no tiene datos de enero de 2021 a enero de 2022 (13 meses). No se rellenan: los
+  retornos solo se calculan entre meses consecutivos, para no inventar un "cambio mensual"
+  a través del hueco.
 - El centinela `-999` de NASA POWER se lee del encabezado de la respuesta y se convierte a nulo.
   Sin ese paso entra como si fuera una temperatura.
 - Un consumo aparente nulo o negativo no produce porcentaje de dependencia: se deja vacío en vez
@@ -156,7 +159,7 @@ año de rezago.
 
 ## 8. ¿Cómo se presenta el resultado?
 
-Una app en Streamlit con seis páginas, que lee del archivo DuckDB versionado y **nunca llama a
+Una app en Streamlit con siete páginas, que lee del archivo DuckDB versionado y **nunca llama a
 las APIs en vivo**. Es una decisión, no una limitación: si una fuente se cae, la app sigue
 funcionando y el panel de frescura dice qué tan viejo es cada dato.
 

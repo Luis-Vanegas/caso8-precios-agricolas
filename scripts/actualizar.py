@@ -18,7 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.acquisition import faostat_api, faostat_bulk, nasa_power, oni, pink_sheet, sipsa
+from src.acquisition import (
+    faostat_api, faostat_bulk, ideam, nasa_power, nasa_power_diario, oni, pink_sheet, sipsa,
+)
 from src.common.modelos import ResultadoDescarga
 from src.common.registro import conectar, registrar, resumen_frescura, ultima_actualizacion_fuente
 
@@ -29,8 +31,10 @@ FUENTES = {
     "faostat_api": faostat_api,
     "sipsa": sipsa,
     "nasa_power": nasa_power,
+    "nasa_power_diario": nasa_power_diario,
     "oni": oni,
     "pink_sheet": pink_sheet,
+    "ideam": ideam,
 }
 
 log = logging.getLogger("actualizar")

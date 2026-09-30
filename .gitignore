@@ -7,3 +7,5 @@ app/.streamlit/secrets.toml
 data/raw/
 data/interim/
 .sonar/
+.pytest_cache/
+scratch_*

@@ -1,0 +1,16 @@
+# Normaliza los saltos de linea: en el repositorio siempre LF, en Windows cada
+# editor puede usar CRLF sin que git marque el archivo como modificado.
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.json text eol=lf
+*.pq text eol=lf
+*.toml text eol=lf
+
+# Binarios: git no debe tocarlos
+*.duckdb binary
+*.parquet binary
+*.xlsx binary
+*.zip binary
+*.png binary

@@ -23,6 +23,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.cleaning import complementarias, faostat, homologacion
+from src.cleaning import ideam as limpieza_ideam
 from src.cleaning import sipsa as limpieza_sipsa
 from src.common.rutas import RAIZ, carpeta_intermedia
 from src.profiling.perfil import (
@@ -51,7 +52,24 @@ CLAVES = {
     "enso": ["anio", "trimestre"],
     "insumos": ["commodity", "anio", "mes"],
     "zonas_puente": ["producto_sipsa", "producto_zona", "departamento"],
+    "ideam_estaciones": ["variable", "codigoestacion", "codigosensor", "anio", "mes"],
+    "ideam_depto": ["variable", "departamento", "anio", "mes"],
 }
+
+
+def _clima() -> pd.DataFrame:
+    """Clima mensual historico + meses del ano en curso sacados del endpoint diario.
+
+    La anomalia se calcula DESPUES de unir, para que los meses nuevos se comparen
+    contra el mismo promedio historico que los viejos.
+    """
+    try:
+        diario = complementarias.limpiar_clima_diario()
+    except FileNotFoundError:
+        log.warning("nasa_power_diario: sin descargas, el clima llega solo hasta el ultimo ano cerrado")
+        diario = pd.DataFrame()
+    unido = complementarias.unir_clima(complementarias.limpiar_clima(), diario)
+    return complementarias.anomalia_precipitacion(unido)
 
 
 def construir() -> dict[str, pd.DataFrame]:
@@ -85,7 +103,7 @@ def construir() -> dict[str, pd.DataFrame]:
         log.error("SIPSA: %s: %s", type(exc).__name__, exc)
 
     for nombre, funcion in (
-        ("clima", lambda: complementarias.anomalia_precipitacion(complementarias.limpiar_clima())),
+        ("clima", _clima),
         ("enso", complementarias.limpiar_enso),
         ("insumos", complementarias.limpiar_insumos),
         ("zonas_puente", complementarias.puente_zona_sipsa),
@@ -94,6 +112,14 @@ def construir() -> dict[str, pd.DataFrame]:
             tablas[nombre] = funcion()
         except Exception as exc:
             log.error("%s: %s: %s", nombre, type(exc).__name__, exc)
+
+    # Sensor IDEAM: grano estacion-mes y su agregado a departamento-mes.
+    try:
+        estaciones = limpieza_ideam.limpiar(limpieza_ideam.leer())
+        tablas["ideam_estaciones"] = estaciones
+        tablas["ideam_depto"] = limpieza_ideam.a_departamento(estaciones)
+    except Exception as exc:
+        log.error("ideam: %s: %s", type(exc).__name__, exc)
 
     return tablas
 

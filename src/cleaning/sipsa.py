@@ -24,6 +24,19 @@ log = logging.getLogger(__name__)
 # de borrarlo: distingue "Guayaba*" de "Guayaba" y esa diferencia es informacion.
 SUFIJO_VARIEDAD = "*"
 
+# Mercados que el DANE renombro. Sin unificarlos, la serie se parte en dos y el
+# z-score de la alerta arranca de cero en la mitad de la historia.
+# Verificado en los datos: "CÚCUTA" publica hasta 2022-12-02 y
+# "SAN JOSÉ DE CÚCUTA" desde 2022-12-06, con los mismos productos.
+MERCADOS_RENOMBRADOS = {
+    "CÚCUTA": "SAN JOSÉ DE CÚCUTA",
+}
+
+
+def normalizar_mercado(mercado: pd.Series) -> pd.Series:
+    """Mayusculas, sin espacios sobrantes y con los renombres del DANE unificados."""
+    return mercado.str.strip().str.upper().replace(MERCADOS_RENOMBRADOS)
+
 
 def limpiar(ruta: Path | None = None) -> pd.DataFrame:
     """Lee el volcado crudo y devuelve la tabla tipada."""
@@ -52,7 +65,7 @@ def limpiar(ruta: Path | None = None) -> pd.DataFrame:
     df["fecha"] = pd.to_datetime(df["fecha"], format="ISO8601", utc=True).dt.date
     df["fecha_creacion"] = pd.to_datetime(df["fecha_creacion"], format="ISO8601", utc=True)
 
-    df["mercado"] = df["mercado"].str.strip().str.upper()
+    df["mercado"] = normalizar_mercado(df["mercado"])
     df["producto"] = df["producto"].str.strip()
     df["es_variedad"] = df["producto"].str.endswith(SUFIJO_VARIEDAD)
     df["producto_base"] = df["producto"].str.rstrip(SUFIJO_VARIEDAD).str.strip()
@@ -82,4 +95,11 @@ def a_mensual(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
     agrupado["precio_cop_kg"] = agrupado["precio_cop_kg"].round(2)
+
+    # El mes de la ultima fecha publicada sigue abierto: tiene menos dias que un
+    # mes normal y su promedio todavia puede cambiar. Se marca para que la app
+    # no dispare alertas sobre un mes a medias.
+    ultima = pd.to_datetime(df["fecha"]).max()
+    periodo = agrupado["anio"] * 100 + agrupado["mes"]
+    agrupado["mes_cerrado"] = periodo < ultima.year * 100 + ultima.month
     return agrupado

@@ -1,90 +1,38 @@
-"""Caso 8 — Detección temprana de volatilidad en precios agrícolas de Colombia.
+"""Punto de entrada de la app: arma el menu y abre la pagina elegida.
 
-Página de entrada: resumen del estado actual y contexto del proyecto.
+Correr desde la raiz del proyecto:
+    .venv\\Scripts\\python.exe -m streamlit run app/streamlit_app.py
+
+Cada pagina vive en app/paginas/. Este archivo solo organiza el menu en tres
+secciones: lo que se ve (Panorama), como se hizo y el contexto.
 """
 
-from __future__ import annotations
+import sys
+from pathlib import Path
 
 import streamlit as st
 
-from datos import aviso_cache, con_indicadores, consultar, enso, frescura
+# La carpeta raiz del proyecto va al path para poder importar `src.` desde
+# cualquier pagina (ahi estan los indicadores y las rutas).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-st.set_page_config(page_title="Volatilidad agrícola Colombia", page_icon="🌾", layout="wide")
+st.set_page_config(page_title="Caso 8 · Precios agrícolas", page_icon="🌽", layout="wide")
 
-st.title("🌾 Volatilidad de precios agrícolas en Colombia")
-st.markdown(
-    "Integración de **cinco fuentes** para detectar movimientos anómalos de precios "
-    "en los mercados mayoristas del país."
-)
+menu = {
+    "Panorama": [
+        st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
+        st.Page("paginas/anio_actual.py", title="Lo que va de 2026", icon=":material/calendar_month:"),
+        st.Page("paginas/semaforo.py", title="Semáforo de alertas", icon=":material/traffic:"),
+        st.Page("paginas/producto.py", title="Detalle por producto", icon=":material/show_chart:"),
+    ],
+    "Cómo lo hicimos": [
+        st.Page("paginas/recorrido.py", title="Recorrido paso a paso", icon=":material/route:"),
+        st.Page("paginas/calidad.py", title="Calidad de datos", icon=":material/fact_check:"),
+    ],
+    "Contexto": [
+        st.Page("paginas/clima.py", title="Clima y El Niño", icon=":material/thermostat:"),
+        st.Page("paginas/comercio.py", title="Producción y comercio", icon=":material/public:"),
+    ],
+}
 
-df = con_indicadores()
-ultimo = int(df["periodo"].max())
-mes_actual = df[df["periodo"] == ultimo]
-
-# --- Estado actual ----------------------------------------------------------
-
-st.subheader(f"Último periodo con dato: {ultimo // 100}-{ultimo % 100:02d}")
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Series vigiladas", f"{len(mes_actual):,}")
-c2.metric("Alertas rojas", int((mes_actual["alerta"] == "roja").sum()))
-c3.metric("Alertas amarillas", int((mes_actual["alerta"] == "amarilla").sum()))
-
-fase = enso().sort_values(["anio", "mes"]).iloc[-1]
-c4.metric("Fase ENSO", fase["fase"], f"{fase['anomalia']:+.2f} °C")
-
-# --- Alertas del mes --------------------------------------------------------
-
-encendidas = mes_actual[mes_actual["alerta"].isin(["roja", "amarilla"])].sort_values(
-    "z_score", key=abs, ascending=False
-)
-
-st.subheader("Alertas del último mes")
-if encendidas.empty:
-    st.success("Ningún movimiento anómalo en el último periodo.")
-else:
-    st.dataframe(
-        encendidas[
-            ["alerta", "producto", "mercado", "precio_cop_kg", "retorno_log", "z_score", "direccion"]
-        ].rename(
-            columns={
-                "precio_cop_kg": "precio COP/kg",
-                "retorno_log": "retorno log",
-                "z_score": "z-score",
-            }
-        ),
-        width="stretch",
-        hide_index=True,
-    )
-
-# --- Qué mide cada fuente ---------------------------------------------------
-
-st.subheader("Qué aporta cada fuente")
-st.markdown(
-    """
-| Fuente | Rol en el análisis | Frecuencia |
-|---|---|---|
-| **SIPSA (DANE)** | Motor de detección: precios mayoristas diarios por mercado | Diaria |
-| **FAOSTAT** | Contexto estructural: producción, comercio, balances, valor | Anual |
-| **NASA POWER** | Anomalía climática en zonas productoras | Mensual |
-| **ONI (NOAA)** | Fase El Niño / La Niña | Mensual |
-| **Pink Sheet (BM)** | Costos de insumos: fertilizantes y combustibles | Mensual |
-"""
-)
-
-st.info(
-    "**Por qué la alerta sale de SIPSA y no de FAOSTAT.** La detección temprana necesita "
-    "frecuencia. SIPSA publica a diario. FAOSTAT publica una vez al año y con un año de "
-    "rezago, así que no puede detectar nada temprano: aporta el contexto, no la señal."
-)
-
-# --- Frescura ---------------------------------------------------------------
-
-st.subheader("Frescura de los datos")
-st.dataframe(frescura(), width="stretch", hide_index=True)
-aviso_cache()
-
-st.caption(
-    "Proyecto académico — Adquisición e Integración de Datos, Ingeniería en Ciencia de Datos, ITM. "
-    "Los umbrales de alerta son convenciones de este trabajo, no estándares oficiales."
-)
+st.navigation(menu).run()

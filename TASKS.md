@@ -1,40 +1,52 @@
 # Tareas del proyecto
 
-## 🔴 Para el usuario (bloquean o requieren acción humana)
-- [ ] Crear `.env.example` a mano con `FAOSTAT_API_KEY=` y `CONTACT_EMAIL=` (mis permisos bloquean escribir archivos `.env*`), copiarlo a `.env`
-- [ ] Obtener el token del Developer Portal de FAO y cargarlo en `.env`. Sin él, `faostat_api` reporta error y las otras cinco fuentes siguen funcionando
-- [ ] **Ejecutar OpenRefine** siguiendo `docs/guia_openrefine.md` y exportar el JSON de operaciones a `data/openrefine/`. La receta está escrita en `receta_homologacion.json` pero NO fue ejecutada: no tengo OpenRefine
-- [ ] **Ejecutar Power Query** siguiendo `docs/guia_powerquery.md`. El código M está escrito pero NO fue ejecutado: no tengo Excel. Compará contra las cifras de "Resultado esperado"
-- [ ] Decidir si las zonas productoras se refinan con polígonos de UPRA/EVA o se quedan en capitales departamentales
-- [ ] Revisar las 9 inconsistencias reales de comercio en `docs/perfilado.md`
-- [ ] Opcional: borrar `data/raw/_probe/sipsa/` (108 MB duplicados). No lo toco por la regla de datos crudos inmutables
-- [ ] Publicar la app en Streamlit Community Cloud (Fase 4.5)
+## Para el equipo (antes de la entrega del 30 de septiembre)
+- [x] Luis: correr `scripts/probe_ideam.py` y pegar la salida en `docs/verificacion_api.md` — encontró y corrigió un bug real (mayúsculas de `departamento`, ver sección "IDEAM — verificación del 2026-09-23")
+- [x] Luis: IDEAM descargado (lluvia, 8 departamentos), `preparar.py`, `integrar.py`, `exploracion.py` y `pytest` corridos el 29-sep-2026 (ver `docs/fuentes_y_referencias.md`)
+- [ ] Todos: instalar de nuevo las librerías (`pip install -r requirements.txt`, se agregó plotly)
+- [ ] Todos: recorrer la página "Recorrido paso a paso" y el documento de estudio
+- [ ] Ejecutar OpenRefine siguiendo `docs/guia_openrefine.md` y exportar el JSON a `data/openrefine/` (captura como evidencia)
+- [ ] Ejecutar Power Query siguiendo `docs/guia_powerquery.md` (captura como evidencia)
+- [ ] Copiar `.env.example` a `.env` (opcional: tokens de FAO y datos.gov.co)
+- [x] Subir el repo a GitHub (privado): https://github.com/Luis-Vanegas/caso8-precios-agricolas
+- [ ] Luis: invitar a cada integrante (Settings → Collaborators) y que cada uno haga al menos un commit
+- [ ] Opcional: borrar `data/raw/_probe/sipsa/` (108 MB duplicados)
 
-## 🟢 Para Antigravity (rápidas, mecánicas, acotadas)
-- [ ] Ampliar `config/zonas_productoras.json` con más productos foco, respetando los nombres exactos de SIPSA
-- [ ] Revisar ortografía y tildes de los documentos de `docs/`
-
-## 🔵 Para Claude Code (arquitectura, lógica compleja, decisiones)
-- [x] Fase 0 — verificación de las seis fuentes (`docs/verificacion_api.md`)
-- [x] Fase 1 — adquisición, bitácora de frescura, scripts idempotentes
-- [x] Fase 2 — limpieza, perfilado y CSV para OpenRefine (`docs/perfilado.md`)
-- [x] Fase 2 — homologación SIPSA ↔ FAOSTAT validada contra los datos
-- [x] Fase 3 — modelo estrella en DuckDB con 19 chequeos de integridad
-- [x] Fase 3 — consultas M de Power Query y guía
-- [x] Fase 4 — indicadores de volatilidad y app Streamlit de seis páginas
-- [x] Fase 5 — reporte, respuestas ESTRUCTURA y guion de presentación
-- [ ] Completar `faostat_api.py` cuando haya token (rutas y esquema de cabecera)
-- [ ] Validar los métodos `*Madr` de SIPSA, que pueden filtrar por la bandera `enviado`
+## Pendientes técnicos
+- [ ] Validar la lista de vigilancia fuera de muestra (calcular rho con datos hasta 2024 y medir el acierto en 2025-2026)
+- [ ] Completar `faostat_api.py` cuando haya token
 - [ ] Validar las alertas contra eventos conocidos de desabastecimiento
-- [ ] Sumar los microdatos del DANE 2013–2019 para extender la historia de precios
+- [ ] Sumar microdatos del DANE para cubrir el hueco de 2021 de SIPSA
+- [ ] Refinar zonas productoras con polígonos de UPRA/EVA
+- [ ] Ampliar a 6 meses los rezagos de la correlación con el ONI (el efecto aparece a los 4-5 meses)
 
-## Estado verificado
+## Hecho
+- [x] Fases 0 a 5: verificación, adquisición, limpieza, homologación, modelo estrella, indicadores, reporte
+- [x] Fuente de sensor IDEAM: módulo, limpieza, tablas en el modelo y 8 pruebas (pendiente carga en vivo)
+- [x] Exploración de datos: 5 figuras y `docs/exploracion.md`
+- [x] Corrección: mercado CÚCUTA / SAN JOSÉ DE CÚCUTA unificado (la serie estaba partida)
+- [x] Corrección: el último mes se marca como abierto y no dispara alertas en la portada
+- [x] Corrección: `compactar` ya no borra la base antes de reemplazarla
+- [x] App rediseñada: 7 páginas, estilo propio, recorrido paso a paso, prueba de humo por página
+- [x] `CLAUDE.md`, `.gitattributes` y `.env.example`
+- [x] Clima 2026: `nasa_power_diario.py` completa los meses que el mensual aún no trae (5 pruebas)
+- [x] Corrección: los rezagos de las correlaciones se cuentan en meses de calendario, no en filas
+- [x] Página "Lo que va de 2026" y lista de vigilancia con tasa de acierto (`vigilancia.py`, 4 pruebas)
+- [x] Guía `docs/guia_nueva_fuente.md`
+
+## Estado verificado (22 de septiembre de 2026)
 
 | Comprobación | Resultado |
 |---|---|
-| Tests | 75, ninguno toca la red |
+| Pruebas | 103 (94 de pipeline + 9 de la app), ninguna usa internet |
 | Chequeos de integridad | 19, todos en verde |
-| Dirección de dependencias | correcta |
-| Idempotencia del pipeline | verificada |
-| App Streamlit | 6 páginas, todas renderizan |
-| Base DuckDB | 18 tablas, 249 563 filas, 5,8 MB |
+| App | 8 páginas, todas abren sin errores con Streamlit 1.63 y pandas 3.0 |
+| Base DuckDB | 18 tablas, 20 mercados, 5,8 MB |
+
+## Actualización del 29 de septiembre de 2026
+- [x] SIPSA, NASA POWER, ONI y Pink Sheet actualizados; base reconstruida (19 chequeos en verde, 105 pruebas)
+- [x] IDEAM (lluvia) integrado: 8 departamentos, 600 filas departamento-mes. Faltaban Cundinamarca 2024-2025 y Antioquia completa
+- [x] Corrección: `BOYACA` y `Boyaca` quedaban como dos departamentos; ahora `a_vocabulario_config` los unifica
+- [x] `matplotlib` faltaba en `requirements.txt` (lo importa `exploracion.py`)
+- [ ] Temperatura del IDEAM (`sbwg-7ju4`): verificada pero no descargada; la app solo muestra lluvia
+- [ ] `docs/reporte.md` dice "datos actualizados al 15 de septiembre": actualizar la fecha y las cifras al entregar

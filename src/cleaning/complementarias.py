@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.acquisition import nasa_power_diario
 from src.acquisition.nasa_power import a_filas, zonas
 from src.acquisition.oni import leer as leer_oni
 from src.common.rutas import ultima_carpeta_cruda
@@ -55,6 +56,51 @@ def limpiar_clima(carpeta: Path | None = None) -> pd.DataFrame:
         columns="parametro",
         values="valor",
     ).reset_index().rename_axis(None, axis=1)
+
+
+def limpiar_clima_diario(carpeta: Path | None = None) -> pd.DataFrame:
+    """Clima del ano en curso: los dias de NASA POWER promediados por mes.
+
+    Devuelve las mismas columnas que `limpiar_clima`, mas `dias_con_dato`.
+    """
+    carpeta = carpeta or ultima_carpeta_cruda("nasa_power_diario")
+    indice = {f"{z['producto']}_{z['departamento']}".replace(" ", "_"): z for z in zonas()}
+    filas: list[dict] = []
+    for archivo in sorted(carpeta.glob("*.json")):
+        zona = indice.get(archivo.stem)
+        if zona is None:
+            log.warning("archivo sin zona declarada en config: %s", archivo.name)
+            continue
+        respuesta = nasa_power_diario.leer_archivo(archivo)
+        elevacion = respuesta["geometry"]["coordinates"][2]
+        for fila in nasa_power_diario.a_mensual(respuesta, zona):
+            fila["elevacion_grilla_m"] = elevacion
+            filas.append(fila)
+    df = pd.DataFrame(filas)
+    if df.empty:
+        return df
+    llave = ["producto", "departamento", "lat", "lon", "elevacion_grilla_m", "anio", "mes"]
+    valores = df.pivot_table(index=llave, columns="parametro", values="valor").reset_index()
+    # Si un parametro tiene menos dias que otro, se reporta el menor.
+    dias = df.groupby(llave)["dias_con_dato"].min().reset_index()
+    return valores.merge(dias, on=llave).rename_axis(None, axis=1)
+
+
+def unir_clima(mensual: pd.DataFrame, diario: pd.DataFrame) -> pd.DataFrame:
+    """Pega los meses del endpoint diario despues de los del mensual.
+
+    Si un mes esta en los dos, gana el mensual (es la version oficial de POWER).
+    La columna `fuente` deja dicho de donde salio cada fila.
+    """
+    # dias_con_dato existe siempre (vacio en el mensual): el modelo la necesita.
+    mensual = mensual.assign(fuente="mensual", dias_con_dato=float("nan"))
+    if diario.empty:
+        return mensual
+    llave = ["producto", "departamento", "anio", "mes"]
+    ya_estan = mensual[llave].drop_duplicates().assign(_esta=True)
+    nuevos = diario.merge(ya_estan, on=llave, how="left")
+    nuevos = nuevos[nuevos["_esta"].isna()].drop(columns="_esta").assign(fuente="diario")
+    return pd.concat([mensual, nuevos], ignore_index=True).sort_values(llave, ignore_index=True)
 
 
 def puente_zona_sipsa() -> pd.DataFrame:

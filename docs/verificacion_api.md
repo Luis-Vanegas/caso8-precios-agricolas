@@ -263,3 +263,136 @@ escribirla a mano.
 | Pink Sheet | ✅ página responde | no |
 
 Solo una cosa bloquea el avance: el token de FAOSTAT.
+
+
+---
+
+## IDEAM (datos.gov.co) — verificado el 2026-09-22
+
+Fuente tipo sensor del proyecto. Verificado leyendo la ficha de la API Socrata
+(`/api/views/<id>.json` y `/api/views/<id>/columns.json`) y una consulta real de 5 filas.
+
+| Variable | Dataset | Frecuencia declarada | Unidad | Lecturas |
+|---|---|---|---|---|
+| Precipitación | `s54a-sgyg` | cada 10 minutos | mm | 165 294 457 filas, 116 312 104 con valor |
+| Temperatura del aire | `sbwg-7ju4` | cada hora | °C | — |
+
+- Columnas: `codigoestacion`, `codigosensor`, `fechaobservacion` (calendar_date), `valorobservado` (number),
+  `nombreestacion`, `departamento`, `municipio`, `zonahidrografica`, `latitud`, `longitud`,
+  `descripcionsensor`, `unidadmedida`.
+- Última lectura vista: 2026-09-21T23:59. Códigos de sensor vistos: `0240` (PRECIPITACIÓN) y
+  `0257` (GPRS - PRECIPITACIÓN).
+- El IDEAM declara control de calidad básico según recomendaciones de la OMM.
+
+**Verificado (`scripts/probe_ideam.py`):** ver la sección "IDEAM — verificación del 2026-09-23"
+más abajo. datos.gov.co estaba bloqueado en el entorno donde se escribió el módulo; se probó
+contra la API real una vez disponible.
+
+Referencia del sensor para el diseño DAQ (no es el modelo confirmado del IDEAM): pluviómetro de
+balancín Texas Electronics TE525MM, 0,1 mm por basculada, salida por reed switch. Resolución y
+rango de la OMM: WMO-No. 8 (2023), vol. I, cap. 6 y anexo 1.A.
+
+
+---
+
+## NASA POWER — actualización del 2026-09-22
+
+- El endpoint **mensual** cambió desde la verificación del 2026-09-11: `/temporal/monthly/configuration`
+  ahora publica `end = 2026-09-30` y la consulta de 2026 trae enero a julio; agosto y septiembre llegan en `-999`.
+- El endpoint **diario** (`/temporal/daily/point`) llega hasta pocos días antes de la fecha de consulta;
+  los últimos 3 días vienen en `-999`.
+- Mismas unidades (PRECTOTCORR mm/día, T2M °C), misma celda y misma elevación en ambos endpoints.
+- El promedio de los días de cada mes coincide exactamente con el valor mensual
+  (Boyacá 2025: enero 2,18 = 2,18; abril 12,77 = 12,77; julio 6,15 = 6,15; 2026: julio 7,69 = 7,69).
+- Decisión: `nasa_power_diario.py` baja el año en curso y `unir_clima` completa solo los meses que el
+  mensual no trae (columna `fuente` en `fact_clima`).
+
+
+---
+
+## IDEAM — verificación del 2026-09-23 (resuelve los TODO VERIFICAR)
+
+Corrido `scripts/probe_ideam.py` contra la API real de datos.gov.co (ya no estaba bloqueada).
+Los tres puntos pendientes quedan así:
+
+### 1. Nombres exactos de departamento
+
+`NOMBRE_IDEAM` tenía un error: `"Norte de Santander"` (con "de" minúscula). El dataset lo
+publica como `"Norte De Santander"` (con "De" mayúscula) — no era un problema de tilde, era de
+mayúsculas, y por eso la consulta nunca traía filas para ese departamento, en ningún año
+probado (2020, 2022, 2024, 2025, 2026). Corregido en `src/acquisition/ideam.py`. Los demás
+nombres con tilde (`Boyacá`, `Quindío`) ya eran correctos.
+
+**Hallazgo no buscado, más grande que el typo:** cada departamento existe DOS VECES en el
+dataset con distinta convención de mayúsculas — por ejemplo, en 2026, `"Boyacá"` tiene 284 604
+lecturas de precipitación y `"BOYACÁ"` tiene 1 629 341. No son registros duplicados: para una
+misma estación (`0023125080`), `"BOYACÁ"` cubre enero-julio de 2026 y `"Boyacá"` cubre
+agosto-septiembre, sin un solo mes en común. Es la misma red de estaciones migrando de
+convención de mayúsculas a mitad de año. Como la comparación `departamento = '...'` en SoQL es
+sensible a mayúsculas, **antes de este fix el codigo perdia silenciosamente la mayoria de las
+lecturas reales de cada departamento** (hasta ~85% en el caso de Boyacá). El fix: `_paginas`
+pide las dos variantes de mayúsculas por igualdad exacta y las junta, en vez de una sola
+comparación con `upper()`.
+
+**Probado y descartado:** `upper(departamento) = upper('...')` junta las dos variantes en una
+sola consulta SoQL, pero le rompe a Socrata el uso del índice sobre `departamento` — el agregado
+por año completo, que con igualdad exacta responde en menos de 1s, con `upper()` empieza a dar
+timeout de lectura (300s) incluso partido por semestre.
+
+### 2. Consulta agregada por departamento-año sin timeout
+
+**No responde sin timeout tal como se pidió originalmente (todo el año de una sola consulta).**
+Se probó, en orden, hasta encontrar el punto real:
+
+| Partición probada | Resultado |
+|---|---|
+| Año completo (con `upper()`, las dos variantes juntas) | timeout a los 300s |
+| Semestre (con `upper()`) | timeout a los 300s |
+| Año completo (igualdad exacta, solo la variante `BOYACÁ`, ~1,6 M lecturas) | timeout a los 300s |
+| Trimestre (igualdad exacta) | timeout a los 200s |
+| Trimestre, agrupando solo por `codigoestacion, codigosensor, mes` (sin lat/lon/municipio) | timeout a los 200s — descarta que el cuello de botella sea la cantidad de columnas del `$group` |
+| **Mes** (igualdad exacta, agrupando por las 7 columnas originales) | **62 filas en 23-26s** |
+
+Conclusión: el cuello de botella es el volumen absoluto de lecturas agregadas server-side, no el
+uso del índice ni la cantidad de columnas del `$group`. `consulta_mensual` ahora pide un
+departamento-variante-**mes** por llamada (`_limites_mes`), nunca el año ni el semestre
+completo. Con 2 variables × 8 departamentos × 2 variantes de mayúsculas × 12 meses, la descarga
+completa de un año hace varios cientos de peticiones secuenciales; se decidió mantenerlo
+secuencial (sin paralelizar) para no sumar complejidad a un módulo recién estabilizado.
+
+### 3. Intervalo real entre lecturas por sensor
+
+Confirmado con una muestra cruda de la estación `0024035340`:
+
+| Sensor | Descripción | Intervalo mediano | Frecuencia documentada |
+|---|---|---:|---|
+| `0240` | PRECIPITACIÓN (convencional) | 10 min | 10 min ✅ coincide |
+| `0257` | GPRS - PRECIPITACIÓN | 2 min | — no documentada, más frecuente |
+| `0068` | TEMPERATURA DEL AIRE A 2 m (convencional) | 60 min | cada hora ✅ coincide |
+| `0071` | GPRS - TEMPERATURA DEL AIRE A 2 m | 2 min | — no documentada, más frecuente |
+
+Los sensores convencionales coinciden con la frecuencia declarada en la ficha de la API. Los
+sensores GPRS (una estación puede tener los dos) reportan cada ~2 minutos, mucho más seguido —
+por eso `consulta_mensual` agrupa también por `codigosensor`: mezclar ambos sensores sumaría la
+lluvia dos veces.
+
+### 4. Hueco real de datos (no es un bug)
+
+Boyacá no tiene ninguna lectura antes de 2026 (probado: 0 filas en 2020, 2022, 2024 y 2025;
+106 filas en 2026). Es un hueco real de la red de estaciones, no un error de nombre — se
+declara como tal, no se rellena (regla 4 de `CLAUDE.md`).
+
+
+---
+
+## IDEAM — descarga completa del 2026-09-29
+
+- Cundinamarca 2024 y 2025 no se habían descargado: `CUNDINAMARCA` (mayúsculas) dic-2024 y ene-2025 dan
+  `ReadTimeout` (120 s) incluso pidiendo un mes. Con ventanas de **5 días** responde bien; se combinan
+  sumando `suma` y `n_lecturas` y recalculando mínimo, máximo y promedio.
+- Antioquia (zona productora) no tenía ningún archivo; se descargó 2020–2026 con el mismo método.
+- Resultado: 8 departamentos, 600 filas departamento-mes, 450 estaciones, 2020-01 a 2026-09
+  (Quindío llega a 2026-07).
+- Los archivos se agregaron a la carpeta de descarga existente `data/raw/ideam/2026-09-23/`
+  (no se editó ninguno existente).
+- Temperatura (`sbwg-7ju4`): no descargada.

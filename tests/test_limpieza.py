@@ -17,7 +17,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.cleaning import faostat, homologacion
-from src.cleaning.sipsa import a_mensual
+from src.cleaning.sipsa import a_mensual, normalizar_mercado
 from src.profiling.perfil import (
     _hueco_mayor,
     comercio_imposible,
@@ -76,6 +76,7 @@ def _diario() -> pd.DataFrame:
             "anio": [2026, 2026, 2026, 2026],
             "mes": [1, 1, 2, 2],
             "precio_cop_kg": [1000.0, 2000.0, 3000.0, 5000.0],
+            "fecha": pd.to_datetime(["2026-01-05", "2026-01-20", "2026-02-02", "2026-02-09"]).date,
         }
     )
 
@@ -95,6 +96,20 @@ def test_sipsa_mensual_conserva_minimo_y_maximo():
     m = a_mensual(_diario()).sort_values("mes")
     assert list(m["precio_min"]) == [1000.0, 3000.0]
     assert list(m["precio_max"]) == [2000.0, 5000.0]
+
+
+def test_sipsa_el_mes_de_la_ultima_fecha_queda_abierto():
+    """Febrero solo tiene datos hasta el 9: su promedio todavia puede cambiar."""
+    m = a_mensual(_diario()).sort_values("mes")
+    assert list(m["mes_cerrado"]) == [True, False]
+
+
+def test_sipsa_cucuta_renombrada_queda_como_un_solo_mercado():
+    """El DANE paso de CÚCUTA a SAN JOSÉ DE CÚCUTA en diciembre de 2022."""
+    crudo = pd.Series(["CÚCUTA", " San José de Cúcuta ", "BOGOTÁ, D.C."])
+    assert list(normalizar_mercado(crudo)) == [
+        "SAN JOSÉ DE CÚCUTA", "SAN JOSÉ DE CÚCUTA", "BOGOTÁ, D.C.",
+    ]
 
 
 # --- Perfilado --------------------------------------------------------------

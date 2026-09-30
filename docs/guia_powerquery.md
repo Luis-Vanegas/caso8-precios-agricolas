@@ -12,7 +12,7 @@ cifras que la sección "Resultado esperado", quedó bien.
 
 ## Qué produce
 
-Una tabla de 33.977 filas y 18 columnas: cada precio mayorista mensual con su contexto de
+Una tabla de 33.949 filas y 18 columnas: cada precio mayorista mensual con su contexto de
 precio al productor, fase El Niño y anomalía de lluvia en la zona productora.
 
 ## Orden de las consultas
@@ -50,13 +50,16 @@ Compará estas cifras con las tuyas:
 
 | Verificación | Valor esperado |
 |---|---:|
-| Filas totales | 33 977 |
+| Filas totales | 33 949 |
 | Columnas | 18 |
 | Filas con precio al productor | 14 106 |
 | Filas con razón calculada | 8 924 |
 | Filas con fase ENSO | 32 974 |
 | Filas con anomalía de lluvia | 5 922 |
 | Mediana de la razón mayorista/productor | 0,838 |
+
+Nota (22 sep. 2026): al unificar el mercado de Cúcuta las filas pasaron de 33 977 a 33 949. Los demás
+conteos de esta tabla se calcularon antes de ese cambio y pueden variar en unas decenas.
 
 Si te da distinto, mirá primero estas tres causas, que son las que fallan siempre.
 
@@ -84,7 +87,7 @@ Si te salteás esa división, la razón entre los dos precios da alrededor de 0,
 Esta la cometí yo y quiero que la veas.
 
 Mi primera versión unía `clima` con SIPSA directamente por `producto`. El código estaba bien
-escrito, corría sin ningún error, y unía **cero filas de 33.977**. ¿Por qué? Porque la
+escrito, corría sin ningún error, y unía **cero filas de 33.949**. ¿Por qué? Porque la
 configuración de zonas dice `Papa` y SIPSA dice `Papa negra*`. Nunca iban a coincidir.
 
 **Un join que no encuentra nada no se queja.** Devuelve nulos y sigue de largo. Por eso la

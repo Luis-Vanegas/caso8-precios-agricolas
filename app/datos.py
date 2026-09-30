@@ -17,7 +17,7 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.common.rutas import BASE_DUCKDB
+from src.common.rutas import BASE_DUCKDB, CONFIG
 
 TTL = 3600  # segundos
 
@@ -92,3 +92,39 @@ def aviso_cache() -> None:
         "La app lee del archivo DuckDB versionado, no de las APIs en vivo. "
         "El panel de frescura indica la antigüedad de cada fuente."
     )
+
+
+# --- Ayudas para las paginas rediseñadas ------------------------------------
+
+
+def fecha(periodo: int) -> str:
+    """202608 -> 'ago 2026'. Mas facil de leer que el numero."""
+    meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+    return f"{meses[periodo % 100 - 1]} {periodo // 100}"
+
+
+@st.cache_data(ttl=TTL)
+def ultimo_mes_cerrado() -> int:
+    """Ultimo periodo AAAAMM cuyo mes ya termino.
+
+    El mes en curso tiene pocos dias de dato y su promedio todavia cambia, asi
+    que la portada muestra el ultimo mes completo. Si la base es anterior a la
+    columna `mes_cerrado`, usa el ultimo periodo disponible.
+    """
+    columnas = consultar("DESCRIBE fact_precio_mayorista")["column_name"].tolist()
+    filtro = "WHERE mes_cerrado" if "mes_cerrado" in columnas else ""
+    return int(consultar(f"SELECT max(periodo) AS p FROM fact_precio_mayorista {filtro}")["p"][0])
+
+
+@st.cache_data(ttl=TTL)
+def mercados_geo() -> pd.DataFrame:
+    """Coordenadas aproximadas (centro urbano) de cada mercado, para el mapa."""
+    return pd.read_csv(CONFIG / "mercados.csv")
+
+
+@st.cache_data(ttl=TTL)
+def tabla_existe(nombre: str) -> bool:
+    """True si la tabla esta en la base. Sirve para fuentes que aun no se cargaron."""
+    return bool(consultar(
+        f"SELECT count(*) AS n FROM duckdb_tables() WHERE table_name = '{nombre}'"
+    )["n"][0])

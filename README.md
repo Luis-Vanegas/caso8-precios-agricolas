@@ -1,65 +1,125 @@
 # Caso 8 — Volatilidad de precios agrícolas en Colombia
 
-Pipeline de integración de datos y app de demostración que detecta movimientos anómalos de
-precio en los mercados mayoristas del país.
+Integramos **6 fuentes de datos** (DANE, IDEAM, FAO, NASA, NOAA y Banco Mundial) en una sola
+base y construimos una app que avisa cuando el precio de un alimento se mueve de forma anormal.
 
 Proyecto académico — Adquisición e Integración de Datos, Ingeniería en Ciencia de Datos, ITM.
 
-## Puesta en marcha
+## Para el equipo: correr la app en 5 pasos (Windows)
 
-```bash
+Requisitos: [Python 3.11+](https://www.python.org/downloads/) (marcar "Add to PATH") y [Git](https://git-scm.com/downloads).
+Abrir PowerShell y copiar cada línea:
+
+```powershell
+# 0. Bajar el proyecto (solo la primera vez) y entrar a la carpeta
+git clone https://github.com/Luis-Vanegas/caso8-precios-agricolas.git
+cd caso8-precios-agricolas
+
+# 1. Crear el entorno de Python (solo la primera vez)
 python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt
+
+# 2. Instalar las librerías (solo la primera vez, o si cambia requirements.txt)
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# 3. Comprobar que todo está bien: deben salir solo puntos y "passed"
+.venv\Scripts\python.exe -m pytest tests -q
+
+# 4. Abrir la app (se abre sola en el navegador)
+.venv\Scripts\python.exe -m streamlit run app\streamlit_app.py
 ```
 
-Copiá `.env.example` a `.env` y cargá `FAOSTAT_API_KEY` si tenés token del Developer Portal de
-FAO. No es obligatorio: la carga histórica sale de las descargas masivas.
+La base de datos (`data/processed/caso8.duckdb`) viene incluida: **no hace falta descargar nada
+para ver la app**. Para entender el proyecto, empezar por la página **"Recorrido paso a paso"**.
 
-## Correr el pipeline
+### Cómo presentarlo (guion sugerido, 5 min)
 
-```bash
-.venv/Scripts/python.exe scripts/carga_inicial.py   # primera vez: baja todo
-.venv/Scripts/python.exe scripts/preparar.py        # limpia y perfila
-.venv/Scripts/python.exe scripts/integrar.py        # carga el modelo y verifica
-.venv/Scripts/python.exe -m streamlit run app/streamlit_app.py
+1. **Inicio** y **Semáforo de alertas**: qué alimentos están en alerta el último mes cerrado.
+2. **Recorrido paso a paso**: las 5 etapas del pipeline (traer → limpiar → homologar → unir → detectar).
+3. **Detalle por producto**: elegir uno (ej. papa) y mostrar precio, volatilidad y z-score.
+4. **Clima y El Niño**: el contexto (lluvia, El Niño/La Niña).
+5. **Calidad de datos**: los huecos que declaramos (SIPSA 2021) y por qué no se inventan datos.
+
+### Los datos: qué viene en el repo y qué no
+
+| Carpeta | ¿En GitHub? | Qué es |
+|---|---|---|
+| `data/processed/caso8.duckdb` | Sí | La base final: con esto basta para la app |
+| `data/raw/` | No (825 MB) | Descargas crudas; se regeneran con `actualizar.py` |
+| `data/interim/` | No | Datos limpios intermedios; se regeneran con `preparar.py` |
+
+Para rehacer los datos desde cero (tarda, necesita internet), correr en orden la sección
+"Para actualizar los datos" de abajo. Probar una sola fuente: `scripts\actualizar.py --solo oni`.
+Ver qué se descargaría sin bajar nada: `scripts\actualizar.py --dry-run`.
+
+### Cómo aportar (cada integrante hace sus commits)
+
+```powershell
+git pull                                  # traer lo último antes de empezar
+# ...hacer los cambios...
+.venv\Scripts\python.exe -m pytest tests -q   # que siga todo en verde
+git add .
+git commit -m "docs: agrego captura de Power Query"
+git push
 ```
 
-Para actualizar después, `scripts/actualizar.py` en lugar de `carga_inicial.py`. Los tres
-scripts son idempotentes: correrlos dos veces seguidas no descarga nada de nuevo.
+Formato del mensaje: `feat:` (algo nuevo), `fix:` (corrección), `docs:` (documentos). Las tareas
+pendientes están en `TASKS.md`.
 
-**Cerrá la app antes de actualizar.** Mantiene el archivo DuckDB abierto y en Windows eso
-bloquea la escritura.
+## Cómo funciona (el pipeline)
 
-## Documentación
+```
+1. Traer      scripts/actualizar.py   descarga cada fuente a data/raw/  (sin modificarla)
+2. Limpiar    scripts/preparar.py     limpia, lleva todo a meses, perfila -> data/interim/
+3. Homologar  config/homologacion_productos.csv  (revisado con OpenRefine)
+4. Unir       scripts/integrar.py     arma el modelo estrella en DuckDB y corre 19 chequeos
+5. Detectar   src/indicators/volatilidad.py  retorno, volatilidad, z-score y alerta
+```
 
-| Documento | Qué contiene |
-|---|---|
-| `docs/reporte.md` | Reporte del proceso, hallazgos, fortalezas y debilidades |
-| `docs/respuestas_estructura.md` | Respuestas a las preguntas de ESTRUCTURA |
-| `docs/verificacion_api.md` | Evidencia de la verificación de cada fuente |
-| `docs/perfilado.md` | Perfilado de las tablas, generado por el pipeline |
-| `docs/guia_openrefine.md` | Paso manual de homologación |
-| `docs/guia_powerquery.md` | Paso manual de integración |
-| `docs/guion_presentacion.md` | Guion de la presentación |
+Para actualizar los datos (cerrar la app primero, porque tiene la base abierta):
+
+```powershell
+.venv\Scripts\python.exe scripts\actualizar.py          # incluye nasa_power_diario (clima del año en curso)
+.venv\Scripts\python.exe scripts\preparar.py
+.venv\Scripts\python.exe scripts\integrar.py
+.venv\Scripts\python.exe scripts\generar_ejemplos.py
+.venv\Scripts\python.exe scripts\exploracion.py
+```
+
+## Las fuentes
+
+| Fuente | Qué aporta | Cómo se obtiene | Frecuencia |
+|---|---|---|---|
+| SIPSA (DANE) | Precios mayoristas por mercado: de aquí salen las alertas | API SOAP | Diaria |
+| IDEAM | Lluvia y temperatura medidas por sensores (fuente tipo sensor) | API Socrata (datos.gov.co) | 10 min / 1 h |
+| FAOSTAT | Producción, comercio, balances, precio al productor | Descarga masiva (ZIP con CSV) | Anual |
+| NASA POWER | Clima por zona productora (histórico + meses recientes) | API REST, endpoints mensual y diario | Mensual / diaria |
+| ONI (NOAA) | El Niño / La Niña | Archivo de texto | Mensual |
+| Pink Sheet (Banco Mundial) | Precios de fertilizantes y energía | Excel | Mensual |
+
+Lo verificado de cada fuente está en `docs/verificacion_api.md`. Para agregar una fuente nueva, seguir `docs/guia_nueva_fuente.md`. Las limitaciones, en la
+página "Calidad de datos" de la app.
 
 ## Estructura
 
 ```
-src/common/        utilidades: HTTP con reintentos, rutas, bitácora
-src/acquisition/   un módulo por fuente, todos con estado() y descargar()
-src/cleaning/      limpieza y homologación
-src/profiling/     perfilado e inconsistencias
-src/integration/   modelo estrella y chequeos de integridad
-src/indicators/    volatilidad, alertas y dependencia de importaciones
-scripts/           puntos de entrada
-app/               Streamlit
-config/            homologación de productos y zonas productoras
-powerquery/        consultas M
-tests/             75 pruebas, ninguna toca la red
+app/               la app: streamlit_app.py (menú), paginas/, estilo.py, graficas.py, datos.py
+src/acquisition/   un archivo por fuente: cómo se descarga
+src/cleaning/      cómo se limpia cada fuente
+src/integration/   el modelo estrella en DuckDB y sus chequeos
+src/indicators/    los cálculos de volatilidad y alertas
+scripts/           los comandos que se corren
+config/            tablas que escribimos a mano (homologación, zonas, mercados)
+tests/             pruebas automáticas (ninguna usa internet)
+docs/              reporte, verificación de fuentes, perfilado, exploración y figuras
 ```
 
-## Pruebas
+## Si algo falla
 
-```bash
-.venv/Scripts/python.exe -m pytest tests/ -q
-```
+| Síntoma | Qué hacer |
+|---|---|
+| `ModuleNotFoundError: plotly` | Repetir el paso 2 (se agregó plotly a requirements.txt) |
+| `IO Error ... being used by another process` | Cerrar la app antes de correr `integrar.py` |
+| La app dice "No existe caso8.duckdb" | Correr `actualizar.py`, `preparar.py` e `integrar.py` |
+| `python` no se reconoce | Reinstalar Python marcando "Add to PATH" |
+| PowerShell no deja activar scripts | No hace falta activar: usar siempre `.venv\Scripts\python.exe` como arriba |
+| `git push` pide permiso | Pedirle a Luis que te agregue como colaborador en GitHub |

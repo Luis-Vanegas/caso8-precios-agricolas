@@ -119,7 +119,7 @@ SENTENCIAS: dict[str, str] = {
     "fact_precio_mayorista": f"""
         SELECT mercado, producto, anio, mes, anio * 100 + mes AS periodo,
                precio_cop_kg, precio_min, precio_max, dias_con_dato,
-               item_codigo_fao, tipo_correspondencia,
+               item_codigo_fao, tipo_correspondencia, mes_cerrado,
                FALSE AS imputado
         FROM {_p('sipsa/sipsa_mensual.parquet')}
     """,
@@ -175,7 +175,8 @@ SENTENCIAS: dict[str, str] = {
         SELECT producto, departamento, anio, mes, anio * 100 + mes AS periodo,
                PRECTOTCORR AS precipitacion_mm_dia,
                T2M AS temperatura_c,
-               PRECTOTCORR_anomalia AS precipitacion_anomalia
+               PRECTOTCORR_anomalia AS precipitacion_anomalia,
+               fuente, dias_con_dato
         FROM {_p('clima/clima.parquet')}
     """,
 
@@ -189,6 +190,31 @@ SENTENCIAS: dict[str, str] = {
         FROM {_p('insumos/insumos.parquet')}
         WHERE valor_usd IS NOT NULL
     """,
+}
+
+
+# Tablas de fuentes que pueden no estar descargadas todavia. Se construyen solo si
+# su parquet existe, para que el modelo no se caiga por una fuente nueva.
+OPCIONALES: dict[str, tuple[str, str]] = {
+    # La estacion es la unidad fisica de captura: codigo, sensor y ubicacion.
+    "dim_estacion_ideam": ("ideam/ideam_estaciones.parquet", f"""
+        SELECT codigoestacion, codigosensor,
+               any_value(nombreestacion) AS nombre, any_value(departamento) AS departamento,
+               any_value(municipio) AS municipio,
+               any_value(latitud) AS lat, any_value(longitud) AS lon,
+               list(DISTINCT variable) AS variables,
+               round(avg(CAST(valido AS INTEGER)), 3) AS proporcion_meses_validos
+        FROM {_p('ideam/ideam_estaciones.parquet')}
+        GROUP BY codigoestacion, codigosensor
+        ORDER BY departamento, codigoestacion
+    """),
+    # Mismo grano que fact_clima (departamento, anio, mes): esa es la variable de
+    # integracion entre el sensor y el resto del modelo.
+    "fact_sensor_ideam": ("ideam/ideam_depto.parquet", f"""
+        SELECT variable, departamento, anio, mes, anio * 100 + mes AS periodo,
+               valor, anomalia, n_estaciones
+        FROM {_p('ideam/ideam_depto.parquet')}
+    """),
 }
 
 
@@ -218,7 +244,8 @@ def compactar(ruta) -> tuple[float, float]:
         nueva.execute(f'CREATE TABLE "{tabla}" AS SELECT * FROM vieja."{tabla}"')
     nueva.close()
 
-    ruta.unlink()
+    # replace() sobrescribe en un solo paso: si algo falla a la mitad, queda la
+    # base vieja completa y no un hueco sin archivo.
     temporal.replace(ruta)
     return antes, ruta.stat().st_size / 1e6
 
@@ -230,6 +257,13 @@ def construir(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     """
     conteos: dict[str, int] = {}
     for tabla, consulta in SENTENCIAS.items():
+        con.execute(f"CREATE OR REPLACE TABLE {tabla} AS {consulta}")
+        conteos[tabla] = con.execute(f"SELECT count(*) FROM {tabla}").fetchone()[0]
+        log.info("%-24s %8d filas", tabla, conteos[tabla])
+    for tabla, (parquet, consulta) in OPCIONALES.items():
+        if not (INTERMEDIO / parquet).exists():
+            log.warning("%-24s omitida: falta %s", tabla, parquet)
+            continue
         con.execute(f"CREATE OR REPLACE TABLE {tabla} AS {consulta}")
         conteos[tabla] = con.execute(f"SELECT count(*) FROM {tabla}").fetchone()[0]
         log.info("%-24s %8d filas", tabla, conteos[tabla])
