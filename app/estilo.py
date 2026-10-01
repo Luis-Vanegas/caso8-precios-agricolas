@@ -57,6 +57,11 @@ _CSS = f"""
 h1, h2, h3 {{ font-family: 'Fraunces', serif !important; color: {TINTA}; letter-spacing: -0.01em; }}
 h1 {{ font-weight: 700 !important; }}
 
+/* Para proyector: subtitulos con aire arriba y textos de apoyo mas legibles */
+h2, h3 {{ margin-top: 1.4rem !important; }}
+[data-testid="stCaptionContainer"] {{ font-size: .95rem; }}
+.simple {{ font-size: 1rem; line-height: 1.5; }}
+
 /* Fondo tipo papel y ancho de lectura comodo */
 .stApp {{ background: {PAPEL}; }}
 .block-container {{ padding-top: 2.2rem; max-width: 1280px; }}
@@ -135,7 +140,9 @@ def aplicar() -> None:
 pio.templates["caso8"] = go.layout.Template(
     layout=go.Layout(
         font=dict(family="Inter, sans-serif", color=TINTA, size=13),
-        title=dict(font=dict(family="Fraunces, serif", size=18)),
+        # Titulo pegado a la izquierda: centrado se cortaba en las columnas angostas.
+        title=dict(font=dict(family="Fraunces, serif", size=16), x=0, xanchor="left",
+                   xref="container", pad=dict(l=4)),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="#FFFFFF",
         colorway=SERIES,

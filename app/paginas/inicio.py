@@ -32,7 +32,7 @@ estilo.contadores([
 ])
 
 # --- Alertas y mapa --------------------------------------------------------------
-izq, der = st.columns([1.05, 1], gap="large")
+izq, der = st.columns([1, 1.4], gap="large")
 
 with izq:
     st.subheader(f"Alertas de {fecha(mes)}")
@@ -57,6 +57,8 @@ with izq:
 
 with der:
     estilo.grafica(graficas.mapa_mercados(datos_mes, mercados_geo(), "Mercados con alertas"))
+    st.caption("Cada punto es un mercado. Rojo o amarillo = tiene alertas (la más grave manda el color); "
+               "cuanto más grande, más productos con alerta. Pasa el mouse para ver cuáles.")
 
 # --- El Nino -----------------------------------------------------------------------
 if fase["anomalia"] >= 0.5:

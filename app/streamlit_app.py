@@ -27,6 +27,7 @@ menu = {
     ],
     "Cómo lo hicimos": [
         st.Page("paginas/recorrido.py", title="Recorrido paso a paso", icon=":material/route:"),
+        st.Page("paginas/sensor.py", title="Sensor IDEAM", icon=":material/water_drop:"),
         st.Page("paginas/calidad.py", title="Calidad de datos", icon=":material/fact_check:"),
     ],
     "Contexto": [

@@ -1,0 +1,4 @@
+[
+ {"codigoestacion":"0021201200","codigosensor":"0240","fechaobservacion":"2026-09-21T23:59:00.000","valorobservado":"0","nombreestacion":"ESCUELA LA UNION [21201200]","departamento":"Bogotá","municipio":"Bogotá, D.C","zonahidrografica":"Alto Magdalena","latitud":"4.34264","longitud":"-74.18381","descripcionsensor":"PRECIPITACIÓN","unidadmedida":"mm"},
+ {"codigoestacion":"0015015050","codigosensor":"0257","fechaobservacion":"2026-09-21T23:58:00.000","valorobservado":"0","nombreestacion":"AEROPUERTO SIMÓN BOLÍVAR - AUT [15015050]","departamento":"Magdalena","municipio":"Santa Marta","zonahidrografica":"Caribe - Guajira","latitud":"11.121211111","longitud":"-74.231447222","descripcionsensor":"GPRS - PRECIPITACIÓN","unidadmedida":"mm"}
+]

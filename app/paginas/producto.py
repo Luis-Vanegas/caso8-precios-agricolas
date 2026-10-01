@@ -29,15 +29,22 @@ if serie.empty:
 
 # --- Resumen en tarjetas ----------------------------------------------------------
 cerrado = serie[serie["periodo"] <= ultimo_mes_cerrado()]
+if cerrado.empty:                      # serie que solo tiene el mes abierto
+    cerrado = serie
 ultimo = cerrado.iloc[-1]
-anterior = cerrado.iloc[-13] if len(cerrado) > 12 else cerrado.iloc[0]
-cambio_anual = ultimo["precio_cop_kg"] / anterior["precio_cop_kg"] - 1
+# El mismo mes del ano pasado, buscado por fecha: contar 12 filas atras fallaria
+# si la serie tiene huecos (por ejemplo, 2021).
+anterior = cerrado[cerrado["periodo"] == ultimo["periodo"] - 100]
+cambio_anual = None                    # None = no hay precio de hace un ano
+if not anterior.empty and anterior["precio_cop_kg"].iloc[0] > 0:
+    cambio_anual = ultimo["precio_cop_kg"] / anterior["precio_cop_kg"].iloc[0] - 1
 vol = ultimo["volatilidad_anualizada"]
 
 estilo.fila_de_tarjetas([
     estilo.tarjeta(f"Precio en {fecha(int(ultimo['periodo']))}", estilo.pesos(ultimo["precio_cop_kg"]) + "/kg",
                    f"promedio de {int(ultimo['dias_con_dato'])} días con dato", retraso=0),
-    estilo.tarjeta("Frente a hace un año", f"{cambio_anual:+.0%}", f"vs {fecha(int(anterior['periodo']))}", retraso=1),
+    estilo.tarjeta("Frente a hace un año", "sin dato" if cambio_anual is None else f"{cambio_anual:+.0%}",
+                   f"vs {fecha(int(ultimo['periodo']) - 100)}", retraso=1),
     estilo.tarjeta("Volatilidad anualizada", "sin dato" if pd.isna(vol) else f"{vol:.0%}",
                    "desviación de 12 meses × √12", retraso=2),
     estilo.tarjeta("Meses con alerta", str(int(serie["alerta"].isin(["roja", "amarilla"]).sum())),
@@ -46,6 +53,11 @@ estilo.fila_de_tarjetas([
 
 # --- Graficas ------------------------------------------------------------------------
 estilo.grafica(graficas.serie_precio(serie))
+st.caption(
+    "La línea verde es el precio promedio de cada mes (eje vertical, en pesos por kilo) y la banda "
+    "clara va del precio más bajo al más alto de ese mes. Un círculo amarillo o rojo marca un mes "
+    "con alerta. Donde la línea se corta no hay datos."
+)
 estilo.grafica(graficas.z_score(serie))
 estilo.explicacion(
     "Cada barra es un mes. Si queda en la franja blanca, el cambio de precio fue normal para "

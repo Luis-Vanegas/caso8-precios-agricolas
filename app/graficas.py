@@ -4,17 +4,16 @@ Cada funcion recibe una tabla (DataFrame) y devuelve una figura lista para
 `st.plotly_chart(fig)`. Asi las paginas no se llenan de detalles de dibujo.
 
 Por que Plotly y no st.line_chart: Plotly deja pasar el mouse para ver cada
-valor, hacer zoom y animar el mapa mes a mes, y respeta los colores del estilo.
+valor, hacer zoom, y respeta los colores del estilo.
 """
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 
-from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, VERDE
+from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TINTA, VERDE
 from src.indicators.volatilidad import UMBRAL_AMARILLA, UMBRAL_ROJA
 
 
@@ -36,71 +35,93 @@ def _completar_meses(df: pd.DataFrame) -> pd.DataFrame:
     return s.reindex(todos).rename_axis("fecha").reset_index()
 
 
-def mapa_mercados(alertas_mes: pd.DataFrame, geo: pd.DataFrame, titulo: str = "") -> go.Figure:
-    """Un circulo por mercado: tamano = alertas del mes, color = la mas grave.
+# Donde va el nombre de cada ciudad respecto a su punto. Las del Eje Cafetero
+# estan casi encimadas, por eso cada una mira para un lado distinto.
+_POSICION_NOMBRE = {
+    "MANIZALES": "top right", "PEREIRA": "top left", "ARMENIA": "middle left",
+    "IBAGUÉ": "bottom center", "CALI": "bottom left", "POPAYÁN": "middle left",
+    "PASTO": "middle left", "MEDELLÍN": "middle left", "MONTERÍA": "middle left",
+    "SINCELEJO": "middle left", "CARTAGENA DE INDIAS": "middle left",
+    "BARRANQUILLA": "top center", "TUNJA": "top right", "VILLAVICENCIO": "bottom right",
+}
 
-    alertas_mes: filas de un solo mes con columnas mercado y alerta.
+
+def _nombre_corto(mercado: str) -> str:
+    """'SAN JOSÉ DE CÚCUTA' -> 'Cúcuta'; 'BOGOTÁ, D.C.' -> 'Bogotá'."""
+    n = mercado.split(",")[0].replace("SAN JOSÉ DE ", "").title()
+    return n.replace(" De ", " de ")
+
+
+def mapa_mercados(alertas_mes: pd.DataFrame, geo: pd.DataFrame, titulo: str = "") -> go.Figure:
+    """Un punto por mercado, con su nombre al lado.
+
+    Color = la alerta mas grave del mes; tamano = cuantos productos tienen alerta.
+    Al pasar el mouse se lista QUE productos tienen alerta en ese mercado.
+
+    alertas_mes: filas de un solo mes con columnas mercado, producto, alerta,
+                 retorno_log y z_score.
     geo: coordenadas de config/mercados.csv.
     """
+    d = alertas_mes.assign(alerta=alertas_mes["alerta"].astype(str))
+    # Productos con alerta por mercado, del mas raro al menos raro.
+    encendidas = d[d["alerta"].isin(["roja", "amarilla"])]
+    encendidas = encendidas.reindex(encendidas["z_score"].abs().sort_values(ascending=False).index)
+    lineas: dict[str, list[str]] = {}
+    for f in encendidas.itertuples():
+        cambio = np.exp(f.retorno_log) - 1          # retorno logaritmico -> % normal
+        flecha = "▲" if cambio > 0 else "▼"
+        lineas.setdefault(f.mercado, []).append(
+            f'<span style="color:{COLOR_ALERTA[f.alerta]}">●</span> '
+            f'{f.producto.replace("*", "")}: {flecha} {cambio:+.0%} (z = {f.z_score:+.1f})')
+
     gravedad = {"roja": 2, "amarilla": 1, "verde": 0}
     resumen = (
-        alertas_mes.assign(g=alertas_mes["alerta"].astype(str).map(gravedad).fillna(0).astype(int))
-        .groupby("mercado")
-        .agg(alertas=("g", lambda s: int((s > 0).sum())), peor=("g", "max"), series=("g", "size"))
-        .reset_index()
+        d.assign(g=d["alerta"].map(gravedad).fillna(0).astype(int))
+        .groupby("mercado").agg(peor=("g", "max"), series=("g", "size")).reset_index()
         .merge(geo, on="mercado")
     )
-    nombres = {2: "con alerta roja", 1: "con alerta amarilla", 0: "sin alertas"}
-    resumen["estado"] = resumen["peor"].map(nombres)
-    resumen["tamano"] = 8 + resumen["alertas"] * 7
 
-    fig = px.scatter_geo(
-        resumen, lat="lat", lon="lon", size="tamano", color="estado",
-        color_discrete_map={"con alerta roja": ROJO, "con alerta amarilla": AMARILLO,
-                            "sin alertas": VERDE},
-        category_orders={"estado": ["sin alertas", "con alerta amarilla", "con alerta roja"]},
-        hover_name="mercado",
-        hover_data={"alertas": True, "series": True, "tamano": False, "lat": False,
-                    "lon": False, "estado": False},
-        size_max=34, title=titulo,
-    )
+    fig = go.Figure()
+    # Se dibuja de menos a mas grave para que las rojas queden encima.
+    for nivel, nombre, color in ((0, "sin alertas", "#9DB5A5"), (1, "con alerta amarilla", AMARILLO),
+                                 (2, "con alerta roja", ROJO)):
+        g = resumen[resumen["peor"] == nivel]
+        n_alertas = [len(lineas.get(m, [])) for m in g["mercado"]]
+        textos = []
+        for m, n, series in zip(g["mercado"], n_alertas, g["series"]):
+            if n == 0:
+                textos.append(f"<b>{_nombre_corto(m)}</b><br>Sin alertas ({series} series)")
+            else:
+                hay = lineas[m][:8]
+                resto = f"<br>y {n - 8} más" if n > 8 else ""
+                textos.append(f"<b>{_nombre_corto(m)}</b>: {n} con alerta<br>" + "<br>".join(hay) + resto)
+        fig.add_trace(go.Scattergeo(
+            lat=g["lat"], lon=g["lon"], name=nombre, mode="markers+text",
+            text=[_nombre_corto(m) for m in g["mercado"]],
+            textposition=[_POSICION_NOMBRE.get(m, "middle right") for m in g["mercado"]],
+            textfont=dict(size=12, color=TINTA),
+            # Sin alerta: punto chico y discreto. Con alerta: grande y con borde blanco.
+            marker=dict(color=color, opacity=0.9 if nivel else 0.8,
+                        size=[9 if n == 0 else min(14 + 3 * n, 36) for n in n_alertas],
+                        line=dict(color="white", width=2 if nivel else 0.5)),
+            hovertext=textos, hovertemplate="%{hovertext}<extra></extra>",
+        ))
     _estilo_mapa(fig)
-    return fig
-
-
-def mapa_animado(con_alertas: pd.DataFrame, geo: pd.DataFrame, desde: int) -> go.Figure:
-    """El mismo mapa, pero con un boton de play que recorre los meses."""
-    df = con_alertas[con_alertas["periodo"] >= desde]
-    df = (
-        df.assign(es=df["alerta"].isin(["roja", "amarilla"]).astype(int))
-        .groupby(["periodo", "mercado"])["es"].sum().reset_index(name="alertas")
-        .merge(geo, on="mercado")
-        .sort_values("periodo")
-    )
-    df["mes"] = df["periodo"].map(lambda p: f"{p // 100}-{p % 100:02d}")
-    df["tamano"] = 6 + df["alertas"] * 6
-    fig = px.scatter_geo(
-        df, lat="lat", lon="lon", size="tamano", color="alertas", animation_frame="mes",
-        hover_name="mercado", hover_data={"alertas": True, "tamano": False, "lat": False,
-                                          "lon": False, "mes": False},
-        color_continuous_scale=[VERDE, AMARILLO, ROJO], range_color=[0, max(3, df["alertas"].max())],
-        size_max=30,
-    )
-    _estilo_mapa(fig)
-    fig.update_layout(coloraxis_colorbar=dict(title="alertas"))
+    fig.update_layout(title=titulo)
     return fig
 
 
 def _estilo_mapa(fig: go.Figure) -> None:
     """Encuadre en Colombia con tierra clara y fronteras suaves."""
     fig.update_geos(
-        lataxis_range=[-4.3, 12.8], lonaxis_range=[-79.6, -66.8], showframe=False,
+        lataxis_range=[-4.3, 12.8], lonaxis_range=[-82.5, -66.5], showframe=False,  # margen al oeste para que quepan los nombres
         showland=True, landcolor="#F1ECDF", showocean=True, oceancolor="#E3ECF3",
         showcountries=True, countrycolor="#BDB6A4", showcoastlines=True, coastlinecolor="#BDB6A4",
         showlakes=False, projection_type="mercator", bgcolor="rgba(0,0,0,0)",
     )
-    fig.update_layout(height=600, margin=dict(l=0, r=0, t=40, b=0), legend_title_text="",
-                      legend=dict(orientation="h", y=0.02, x=0.02, bgcolor="rgba(255,255,255,.8)"))
+    fig.update_layout(height=520, margin=dict(l=0, r=0, t=40, b=0), legend_title_text="",
+                      legend=dict(orientation="v", y=0.03, x=0.02, bgcolor="rgba(255,255,255,.85)",
+                                  bordercolor=BORDE, borderwidth=1, font=dict(size=13)))
 
 
 def serie_precio(serie: pd.DataFrame) -> go.Figure:
@@ -166,7 +187,7 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
                              name="ONI", hovertemplate="%{x|%b %Y}: %{y:+.2f} °C<extra></extra>"))
     for y in (0.5, -0.5):
         fig.add_hline(y=y, line_dash="dot", line_color=GRIS, line_width=1)
-    fig.update_layout(title="Índice ONI (°C sobre lo normal en el Pacífico)", height=360)
+    fig.update_layout(title="Índice ONI (°C sobre lo normal)", height=360)
     return fig
 
 
@@ -178,21 +199,4 @@ def barras_horizontales(df: pd.DataFrame, x: str, y: str, titulo: str, color: st
                            hovertemplate=f"%{{y}}: %{{x:{formato}}}<extra></extra>"))
     fig.update_layout(title=titulo, height=max(320, 22 * len(d) + 80), xaxis_tickformat=formato,
                       yaxis=dict(gridcolor="rgba(0,0,0,0)"))
-    return fig
-
-
-def calor_z(mes: pd.DataFrame) -> go.Figure:
-    """Mapa de calor producto x mercado del z-score de un mes."""
-    tabla = mes.pivot_table(index="producto", columns="mercado", values="z_score")
-    tabla = tabla.loc[tabla.abs().max(axis=1).sort_values(ascending=False).index]
-    fig = go.Figure(go.Heatmap(
-        z=tabla.values, x=[m.title() for m in tabla.columns], y=tabla.index,
-        zmin=-4, zmax=4, zmid=0,
-        colorscale=[[0, AZUL], [0.5, "#FFFFFF"], [1, ROJO]],
-        colorbar=dict(title="z"), hovertemplate="%{y} en %{x}<br>z = %{z:.2f}<extra></extra>",
-        xgap=1, ygap=1,
-    ))
-    fig.update_layout(title="Cada cuadro: producto en un mercado. Rojo = subió raro, azul = bajó raro",
-                      height=max(420, 20 * len(tabla) + 120), xaxis_tickangle=-40,
-                      plot_bgcolor=BORDE)
     return fig

@@ -26,9 +26,11 @@ fig = go.Figure(go.Bar(x=meses["fecha"], y=meses["series"], marker_color=estilo.
                        hovertemplate="%{x|%b %Y}: %{y} series · mediana %{customdata} días<extra></extra>"))
 fig.add_vrect(x0="2020-12-20", x1="2022-01-31", fillcolor=estilo.ROJO, opacity=0.08, line_width=0,
               annotation_text="sin datos: ene 2021 – ene 2022", annotation_position="top left")
-fig.update_layout(title="Series producto-mercado con precio en cada mes (SIPSA)", height=340)
+fig.update_layout(title="Series con precio en cada mes (SIPSA)", height=340)
 estilo.grafica(fig)
 estilo.explicacion(
+    "Cada barra es un mes y su altura es cuántas series (un producto en un mercado) tienen precio "
+    "ese mes; la franja roja marca el hueco. "
     "El servicio web de SIPSA no entrega <b>ningún precio entre enero de 2021 y enero de 2022</b> "
     "(13 meses). No lo rellenamos: inventar 13 meses de precios sería peor que dejarlos vacíos. "
     "Lo que sí hicimos fue no calcular cambios entre diciembre de 2020 y febrero de 2022, "

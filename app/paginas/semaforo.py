@@ -1,5 +1,6 @@
 """Semaforo: que productos y mercados se movieron raro en un mes elegido."""
 
+import numpy as np
 import streamlit as st
 
 import estilo
@@ -26,7 +27,7 @@ df = con_indicadores()
 cerrado = ultimo_mes_cerrado()
 periodos = sorted(df["periodo"].unique(), reverse=True)
 periodo = st.selectbox(
-    "Mes", periodos, index=periodos.index(cerrado),
+    "Mes", periodos, index=periodos.index(cerrado) if cerrado in periodos else 0,
     format_func=lambda p: fecha(p) + ("  ·  en curso, parcial" if p > cerrado else ""),
 )
 mes = df[df["periodo"] == periodo]
@@ -39,40 +40,57 @@ estilo.contadores([
     ("series normales", int((mes["alerta"] == "verde").sum()), "", estilo.VERDE),
 ])
 
-tab_calor, tab_lista, tab_mapa = st.tabs(["Mapa de calor", "Lista de alertas", "Mapa animado"])
+# --- Lista de alertas (izquierda) y mapa del mismo mes (derecha) ---------------------
+izq, der = st.columns([1.1, 1], gap="large")
 
-with tab_calor:
-    estilo.grafica(graficas.calor_z(mes))
-
-with tab_lista:
+with izq:
+    st.subheader(f"Alertas de {fecha(periodo)}")
     encendidas = mes[mes["alerta"].isin(["roja", "amarilla"])]
     encendidas = encendidas.reindex(encendidas["z_score"].abs().sort_values(ascending=False).index)
     if encendidas.empty:
         st.success("Ninguna alerta este mes.")
     else:
+        tabla = encendidas.assign(
+            alerta=encendidas["alerta"].astype(str),
+            producto=encendidas["producto"].str.replace("*", "", regex=False),
+            mercado=encendidas["mercado"].str.title(),
+            cambio=(np.exp(encendidas["retorno_log"]) - 1) * 100,   # retorno logaritmico -> %
+        )
         st.dataframe(
-            encendidas[["alerta", "producto", "mercado", "precio_cop_kg", "z_score", "direccion", "dias_con_dato"]],
+            tabla[["alerta", "producto", "mercado", "cambio", "z_score", "precio_cop_kg"]],
             column_config={
                 "alerta": "Alerta", "producto": "Producto", "mercado": "Mercado",
+                "cambio": st.column_config.NumberColumn("Cambio del mes", format="%+.0f%%"),
+                "z_score": st.column_config.NumberColumn("z-score", format="%+.1f"),
                 "precio_cop_kg": st.column_config.NumberColumn("Precio COP/kg", format="$%.0f"),
-                "z_score": st.column_config.NumberColumn("z-score", format="%.2f"),
-                "direccion": "Dirección", "dias_con_dato": "Días con dato",
             },
             width="stretch", hide_index=True,
+            height=min(560, 36 * (len(tabla) + 1) + 3),   # alto justo a las filas, sin renglones vacios
+        )
+        st.caption(
+            "Cada fila es un producto en un mercado cuyo precio se salió de lo normal, de la más "
+            "rara a la menos rara. «Cambio del mes» es lo que subió (+) o bajó (−) frente al mes "
+            "anterior; el z-score dice a cuántas desviaciones de lo normal quedó."
         )
 
-with tab_mapa:
-    st.caption("Dale ▶ para ver cómo se mueven las alertas mes a mes desde 2024.")
-    estilo.grafica(graficas.mapa_animado(df[df["periodo"] <= cerrado], mercados_geo(), desde=202401))
+with der:
+    st.subheader("¿Dónde están?")
+    estilo.grafica(graficas.mapa_mercados(mes, mercados_geo()))
+    st.caption(
+        "Cada punto es una ciudad. Un punto grande y de color tiene alertas: rojo si hay alguna "
+        "roja, amarillo si solo hay amarillas; cuantos más productos con alerta, más grande. "
+        "Los puntos chicos y apagados no tienen alertas. Pasa el mouse para ver cuáles productos."
+    )
 
 # --- Ranking de volatilidad ----------------------------------------------------------
 st.subheader("¿Qué productos son más volátiles en general?")
-st.caption(
-    "Volatilidad anualizada típica (mediana). Un producto muy volátil no dispara alertas "
-    "seguido: para él, los saltos grandes son lo normal."
-)
 resumen = resumen_por_producto(df)
 resumen["producto"] = resumen["producto"].str.replace("*", "", regex=False)
 estilo.grafica(graficas.barras_horizontales(resumen, "volatilidad_mediana", "producto",
                                             "Volatilidad anualizada (mediana)"))
+st.caption(
+    "Cada barra es un producto: cuanto más larga, más suben y bajan sus precios en un año "
+    "(mediana de todos sus mercados). Un producto muy volátil no dispara alertas seguido: "
+    "para él, los saltos grandes son lo normal."
+)
 estilo.pie()

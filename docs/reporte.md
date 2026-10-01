@@ -3,31 +3,32 @@
 **Predicción y detección temprana de volatilidad en precios agrícolas de Colombia**
 
 Adquisición e Integración de Datos — Ingeniería en Ciencia de Datos, ITM.
-Datos actualizados al 15 de septiembre de 2026.
+Datos actualizados al 30 de septiembre de 2026 (SIPSA hasta el 29; ago. 2026 es el último mes cerrado).
 
 ---
 
 ## 1. Qué se construyó
 
-Un pipeline reproducible que integra **cinco fuentes** en una base analítica, más una app de
+Un pipeline reproducible que integra **seis fuentes** en una base analítica, más una app de
 demostración que señala movimientos anómalos de precio en los mercados mayoristas del país.
 
 | Fuente | Rol | Acceso | Filas de Colombia |
 |---|---|---|---:|
-| SIPSA (DANE) | Precios mayoristas diarios por mercado | SOAP | 383 718 |
+| SIPSA (DANE) | Precios mayoristas diarios por mercado | SOAP | 387 063 |
+| IDEAM | Lluvia de sensores automáticos (lectura cada 10 min), agregada en el servidor | API Socrata | 600 (mes × departamento) |
 | FAOSTAT | Producción, comercio, balances, valor, precios, tasa de cambio | Bulk + API | 159 082 |
-| NASA POWER | Precipitación y temperatura en zonas productoras | REST | 3 780 |
+| NASA POWER | Precipitación y temperatura en zonas productoras | REST | 3 861 |
 | ONI (NOAA CPC) | Fase El Niño / La Niña | Texto plano | 919 |
 | Pink Sheet (Banco Mundial) | Precios de fertilizantes y combustibles | Excel mensual | 50 383 |
 
-La base resultante tiene **18 tablas** y **249 563 filas** en un archivo DuckDB de 5,8 MB, que
+La base resultante tiene **20 tablas** y **250 676 filas** en un archivo DuckDB de 6,3 MB, que
 se versiona en el repositorio para que la app funcione sin credenciales.
 
 ## 2. Las tres herramientas del reto
 
 | Herramienta | Qué hace acá | Evidencia |
 |---|---|---|
-| **Python** | Adquisición, perfilado, limpieza, indicadores y carga | `src/`, `scripts/`, 75 tests |
+| **Python** | Adquisición, perfilado, limpieza, indicadores y carga | `src/`, `scripts/`, 105 tests |
 | **OpenRefine** | Homologación de los 33 productos de SIPSA | `data/openrefine/`, `docs/guia_openrefine.md` |
 | **Power Query** | Integración en tabla analítica única | `powerquery/*.pq`, `docs/guia_powerquery.md` |
 
@@ -184,7 +185,7 @@ toda la serie filtraría información que en su momento no existía y volvería 
 en vivo. Hay un test que lo verifica.
 
 **Por qué sobre SIPSA y no sobre FAOSTAT.** La detección temprana necesita frecuencia. SIPSA
-publica a diario y el 89 % de sus 589 series tiene 24 meses o más de historia. FAOSTAT publica
+publica a diario y el 93 % de sus 559 series tiene 24 meses o más de historia. FAOSTAT publica
 una vez al año con un año de rezago: aporta contexto estructural, no señal temprana.
 
 ## 7. Fortalezas y debilidades
@@ -198,7 +199,7 @@ una vez al año con un año de rezago: aporta contexto estructural, no señal te
 - **Las limitaciones están en los datos, no solo en el texto.** La elevación de grilla es una
   columna; el tipo de correspondencia viaja con cada fila; la app muestra una advertencia cuando
   el producto no admite comparación.
-- **75 tests, ninguno toca la red.** Las fixtures son recortes de respuestas reales, así que si
+- **105 tests, ninguno toca la red.** Las fixtures son recortes de respuestas reales, así que si
   una fuente cambia de formato, los tests avisan.
 - **19 chequeos de integridad** sobre el modelo, tres de los cuales nacieron de un error real.
 

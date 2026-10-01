@@ -149,6 +149,8 @@ with c1:
     fig.update_layout(title="Antes: un precio por día", yaxis_tickprefix="$", yaxis_tickformat=",.0f",
                       xaxis_tickformat="%d/%m", height=330, showlegend=False)
     estilo.grafica(fig)
+    st.caption("Cada punto verde es el precio de un día (eje vertical); la línea roja punteada es el "
+               "promedio del mes, el único número que guardamos.")
 with c2:
     st.markdown("**Después: una sola fila para todo el mes**")
     if not mensual.empty:

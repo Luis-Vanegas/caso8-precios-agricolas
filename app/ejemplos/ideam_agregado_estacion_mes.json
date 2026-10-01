@@ -1,0 +1,17 @@
+[
+ {
+  "codigoestacion": "0021215190",
+  "codigosensor": "0240",
+  "nombreestacion": "CAJAMARCA",
+  "departamento": "TOLIMA",
+  "municipio": "CAJAMARCA",
+  "latitud": "4.435666667",
+  "longitud": "-75.50036111",
+  "mes": "2026-07-01T00:00:00.000",
+  "suma": "53.0",
+  "promedio": "0.00983302411873840445",
+  "minimo": "0",
+  "maximo": "2.5",
+  "n_lecturas": "5390"
+ }
+]

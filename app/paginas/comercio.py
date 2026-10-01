@@ -30,12 +30,21 @@ dep = dependencia_importaciones(comercio, produccion).merge(items, on="item_codi
 dep = dep[dep["dependencia_pct"].between(0, 100) & (dep["produccion"] > 0)
           & (dep["consumo_aparente"] > 1000)]
 
+if dep.empty:
+    st.warning("No hay datos de comercio para mostrar.")
+    st.stop()
+
 anio = st.selectbox("Año", sorted(dep["anio"].dropna().astype(int).unique(), reverse=True))
 top = dep[dep["anio"] == anio].nlargest(15, "dependencia_pct").assign(dep=lambda d: d["dependencia_pct"] / 100)
 estilo.grafica(graficas.barras_horizontales(top, "dep", "item",
                                             f"Los 15 productos más importados en {anio} (% del consumo)",
                                             color=estilo.AZUL))
-st.caption("Solo productos que Colombia también produce, con consumo aparente mayor a 1.000 toneladas. Nombres tal como los publica la FAO.")
+st.caption(
+    "Cada barra es un producto; su largo es el porcentaje del consumo del país que viene de "
+    "importaciones (100 % = todo viene de afuera). Cuanto más larga, más expuesto está su precio al "
+    "dólar. Solo productos que Colombia también produce, con consumo aparente mayor a 1.000 "
+    "toneladas. Nombres tal como los publica la FAO."
+)
 
 with st.expander("Ver la tabla"):
     st.dataframe(dep[dep["anio"] == anio].sort_values("dependencia_pct", ascending=False)
