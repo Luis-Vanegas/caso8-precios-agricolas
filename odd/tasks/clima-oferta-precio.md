@@ -1,0 +1,66 @@
+# Fase: clima → oferta → precio (trabajo en paralelo)
+
+## Objetivo
+Mostrar qué tanto afecta el clima a los precios de la canasta familiar, con la cadena
+**lluvia en la zona productora → toneladas que llegan al mercado → precio → semáforo**,
+un mapa por departamento, el clima de hoy y un pronóstico validado contra el pasado.
+
+## Por qué
+El reto pide relacionar clima y precios y anticipar cambios. Hoy el proyecto tiene 33
+productos y una lista de vigilancia débil (2 de 36 parejas con relación). Las fuentes nuevas
+(abastecimiento, precios semanales, Open-Meteo) permiten la cadena completa y la canasta real.
+Referencia: Malau et al. (2021), panel de efectos fijos clima → precio (Indonesia, anual).
+
+## Restricciones
+- Reglas de `CLAUDE.md`: verificar contra la fuente real, datos crudos inmutables, pruebas sin red,
+  no interpolar huecos, código simple y comentado en español sin tildes.
+- El modelo de pronóstico solo se presenta si le gana al modelo ingenuo en la validación.
+- Correlación no es causalidad: la app lo dice en pantalla.
+
+## Reparto (quién toca qué)
+
+| | Claude 1 | Claude 2 |
+|---|---|---|
+| Carpeta | `C:\Users\LENOVO\Pictures\AdquiDatos` | `C:\Users\LENOVO\Pictures\AdquiDatos-claude2` |
+| Rama | `feat/datos-clima-oferta` | `feat/app-canasta-clima` |
+| Es dueño de | `src/`, `scripts/`, `tests/` (menos `test_app.py`), `config/mercados.csv`, `config/zonas_productoras.json`, `docs/contrato_datos.md`, `docs/verificacion_api.md`, `docs/fuentes_y_referencias.md`, `requirements.txt` | `app/`, `tests/test_app.py`, `DESIGN.md`, `config/productos_canonicos.csv`, `config/geo/`, `docs/fuentes_app.md`, `docs/guia_openrefine.md`, `docs/guia_powerquery.md`, `powerquery/`, `data/openrefine/` |
+| Puerto de la app | 8501 | 8502 |
+
+Compartidos (cada uno edita solo su sección): `TASKS.md`, este archivo.
+**Nadie commitea `data/processed/caso8.duckdb`** salvo Claude 1 en su PR final de datos.
+Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la agrega a `requirements.txt`.
+
+## Tareas de Claude 1 (datos y estadística)
+- [ ] C1-01 Adquisición `sipsa_abastecimiento.py` (método `promedioAbasSipsaMesMadr`) + fixture recortada + prueba
+- [ ] C1-02 Adquisición `sipsa_semanal.py` (método `promediosSipsaSemanaMadr`) que acumula snapshots (la API solo da 12 meses)
+- [ ] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
+- [ ] C1-04 Limpieza de las tres fuentes + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
+- [ ] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
+- [ ] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
+- [ ] C1-07 `indicador_quiebres`: prueba de Chow de quiebre estructural (ej. El Niño 2023-24)
+- [ ] C1-08 `pronostico_precio`: modelo con rezagos de lluvia, abastecimiento y ONI, validado contra el ingenuo estacional
+- [ ] C1-09 `actualizar.py` diario para las fuentes nuevas + documentación en `docs/verificacion_api.md`
+
+## Tareas de Claude 2 (app, diseño y herramientas)
+- [ ] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
+- [ ] C2-02 `config/productos_canonicos.csv` con OpenRefine (clustering de los 351 nombres semanales) + JSON en `data/openrefine/` + guía actualizada
+- [ ] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
+- [ ] C2-04 Página "Semáforo de la canasta": matriz producto × periodo con los datos que ya existen
+- [ ] C2-05 Página "Mapa": departamentos coloreados por cambio de precio (con `dim_mercado` + GeoJSON)
+- [ ] C2-06 Página "Clima hoy": lee `fact_clima_diario` y `fact_pronostico_estacional` (aviso si aún no existen)
+- [ ] C2-07 Página "La cadena": lluvia, abastecimiento y precio alineados para un producto
+- [ ] C2-08 Página "Pronóstico": `pronostico_precio` con banda y comparación contra el ingenuo
+- [ ] C2-09 Power Query: guía y consulta para la tabla de abastecimiento
+- [ ] C2-10 Prueba de humo de cada página nueva en `tests/test_app.py`
+
+## Cómo se integra
+1. Cada uno trabaja en su carpeta y su rama. Commits pequeños, Conventional Commits, sin atribución de IA.
+2. Antes de abrir un PR: `git fetch origin` + `git rebase origin/main` + `pytest` en verde.
+3. PR con `gh pr create --base main`. Se fusiona con `gh pr merge --squash --delete-branch` solo si las pruebas pasan.
+4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
+
+## Progreso y evidencia
+- 2026-10-09: fuentes nuevas verificadas contra la API real (ver `docs/contrato_datos.md`). 106 pruebas en verde en `main`.
+
+## Siguiente paso
+Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.

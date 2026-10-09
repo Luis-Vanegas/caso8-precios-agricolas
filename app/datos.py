@@ -31,7 +31,16 @@ def conexion() -> duckdb.DuckDBPyConnection:
             "despues de `carga_inicial.py` y `preparar.py`."
         )
         st.stop()
-    return duckdb.connect(str(BASE_DUCKDB), read_only=True)
+    try:
+        return duckdb.connect(str(BASE_DUCKDB), read_only=True)
+    except duckdb.IOException:
+        # En Windows, si otro script tiene la base abierta para escribir
+        # (actualizar.py o integrar.py), nadie mas la puede abrir.
+        st.warning(
+            "La base de datos se está actualizando en este momento. "
+            "Esperá a que termine `actualizar.py` o `integrar.py` y recargá la página."
+        )
+        st.stop()
 
 
 @st.cache_data(ttl=TTL)

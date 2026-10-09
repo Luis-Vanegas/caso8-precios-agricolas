@@ -123,6 +123,12 @@ h2, h3 {{ margin-top: 1.4rem !important; }}
 /* Tablas y metricas nativas de Streamlit un poco mas limpias */
 [data-testid="stMetricValue"] {{ font-family: 'JetBrains Mono', monospace; }}
 [data-testid="stDataFrame"] {{ border: 1px solid {BORDE}; border-radius: 10px; }}
+
+/* Si el sistema pide reducir movimiento: todo aparece quieto y visible */
+@media (prefers-reduced-motion: reduce) {{
+  .anim {{ animation: none; opacity: 1; transform: none; }}
+  .punto.late {{ animation: none; }}
+}}
 </style>
 """
 
@@ -139,7 +145,7 @@ def aplicar() -> None:
 
 pio.templates["caso8"] = go.layout.Template(
     layout=go.Layout(
-        font=dict(family="Inter, sans-serif", color=TINTA, size=13),
+        font=dict(family="Inter, sans-serif", color=TINTA, size=15),  # legible en proyector
         # Titulo pegado a la izquierda: centrado se cortaba en las columnas angostas.
         title=dict(font=dict(family="Fraunces, serif", size=16), x=0, xanchor="left",
                    xref="container", pad=dict(l=4)),

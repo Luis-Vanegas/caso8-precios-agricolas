@@ -42,6 +42,13 @@ Cerrar la app antes de `integrar.py`: tiene la base abierta y Windows bloquea la
 6. Codigo simple y comentado: el equipo debe entender cada linea.
 7. El informe del curso lo redacta el equipo (la guia AE2 prohibe texto de IA en el informe). Claude puede dar datos, tablas, codigo y explicaciones, no parrafos para pegar.
 
+## Trabajo en paralelo (dos sesiones de Claude)
+
+- Claude 1: carpeta `AdquiDatos`, rama `feat/datos-clima-oferta` (datos, estadistica).
+- Claude 2: carpeta `AdquiDatos-claude2`, rama `feat/app-canasta-clima` (app, diseno, OpenRefine, Power Query). Arranca leyendo `odd/claude2_inicio.md`.
+- Quien toca que archivo: tabla "Reparto" en `odd/tasks/clima-oferta-precio.md`. Las tablas que se intercambian: `docs/contrato_datos.md`.
+- Nadie commitea `data/processed/caso8.duckdb` salvo Claude 1 en su PR de datos.
+
 ## Trampas conocidas
 
 - SIPSA: el endpoint del WSDL (HTTP) no procesa SOAP; usar HTTPS y SOAP 1.2.
