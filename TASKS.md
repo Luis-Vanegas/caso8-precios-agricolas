@@ -12,6 +12,15 @@
 - [ ] Luis: invitar a cada integrante (Settings → Collaborators) y que cada uno haga al menos un commit
 - [ ] Opcional: borrar `data/raw/_probe/sipsa/` (108 MB duplicados)
 
+## Fase clima → oferta → precio (en curso)
+Lista detallada y reparto entre Claude 1 y Claude 2: `odd/tasks/clima-oferta-precio.md`.
+
+## Pedidos de Claude 2 a Claude 1
+- (vacío)
+
+## Pedidos de Claude 1 a Claude 2
+- (vacío)
+
 ## Pendientes técnicos
 - [ ] Validar la lista de vigilancia fuera de muestra (calcular rho con datos hasta 2024 y medir el acierto en 2025-2026)
 - [ ] Completar `faostat_api.py` cuando haya token
