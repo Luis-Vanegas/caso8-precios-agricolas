@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.common.rutas import CONFIG, CRUDO, carpetas_con_datos
+from src.common.rutas import CONFIG, CRUDO, archivos_mas_recientes
 
 COLUMNAS_ESTACIONAL = ["departamento", "dpto_codigo", "anio", "mes", "periodo",
                        "precip_p10", "precip_p50", "precip_p90", "anomalia_p50"]
@@ -25,16 +25,13 @@ def _codigos() -> dict[str, str]:
     return dict(zip(dep["departamento"], dep["dpto_codigo"]))
 
 
-def _ultima_carpeta(base: Path) -> Path:
-    carpetas = carpetas_con_datos(base)
-    if not carpetas:
-        raise FileNotFoundError(f"no hay descargas en {base}")
-    return carpetas[-1]
-
-
-def _archivos(carpeta: Path, tipo: str):
-    """(departamento, contenido) de cada archivo de un tipo."""
-    for ruta in sorted(carpeta.glob(f"{tipo}_*.json")):
+def _archivos(base: Path, tipo: str):
+    """(departamento, contenido) de cada archivo de un tipo. Se toma la version mas
+    reciente de cada departamento: si hoy fallo uno, se usa su ultima copia buena."""
+    archivos = archivos_mas_recientes(base, f"{tipo}_*.json")
+    if not archivos and tipo == "observado":
+        raise FileNotFoundError(f"no hay descargas de Open-Meteo en {base}")
+    for ruta in archivos:
         departamento = ruta.stem.removeprefix(f"{tipo}_").replace("_", " ")
         yield departamento, json.loads(ruta.read_text(encoding="utf-8"))
 
@@ -43,10 +40,10 @@ def _archivos(carpeta: Path, tipo: str):
 
 def limpiar_diario(base: Path | None = None) -> pd.DataFrame:
     """Una fila por departamento y dia, marcada `observado` o `pronostico`."""
-    carpeta = _ultima_carpeta(base or CRUDO / "open_meteo")
+    base = base or CRUDO / "open_meteo"
     partes = []
     for tipo in ("observado", "pronostico"):
-        for departamento, datos in _archivos(carpeta, tipo):
+        for departamento, datos in _archivos(base, tipo):
             d = datos["daily"]
             partes.append(pd.DataFrame({
                 "departamento": departamento,
@@ -108,16 +105,16 @@ def climatologia(diario: pd.DataFrame) -> pd.DataFrame:
 
 def limpiar_estacional(base: Path | None = None) -> pd.DataFrame:
     """Pronostico estacional mensual por departamento, con su anomalia frente a lo normal."""
-    carpeta = _ultima_carpeta(base or CRUDO / "open_meteo")
-    partes = [estacional_mensual(datos, depto) for depto, datos in _archivos(carpeta, "estacional")]
+    base = base or CRUDO / "open_meteo"
+    partes = [estacional_mensual(datos, depto) for depto, datos in _archivos(base, "estacional")]
     df = pd.concat([p for p in partes if not p.empty] or [pd.DataFrame(columns=COLUMNAS_ESTACIONAL)],
                    ignore_index=True)
     if df.empty:
         return df[COLUMNAS_ESTACIONAL]
 
     df["dpto_codigo"] = df["departamento"].map(_codigos())
-    if any(carpeta.glob("observado_*.json")):
-        normal = climatologia(limpiar_diario(carpeta.parent))
+    if archivos_mas_recientes(base, "observado_*.json"):
+        normal = climatologia(limpiar_diario(base))
         df = df.merge(normal, on=["departamento", "mes"], how="left")
         df["anomalia_p50"] = (df["precip_p50"] - df["lluvia_normal"]).round(1)
     else:

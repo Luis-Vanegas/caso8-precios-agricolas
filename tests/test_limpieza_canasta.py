@@ -116,3 +116,16 @@ def test_carpeta_vacia_mas_nueva_no_tapa_la_buena(tmp_path):
     from src.common.rutas import carpetas_con_datos
     assert [c.name for c in carpetas_con_datos(tmp_path)] == ["2026-10-08"]
     assert len(sipsa_canasta.limpiar_abastecimiento(tmp_path)) == 3
+
+
+def test_descarga_parcial_no_borra_archivos_buenos_de_dias_anteriores(tmp_path):
+    # Bug real del 2026-10-09: IDEAM fallo en 3 archivos y la lluvia de esos
+    # departamentos-anio desaparecio, aunque estaban sanos en la descarga anterior.
+    from src.common.rutas import archivos_mas_recientes
+    viejo, nuevo = tmp_path / "2026-09-23", tmp_path / "2026-10-09"
+    viejo.mkdir(); nuevo.mkdir()
+    (viejo / "lluvia_Antioquia_2025.json").write_text("viejo")
+    (viejo / "lluvia_Boyaca_2025.json").write_text("viejo")
+    (nuevo / "lluvia_Boyaca_2025.json").write_text("nuevo")      # Antioquia fallo hoy
+    archivos = {a.name: a.read_text() for a in archivos_mas_recientes(tmp_path, "*.json")}
+    assert archivos == {"lluvia_Antioquia_2025.json": "viejo", "lluvia_Boyaca_2025.json": "nuevo"}

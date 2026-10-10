@@ -12,6 +12,7 @@ tiene que poder explicarse en una sustentacion de 5 minutos.
 ## Comandos (Windows, desde la raiz)
 
 ```
+.venv\Scripts\python.exe scripts\diario.py              # todo junto: actualizar + preparar + integrar (docs/actualizacion_diaria.md)
 .venv\Scripts\python.exe scripts\actualizar.py          # descarga lo nuevo (--solo <fuente>, --dry-run)
 .venv\Scripts\python.exe scripts\preparar.py            # limpia, perfila, escribe data/interim
 .venv\Scripts\python.exe scripts\integrar.py            # modelo estrella + 29 chequeos

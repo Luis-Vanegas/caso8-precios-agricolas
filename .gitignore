@@ -10,3 +10,4 @@ data/interim/
 .pytest_cache/
 scratch_*
 entrega_AE2/
+data/diario.log

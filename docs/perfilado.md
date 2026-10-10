@@ -12,7 +12,7 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | faostat_fbs | 24,399 | 16 | 0 |
 | faostat_qv | 20,820 | 15 | 0 |
 | faostat_pe | 515 | 16 | 0 |
-| sipsa_diario | 389,045 | 11 | 0 |
+| sipsa_diario | 389,340 | 11 | 0 |
 | sipsa_mensual | 34,454 | 14 | 0 |
 | clima | 3,861 | 12 | 0 |
 | enso | 920 | 6 | 0 |
@@ -22,8 +22,8 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | sipsa_abastecimiento | 164,274 | 14 | 0 |
 | clima_diario | 19,912 | 8 | 0 |
 | clima_estacional | 40 | 9 | 0 |
-| ideam_estaciones | 14,905 | 19 | 0 |
-| ideam_depto | 600 | 7 | 0 |
+| ideam_estaciones | 25,989 | 24 | 0 |
+| ideam_depto | 1,191 | 7 | 0 |
 
 ## Columnas
 
@@ -125,25 +125,25 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | faostat_pe           | flag                 | str                 |     515 |       0 |        0    |        1 |    nan       |    nan           |
 | faostat_pe           | dominio              | str                 |     515 |       0 |        0    |        1 |    nan       |    nan           |
 | faostat_pe           | frecuencia           | str                 |     515 |       0 |        0    |        2 |    nan       |    nan           |
-| sipsa_diario         | mercado              | str                 |  389045 |       0 |        0    |       20 |              |                  |
-| sipsa_diario         | producto_codigo      | Int64               |  389045 |       0 |        0    |       33 |      1       |     33           |
-| sipsa_diario         | fecha                | object              |  389045 |       0 |        0    |     1437 |              |                  |
-| sipsa_diario         | fecha_creacion       | datetime64[us, UTC] |  389045 |       0 |        0    |     2694 |              |                  |
-| sipsa_diario         | precio_cop_kg        | int64               |  389045 |       0 |        0    |     7347 |    270       |  15500           |
-| sipsa_diario         | producto             | str                 |  389045 |       0 |        0    |       33 |              |                  |
-| sipsa_diario         | registro_id          | Int64               |  389045 |       0 |        0    |   389045 | 310785       | 700146           |
-| sipsa_diario         | es_variedad          | bool                |  389045 |       0 |        0    |        2 |      0       |      1           |
-| sipsa_diario         | producto_base        | str                 |  389045 |       0 |        0    |       33 |              |                  |
-| sipsa_diario         | anio                 | int32               |  389045 |       0 |        0    |        6 |   2020       |   2026           |
-| sipsa_diario         | mes                  | int32               |  389045 |       0 |        0    |       12 |      1       |     12           |
+| sipsa_diario         | mercado              | str                 |  389340 |       0 |        0    |       20 |              |                  |
+| sipsa_diario         | producto_codigo      | Int64               |  389340 |       0 |        0    |       33 |      1       |     33           |
+| sipsa_diario         | fecha                | object              |  389340 |       0 |        0    |     1438 |              |                  |
+| sipsa_diario         | fecha_creacion       | datetime64[us, UTC] |  389340 |       0 |        0    |     2697 |              |                  |
+| sipsa_diario         | precio_cop_kg        | int64               |  389340 |       0 |        0    |     7348 |    270       |  15500           |
+| sipsa_diario         | producto             | str                 |  389340 |       0 |        0    |       33 |              |                  |
+| sipsa_diario         | registro_id          | Int64               |  389340 |       0 |        0    |   389340 | 310785       | 700441           |
+| sipsa_diario         | es_variedad          | bool                |  389340 |       0 |        0    |        2 |      0       |      1           |
+| sipsa_diario         | producto_base        | str                 |  389340 |       0 |        0    |       33 |              |                  |
+| sipsa_diario         | anio                 | int32               |  389340 |       0 |        0    |        6 |   2020       |   2026           |
+| sipsa_diario         | mes                  | int32               |  389340 |       0 |        0    |       12 |      1       |     12           |
 | sipsa_mensual        | mercado              | str                 |   34454 |       0 |        0    |       20 |              |                  |
 | sipsa_mensual        | producto             | str                 |   34454 |       0 |        0    |       33 |              |                  |
 | sipsa_mensual        | producto_codigo      | Int64               |   34454 |       0 |        0    |       33 |      1       |     33           |
 | sipsa_mensual        | anio                 | int32               |   34454 |       0 |        0    |        6 |   2020       |   2026           |
 | sipsa_mensual        | mes                  | int32               |   34454 |       0 |        0    |       12 |      1       |     12           |
-| sipsa_mensual        | precio_cop_kg        | float64             |   34454 |       0 |        0    |    28036 |    330.62    |  15225           |
+| sipsa_mensual        | precio_cop_kg        | float64             |   34454 |       0 |        0    |    28075 |    330.62    |  15225           |
 | sipsa_mensual        | dias_con_dato        | int64               |   34454 |       0 |        0    |       23 |      1       |     23           |
-| sipsa_mensual        | precio_min           | int64               |   34454 |       0 |        0    |     3688 |    270       |  14900           |
+| sipsa_mensual        | precio_min           | int64               |   34454 |       0 |        0    |     3686 |    270       |  14900           |
 | sipsa_mensual        | precio_max           | int64               |   34454 |       0 |        0    |     4188 |    375       |  15500           |
 | sipsa_mensual        | mes_cerrado          | bool                |   34454 |       0 |        0    |        2 |      0       |      1           |
 | sipsa_mensual        | item_codigo_fao      | Int64               |   34454 |    2183 |        6.34 |       23 |    116       |    619           |
@@ -225,32 +225,37 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | clima_estacional     | precip_p50           | float64             |      40 |       0 |        0    |       40 |     10.3     |    444.9         |
 | clima_estacional     | precip_p90           | float64             |      40 |       0 |        0    |       40 |     35.9     |    570.9         |
 | clima_estacional     | anomalia_p50         | float64             |      40 |       0 |        0    |       40 |   -368.3     |    103           |
-| ideam_estaciones     | codigoestacion       | str                 |   14905 |       0 |        0    |      441 |              |                  |
-| ideam_estaciones     | codigosensor         | str                 |   14905 |       0 |        0    |        2 |              |                  |
-| ideam_estaciones     | nombreestacion       | str                 |   14905 |       0 |        0    |      865 |              |                  |
-| ideam_estaciones     | departamento         | str                 |   14905 |       0 |        0    |        8 |              |                  |
-| ideam_estaciones     | municipio            | str                 |   14905 |       0 |        0    |      464 |              |                  |
-| ideam_estaciones     | latitud              | float64             |   14905 |       0 |        0    |      692 |      1.67583 |      8.63833     |
-| ideam_estaciones     | longitud             | float64             |   14905 |       0 |        0    |      641 |    -76.7619  |    -71.3357      |
-| ideam_estaciones     | suma                 | float64             |   14905 |       0 |        0    |     4282 |      0       |  30726.5         |
-| ideam_estaciones     | promedio             | float64             |   14905 |       0 |        0    |    12769 |      0       |     24.6035      |
-| ideam_estaciones     | minimo               | float64             |   14905 |       0 |        0    |       12 |      0       |     20.53        |
-| ideam_estaciones     | maximo               | float64             |   14905 |       0 |        0    |      754 |      0       |     30           |
-| ideam_estaciones     | n_lecturas           | Int64               |   14905 |       0 |        0    |     4375 |      1       |  77518           |
-| ideam_estaciones     | variable             | str                 |   14905 |       0 |        0    |        1 |              |                  |
-| ideam_estaciones     | anio                 | int32               |   14905 |       0 |        0    |        7 |   2020       |   2026           |
-| ideam_estaciones     | mes                  | int32               |   14905 |       0 |        0    |       12 |      1       |     12           |
-| ideam_estaciones     | completitud          | Float64             |   14905 |       0 |        0    |      986 |      0       |      1           |
-| ideam_estaciones     | fuera_de_rango       | bool                |   14905 |       0 |        0    |        1 |      0       |      0           |
-| ideam_estaciones     | valido               | boolean             |   14905 |       0 |        0    |        2 |      0       |      1           |
-| ideam_estaciones     | valor                | float64             |   14905 |       0 |        0    |     4282 |      0       |  30726.5         |
-| ideam_depto          | variable             | str                 |     600 |       0 |        0    |        1 |    nan       |    nan           |
-| ideam_depto          | departamento         | str                 |     600 |       0 |        0    |        8 |    nan       |    nan           |
-| ideam_depto          | anio                 | int32               |     600 |       0 |        0    |        7 |   2020       |   2026           |
-| ideam_depto          | mes                  | int32               |     600 |       0 |        0    |       12 |      1       |     12           |
-| ideam_depto          | valor                | float64             |     600 |       0 |        0    |      570 |      0       |    641.5         |
-| ideam_depto          | n_estaciones         | int64               |     600 |       0 |        0    |       60 |      1       |     64           |
-| ideam_depto          | anomalia             | float64             |     600 |       0 |        0    |      600 |   -313.925   |    348.042       |
+| ideam_estaciones     | codigoestacion       | str                 |   25989 |       0 |        0    |      465 |              |                  |
+| ideam_estaciones     | codigosensor         | str                 |   25989 |       0 |        0    |        4 |              |                  |
+| ideam_estaciones     | fechaobservacion     | str                 |   25989 |   25987 |       99.99 |        1 |              |                  |
+| ideam_estaciones     | valorobservado       | str                 |   25989 |   25987 |       99.99 |        1 |              |                  |
+| ideam_estaciones     | nombreestacion       | str                 |   25989 |       0 |        0    |      937 |              |                  |
+| ideam_estaciones     | departamento         | str                 |   25989 |       0 |        0    |        8 |              |                  |
+| ideam_estaciones     | municipio            | str                 |   25989 |       0 |        0    |      492 |              |                  |
+| ideam_estaciones     | zonahidrografica     | str                 |   25989 |   25987 |       99.99 |        1 |              |                  |
+| ideam_estaciones     | latitud              | float64             |   25989 |       0 |        0    |      763 |      1.67583 |      8.63833     |
+| ideam_estaciones     | longitud             | float64             |   25989 |       0 |        0    |      691 |    -76.7619  |    -71.3357      |
+| ideam_estaciones     | descripcionsensor    | str                 |   25989 |   25987 |       99.99 |        2 |              |                  |
+| ideam_estaciones     | unidadmedida         | str                 |   25989 |   25987 |       99.99 |        1 |              |                  |
+| ideam_estaciones     | variable             | str                 |   25989 |       0 |        0    |        3 |              |                  |
+| ideam_estaciones     | suma                 | float64             |   25989 |       2 |        0.01 |    14671 |      0       |      1.12201e+06 |
+| ideam_estaciones     | promedio             | float64             |   25989 |       2 |        0.01 |    23762 |      0       |     43.1629      |
+| ideam_estaciones     | minimo               | float64             |   25989 |       2 |        0.01 |     2380 |      0       |     34.7         |
+| ideam_estaciones     | maximo               | float64             |   25989 |       2 |        0.01 |     3052 |      0       |     50           |
+| ideam_estaciones     | n_lecturas           | Int64               |   25989 |       2 |        0.01 |     5310 |      1       |  77518           |
+| ideam_estaciones     | anio                 | float64             |   25989 |       2 |        0.01 |        7 |   2020       |   2026           |
+| ideam_estaciones     | mes                  | float64             |   25989 |       2 |        0.01 |       12 |      1       |     12           |
+| ideam_estaciones     | completitud          | Float64             |   25989 |       2 |        0.01 |     1001 |      0       |      1           |
+| ideam_estaciones     | fuera_de_rango       | bool                |   25989 |       0 |        0    |        2 |      0       |      1           |
+| ideam_estaciones     | valido               | boolean             |   25989 |       2 |        0.01 |        2 |      0       |      1           |
+| ideam_estaciones     | valor                | float64             |   25989 |       2 |        0.01 |    14885 |      0       |  30726.5         |
+| ideam_depto          | variable             | str                 |    1191 |       0 |        0    |        2 |    nan       |    nan           |
+| ideam_depto          | departamento         | str                 |    1191 |       0 |        0    |        8 |    nan       |    nan           |
+| ideam_depto          | anio                 | float64             |    1191 |       0 |        0    |        7 |   2020       |   2026           |
+| ideam_depto          | mes                  | float64             |    1191 |       0 |        0    |       12 |      1       |     12           |
+| ideam_depto          | valor                | float64             |    1191 |       0 |        0    |     1153 |      0       |    641.5         |
+| ideam_depto          | n_estaciones         | int64               |    1191 |       0 |        0    |       60 |      1       |     64           |
+| ideam_depto          | anomalia             | float64             |    1191 |       0 |        0    |     1168 |   -313.925   |    348.042       |
 
 ## Homologacion SIPSA - FAOSTAT
 

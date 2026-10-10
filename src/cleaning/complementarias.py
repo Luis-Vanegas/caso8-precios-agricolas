@@ -17,7 +17,7 @@ import pandas as pd
 from src.acquisition import nasa_power_diario
 from src.acquisition.nasa_power import a_filas, zonas
 from src.acquisition.oni import leer as leer_oni
-from src.common.rutas import ultima_carpeta_cruda
+from src.common.rutas import CRUDO, archivos_mas_recientes, ultima_carpeta_cruda
 
 log = logging.getLogger(__name__)
 
@@ -25,14 +25,19 @@ log = logging.getLogger(__name__)
 # --- NASA POWER -------------------------------------------------------------
 
 def limpiar_clima(carpeta: Path | None = None) -> pd.DataFrame:
-    """Une los JSON de todas las zonas en una sola tabla larga."""
-    carpeta = carpeta or ultima_carpeta_cruda("nasa_power")
+    """Une los JSON de todas las zonas en una sola tabla larga.
+
+    Sin carpeta: la version mas reciente de cada zona (si hoy fallo una, se usa su
+    ultima copia buena en vez de perderla; ver `archivos_mas_recientes`).
+    """
+    archivos = (sorted(carpeta.glob("*.json")) if carpeta
+                else archivos_mas_recientes(CRUDO / "nasa_power", "*.json"))
     indice = {
         f"{z['producto']}_{z['departamento']}".replace(" ", "_"): z for z in zonas()
     }
 
     filas: list[dict] = []
-    for archivo in sorted(carpeta.glob("*.json")):
+    for archivo in archivos:
         zona = indice.get(archivo.stem)
         if zona is None:
             log.warning("archivo sin zona declarada en config: %s", archivo.name)
@@ -63,10 +68,13 @@ def limpiar_clima_diario(carpeta: Path | None = None) -> pd.DataFrame:
 
     Devuelve las mismas columnas que `limpiar_clima`, mas `dias_con_dato`.
     """
-    carpeta = carpeta or ultima_carpeta_cruda("nasa_power_diario")
+    # Sin carpeta: la version mas reciente de cada zona (si hoy fallo una, se usa su
+    # ultima copia buena en vez de perderla; ver `archivos_mas_recientes`).
+    archivos = (sorted(carpeta.glob("*.json")) if carpeta
+                else archivos_mas_recientes(CRUDO / "nasa_power_diario", "*.json"))
     indice = {f"{z['producto']}_{z['departamento']}".replace(" ", "_"): z for z in zonas()}
     filas: list[dict] = []
-    for archivo in sorted(carpeta.glob("*.json")):
+    for archivo in archivos:
         zona = indice.get(archivo.stem)
         if zona is None:
             log.warning("archivo sin zona declarada en config: %s", archivo.name)
