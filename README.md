@@ -134,7 +134,7 @@ página "Calidad de datos" de la app.
 ## Estructura
 
 ```
-app/               la app: streamlit_app.py (menú), paginas/, estilo.py, graficas.py, datos.py
+app/               la app: streamlit_app.py (menú), paginas/ (7 páginas), secciones/, estilo.py, graficas.py, datos.py
 src/acquisition/   un archivo por fuente: cómo se descarga
 src/cleaning/      cómo se limpia cada fuente
 src/integration/   el modelo estrella en DuckDB y sus chequeos

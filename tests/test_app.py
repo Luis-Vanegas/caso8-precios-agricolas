@@ -43,7 +43,7 @@ def test_cada_pagina_esta_en_el_menu():
 # Abrir la pagina no alcanza: dos errores reales de esta fase solo aparecian al
 # mover un control (un rango de anios sin alertas para algun producto, y un
 # departamento sin abastecimiento del articulo elegido).
-PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima_hoy", "cadena", "pronostico"]
+PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima", "efecto_clima", "pronostico", "como_lo_hicimos"]
 
 # Cuantos valores se prueban por control. El mapa tiene 284 articulos: recorrerlos
 # todos haria la prueba lenta sin encontrar nada nuevo.
@@ -310,3 +310,142 @@ def test_el_pronostico_corta_la_linea_real_en_el_hueco_de_2021():
     en_2021 = [v for f, v in zip(fechas, valores) if f.year == 2021]
     assert len(en_2021) == 12 and all(v is None or math.isnan(v) for v in en_2021)
     assert real.connectgaps is False
+
+
+# --- Rediseno para presentar (C2-21 a C2-26) ---
+
+
+def _html(app) -> str:
+    """El HTML que la pagina pinta con st.html (tarjetas, recuadros)."""
+    return "\n".join(e.proto.body for e in app.get("html"))
+
+
+def _abrir(nombre: str):
+    pagina = APP / "paginas" / f"{nombre}.py"
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+    return app
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
+    """C2-22: maximo 5 filas, un producto no se repite (antes salia el platano
+    3 veces, una por mercado), y ni rastro de `z`."""
+    app = _abrir("inicio")
+
+    tabla = app.dataframe[0].value
+    assert 1 <= len(tabla) <= 5
+    assert tabla["Producto"].is_unique
+    assert tabla["Qué pasó con el precio"].str.match(r"^[▲▼] (subió|bajó) \d+ %$").all()
+
+    pantalla = _textos(app) + _html(app)
+    assert "z =" not in pantalla and "z-score" not in pantalla.lower()
+    # El ONI dice en palabras que es, en la misma tarjeta.
+    assert "°C más caliente de lo normal" in pantalla or "°C más frío de lo normal" in pantalla \
+        or "cerca de lo normal" in pantalla
+    # "N artículos de la canasta" y no "vigilamos 33 productos": N sale de la base.
+    import duckdb
+    con = duckdb.connect(str(BASE), read_only=True)
+    articulos = con.execute(
+        "SELECT count(DISTINCT art_id) FROM fact_precio_semanal WHERE en_canasta").fetchone()[0]
+    con.close()
+    assert f"{articulos} artículos" in pantalla
+    assert "33 productos" not in pantalla
+
+
+def test_la_app_tiene_7_paginas():
+    """C2-23: de 14 paginas que se pisaban a 7. Lo que se fusiono vive en
+    app/secciones/ (una funcion mostrar() por antigua pagina)."""
+    assert len(PAGINAS) == 7, [p.stem for p in PAGINAS]
+    for seccion in ("detalle_producto", "clima_hoy", "el_nino", "sensor",
+                    "recorrido", "calidad", "comercio", "cadena"):
+        assert (APP / "secciones" / f"{seccion}.py").exists(), seccion
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("nombre, pestanas", [
+    ("canasta", ["Canasta familiar", "Frutas y verduras", "Detalle de un producto"]),
+    ("clima", ["Hoy y lo que viene", "El Niño y La Niña", "Sensor de lluvia del IDEAM"]),
+    ("como_lo_hicimos", ["Recorrido paso a paso", "Calidad de datos", "Producción y comercio"]),
+])
+def test_las_paginas_fusionadas_traen_sus_secciones(nombre, pestanas):
+    """C2-23: cada antigua pagina es una pestana de la pagina que la absorbio."""
+    app = _abrir(nombre)
+    etiquetas = [t.label for t in app.tabs]
+    for esperada in pestanas:
+        assert any(e.startswith(esperada) for e in etiquetas), (esperada, etiquetas)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_pagina_del_efecto_del_clima_dice_lo_que_midio():
+    """C2-24: la respuesta al reto en pantalla, con los numeros de la base.
+
+    Solo cuenta como hallazgo q < 0,1 (docs/contrato_datos.md). Los numeros se
+    leen de la base: si el pipeline cambia, la prueba sigue valiendo.
+    """
+    import duckdb
+
+    con = duckdb.connect(str(BASE), read_only=True)
+    oni_total, oni_hallazgos, oni_positivos = con.execute("""
+        SELECT count(*), count(*) FILTER (q_valor < 0.1),
+               count(*) FILTER (q_valor < 0.1 AND coeficiente > 0)
+        FROM indicador_sensibilidad_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
+    lluvia_precio = con.execute("""
+        SELECT producto, departamento, rezago_meses FROM indicador_sensibilidad_clima
+        WHERE eslabon = 'lluvia->precio' AND q_valor < 0.1""").fetchall()
+    oferta_baja = [p for (p,) in con.execute("""
+        SELECT producto FROM indicador_sensibilidad_clima
+        WHERE eslabon = 'oferta->precio' AND q_valor < 0.1 AND coeficiente < 0""").fetchall()]
+    productos_nino, quiebres_nino = con.execute("""
+        SELECT count(DISTINCT producto), count(DISTINCT producto) FILTER (q_valor < 0.1)
+        FROM indicador_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
+    con.close()
+
+    app = _abrir("efecto_clima")
+    pantalla = _textos(app) + _html(app)
+
+    assert f"{oni_hallazgos} de {oni_total}" in pantalla
+    assert oni_positivos == 0            # todas negativas: El Nino seca
+    minusculas = pantalla.lower()
+    for producto, departamento, rezago in lluvia_precio:
+        assert producto.replace("*", "").strip().lower() in minusculas
+        assert departamento in pantalla
+        assert f"{rezago} meses" in pantalla
+    for producto in oferta_baja:
+        assert producto.split()[0].lower() in minusculas   # "Chócolo mazorca" -> "chócolo"
+    assert f"{quiebres_nino} de {productos_nino}" in pantalla
+    assert "correlación no es causalidad" in pantalla.lower()
+    # Trae la grafica de la cadena (antes pagina aparte).
+    assert any(t.label.startswith("La cadena") for t in app.tabs)
+    assert any(s.label == "Artículo" for s in app.selectbox)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.stem)
+def test_cada_pagina_tiene_su_guion_para_presentar(pagina):
+    """C2-21: arriba de cada pagina, un recuadro con que decir al presentar."""
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+    guiones = [e.proto.body for e in app.get("html") if 'class="presentar' in e.proto.body]
+    assert len(guiones) == 1, f"{pagina.stem}: {len(guiones)} recuadros para presentar"
+    assert "Si te preguntan" in guiones[0]
+
+
+# Palabras de estadistica que el jurado no tiene por que conocer. Pueden aparecer,
+# pero solo en la misma frase que su traduccion ("en la jerga", "en estadistica").
+JERGA = ("z-score", "z =", "q-valor", "p-valor", "MAE")
+TRADUCCION = ("en la jerga", "en estadística")
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.stem)
+def test_ninguna_palabra_de_jerga_va_sin_traducir(pagina):
+    """C2-25: nada de z, q, p o MAE sueltos en pantalla."""
+    import re
+
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    pantalla = _textos(app) + "\n" + re.sub(r"<style>.*?</style>", "", _html(app), flags=re.S)
+    for frase in re.split(r"(?<=[.:;])\s|\n", pantalla):
+        for palabra in JERGA:
+            if palabra in frase:
+                assert any(t in frase for t in TRADUCCION), (pagina.stem, palabra, frase)

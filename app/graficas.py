@@ -39,95 +39,6 @@ def _completar_meses(df: pd.DataFrame) -> pd.DataFrame:
     return s.reindex(todos).rename_axis("fecha").reset_index()
 
 
-# Donde va el nombre de cada ciudad respecto a su punto. Las del Eje Cafetero
-# estan casi encimadas, por eso cada una mira para un lado distinto.
-_POSICION_NOMBRE = {
-    "MANIZALES": "top right", "PEREIRA": "top left", "ARMENIA": "middle left",
-    "IBAGUÉ": "bottom center", "CALI": "bottom left", "POPAYÁN": "middle left",
-    "PASTO": "middle left", "MEDELLÍN": "middle left", "MONTERÍA": "middle left",
-    "SINCELEJO": "middle left", "CARTAGENA DE INDIAS": "middle left",
-    "BARRANQUILLA": "top center", "TUNJA": "top right", "VILLAVICENCIO": "bottom right",
-}
-
-
-def _nombre_corto(mercado: str) -> str:
-    """'SAN JOSÉ DE CÚCUTA' -> 'Cúcuta'; 'BOGOTÁ, D.C.' -> 'Bogotá'."""
-    n = mercado.split(",")[0].replace("SAN JOSÉ DE ", "").title()
-    return n.replace(" De ", " de ")
-
-
-def mapa_mercados(alertas_mes: pd.DataFrame, geo: pd.DataFrame, titulo: str = "") -> go.Figure:
-    """Un punto por mercado, con su nombre al lado.
-
-    Color = la alerta mas grave del mes; tamano = cuantos productos tienen alerta.
-    Al pasar el mouse se lista QUE productos tienen alerta en ese mercado.
-
-    alertas_mes: filas de un solo mes con columnas mercado, producto, alerta,
-                 retorno_log y z_score.
-    geo: coordenadas de config/mercados.csv.
-    """
-    d = alertas_mes.assign(alerta=alertas_mes["alerta"].astype(str))
-    # Productos con alerta por mercado, del mas raro al menos raro.
-    encendidas = d[d["alerta"].isin(["roja", "amarilla"])]
-    encendidas = encendidas.reindex(encendidas["z_score"].abs().sort_values(ascending=False).index)
-    lineas: dict[str, list[str]] = {}
-    for f in encendidas.itertuples():
-        cambio = np.exp(f.retorno_log) - 1          # retorno logaritmico -> % normal
-        flecha = "▲" if cambio > 0 else "▼"
-        lineas.setdefault(f.mercado, []).append(
-            f'<span style="color:{COLOR_ALERTA[f.alerta]}">●</span> '
-            f'{f.producto.replace("*", "")}: {flecha} {cambio:+.0%} (z = {f.z_score:+.1f})')
-
-    gravedad = {"roja": 2, "amarilla": 1, "verde": 0}
-    resumen = (
-        d.assign(g=d["alerta"].map(gravedad).fillna(0).astype(int))
-        .groupby("mercado").agg(peor=("g", "max"), series=("g", "size")).reset_index()
-        .merge(geo, on="mercado")
-    )
-
-    fig = go.Figure()
-    # Se dibuja de menos a mas grave para que las rojas queden encima.
-    for nivel, nombre, color in ((0, "sin alertas", "#9DB5A5"), (1, "con alerta amarilla", AMARILLO),
-                                 (2, "con alerta roja", ROJO)):
-        g = resumen[resumen["peor"] == nivel]
-        n_alertas = [len(lineas.get(m, [])) for m in g["mercado"]]
-        textos = []
-        for m, n, series in zip(g["mercado"], n_alertas, g["series"]):
-            if n == 0:
-                textos.append(f"<b>{_nombre_corto(m)}</b><br>Sin alertas ({series} series)")
-            else:
-                hay = lineas[m][:8]
-                resto = f"<br>y {n - 8} más" if n > 8 else ""
-                textos.append(f"<b>{_nombre_corto(m)}</b>: {n} con alerta<br>" + "<br>".join(hay) + resto)
-        fig.add_trace(go.Scattergeo(
-            lat=g["lat"], lon=g["lon"], name=nombre, mode="markers+text",
-            text=[_nombre_corto(m) for m in g["mercado"]],
-            textposition=[_POSICION_NOMBRE.get(m, "middle right") for m in g["mercado"]],
-            textfont=dict(size=12, color=TINTA),
-            # Sin alerta: punto chico y discreto. Con alerta: grande y con borde blanco.
-            marker=dict(color=color, opacity=0.9 if nivel else 0.8,
-                        size=[9 if n == 0 else min(14 + 3 * n, 36) for n in n_alertas],
-                        line=dict(color="white", width=2 if nivel else 0.5)),
-            hovertext=textos, hovertemplate="%{hovertext}<extra></extra>",
-        ))
-    _estilo_mapa(fig)
-    fig.update_layout(title=titulo)
-    return fig
-
-
-def _estilo_mapa(fig: go.Figure) -> None:
-    """Encuadre en Colombia con tierra clara y fronteras suaves."""
-    fig.update_geos(
-        lataxis_range=[-4.3, 12.8], lonaxis_range=[-82.5, -66.5], showframe=False,  # margen al oeste para que quepan los nombres
-        showland=True, landcolor="#F1ECDF", showocean=True, oceancolor="#E3ECF3",
-        showcountries=True, countrycolor="#BDB6A4", showcoastlines=True, coastlinecolor="#BDB6A4",
-        showlakes=False, projection_type="mercator", bgcolor="rgba(0,0,0,0)",
-    )
-    fig.update_layout(height=520, margin=dict(l=0, r=0, t=40, b=0), legend_title_text="",
-                      legend=dict(orientation="v", y=0.03, x=0.02, bgcolor="rgba(255,255,255,.85)",
-                                  bordercolor=BORDE, borderwidth=1, font=dict(size=13)))
-
-
 def serie_precio(serie: pd.DataFrame) -> go.Figure:
     """Precio mensual con su rango (min-max del mes) y los meses con alerta marcados."""
     s = _completar_meses(serie)
@@ -151,7 +62,7 @@ def serie_precio(serie: pd.DataFrame) -> go.Figure:
                                  name=f"alerta {nivel}",
                                  marker=dict(color=COLOR_ALERTA[nivel], size=12,
                                              line=dict(color="white", width=2))))
-    fig.update_layout(title="Precio mayorista (COP por kg)", yaxis_tickprefix="$",
+    fig.update_layout(title="Precio mayorista (pesos por kg)", yaxis_tickprefix="$",
                       yaxis_tickformat=",.0f", height=400)
     return fig
 
@@ -170,9 +81,11 @@ def z_score(serie: pd.DataFrame) -> go.Figure:
                           line_width=0)
     colores = s["alerta"].astype(str).map(COLOR_ALERTA).fillna(GRIS)
     fig.add_trace(go.Bar(x=s["fecha"], y=s["z_score"], marker_color=colores,
-                         hovertemplate="%{x|%b %Y}<br>z = %{y:.2f}<extra></extra>"))
+                         hovertemplate="%{x|%b %Y}<br>a %{y:.1f} desviaciones de lo normal"
+                                       "<extra></extra>"))
     tope = max(4, float(np.nanmax(np.abs(s["z_score"]))) + 0.5) if s["z_score"].notna().any() else 4
-    fig.update_layout(title="¿Qué tan raro fue el cambio de cada mes? (z-score)",
+    fig.update_layout(title="¿Qué tan raro fue el cambio de cada mes?",
+                      yaxis_title="desviaciones de lo normal",
                       yaxis_range=[-tope, tope], height=320, showlegend=False)
     return fig
 
@@ -245,7 +158,7 @@ def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
         if not real.empty:
             fig.add_vline(x=real["fecha"].max(), line_dash="dot", line_color=GRIS, line_width=1.2)
 
-    fig.update_layout(height=450, yaxis_title="precio (COP por kg)",
+    fig.update_layout(height=450, yaxis_title="precio (pesos por kg)",
                       legend=dict(orientation="h", y=-0.22))
     return fig
 
@@ -263,7 +176,7 @@ def cadena_lluvia_oferta_precio(cadena: pd.DataFrame, unidad: str = "kg") -> go.
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=.06,
                         subplot_titles=("Lluvia en la zona productora (mm al mes)",
                                         "Toneladas que entraron a la central",
-                                        f"Precio (COP por {unidad})"))
+                                        f"Precio (pesos por {unidad})"))
 
     fig.add_trace(go.Bar(x=c["fecha"], y=c["lluvia_mm"], marker_color=AZUL, opacity=.85,
                          name="lluvia",

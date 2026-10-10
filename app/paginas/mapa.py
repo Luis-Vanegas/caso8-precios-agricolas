@@ -17,6 +17,12 @@ estilo.encabezado(
     "Mapa por departamento",
     "Cuánto cambió el precio de un artículo en cada departamento frente al mes anterior.",
 )
+estilo.para_presentar(
+    "Aquí se elige un alimento y un mes, y el mapa muestra dónde subió (rojo) y dónde bajó "
+    "(azul) su precio frente al mes anterior.<br>"
+    "<b>Si te preguntan «¿por qué no muestran dónde es más caro?»:</b> porque la misma "
+    "«papa» es otra variedad en cada ciudad; el cambio sí se puede comparar."
+)
 
 estilo.explicacion(
     "El color dice <b>cuánto cambió</b> el precio, no cuán caro es. "
@@ -71,16 +77,20 @@ if df.empty:
     st.stop()
 
 subieron = int((df["variacion"] > 0).sum())
+mayor = df.loc[df["variacion"].abs().idxmax()]            # el departamento que mas se movio
 bajaron = int((df["variacion"] < 0).sum())
 unidad = df["unidad"].iloc[0]
 estilo.fila_de_tarjetas([
     estilo.tarjeta("Departamentos con dato", f"{len(df)} de 33",
-                   f"precio por {unidad}"),
-    estilo.tarjeta("Subió", f"{subieron}", "departamentos", color=estilo.ROJO if subieron else None),
-    estilo.tarjeta("Bajó", f"{bajaron}", "departamentos", color=estilo.AZUL if bajaron else None),
-    estilo.tarjeta("El que más se movió", f"{df['variacion'].abs().max():+.1f}%".replace("+-", "-"),
-                   df.reindex(df["variacion"].abs().sort_values(ascending=False).index)
-                     ["departamento"].iloc[0]),
+                   f"tienen precio por {unidad} este mes y el anterior"),
+    estilo.tarjeta("Subió", f"{subieron}", "departamentos donde el precio subió",
+                   color=estilo.ROJO if subieron else None),
+    estilo.tarjeta("Bajó", f"{bajaron}", "departamentos donde el precio bajó",
+                   color=estilo.AZUL if bajaron else None),
+    estilo.tarjeta("El que más se movió",
+                   f"{estilo.decimal(mayor['variacion'], signo=True)} %",
+                   f"{mayor['departamento']}: {'subió' if mayor['variacion'] > 0 else 'bajó'} "
+                   "frente al mes anterior"),
 ])
 
 st.subheader(f"{articulo} · {fecha(periodo)}")

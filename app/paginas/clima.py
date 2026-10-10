@@ -1,70 +1,37 @@
-"""Clima: El Nino / La Nina y la lluvia en las zonas productoras."""
+"""Clima: lo que pasa hoy en las zonas productoras, El Nino y el sensor del IDEAM.
 
-import pandas as pd
-import plotly.graph_objects as go
+Absorbe las antiguas paginas "Clima hoy", "Clima y El Nino" y "Sensor IDEAM".
+Cada una es ahora una seccion (app/secciones/) en su propia pestana.
+"""
+
 import streamlit as st
 
 import estilo
-import graficas
-from datos import clima, enso
+from secciones import clima_hoy, el_nino, sensor
 
 estilo.aplicar()
 estilo.encabezado(
-    "Clima y El Niño",
-    "El clima mueve la oferta de alimentos: una sequía o un aguacero en la zona productora "
-    "se nota en el precio semanas o meses después.",
-    antetitulo="Contexto",
+    "Clima",
+    "El clima mueve la oferta de alimentos: una sequía o un aguacero en la zona donde se "
+    "siembra se puede notar en el precio semanas o meses después.",
+)
+estilo.para_presentar(
+    "Aquí está el clima de las zonas donde se siembra: lo que llovió estos días, lo que se "
+    "espera y si hay El Niño.<br>"
+    "<b>Si te preguntan «¿de dónde salen estos datos?»:</b> de cuatro fuentes: Open-Meteo "
+    "(días y pronóstico), NOAA (El Niño), NASA POWER (historia) y los sensores del IDEAM."
 )
 
-e = enso()
-actual = e.iloc[-1]
-estilo.contadores([
-    (f"ONI {actual['trimestre']} {int(actual['anio'])}", round(float(actual["anomalia"]), 2), "°C", estilo.ROJO),
-    ("umbral de El Niño", 0.5, "°C", estilo.GRIS),
+hoy, nino, ideam = st.tabs([
+    "Hoy y lo que viene",
+    "El Niño y La Niña",
+    "Sensor de lluvia del IDEAM",
 ])
-estilo.explicacion(
-    "El <b>ONI</b> mide cuánto más caliente (o frío) está el océano Pacífico frente a lo normal. "
-    "Por encima de <b>+0,5 °C</b> hay <b>El Niño</b>: en Colombia suele traer menos lluvia. "
-    "Por debajo de <b>−0,5 °C</b> hay <b>La Niña</b>: más lluvia. Un estudio del Banco de la "
-    "República encontró que un El Niño fuerte sube la inflación de alimentos a los 4 y 5 meses."
-)
-desde = st.slider("Desde el año", int(e["anio"].min()), int(e["anio"].max()) - 1, 2000)
-fig = graficas.oni(e, desde)
-fig.update_layout(title="ONI: el Pacífico vs lo normal (°C)")  # titulo corto para que no se corte
-estilo.grafica(fig)
-estilo.explicacion(
-    "Cada punto es un trimestre. Lo que está <b>sobre cero</b> (rojo) es un Pacífico más caliente "
-    "de lo normal; lo que está <b>bajo cero</b> (azul) es más frío. Las líneas punteadas marcan "
-    "±0,5 °C: si el índice pasa de ahí durante varios trimestres seguidos, se declara El Niño o La Niña.",
-    etiqueta="Cómo leerlo",
-)
+with hoy:
+    clima_hoy.mostrar()
+with nino:
+    el_nino.mostrar()
+with ideam:
+    sensor.mostrar()
 
-# La lluvia medida por los sensores del IDEAM ahora tiene su propia pagina: "Sensor IDEAM".
-
-# --- NASA POWER -----------------------------------------------------------------------
-st.subheader("Lluvia en las zonas productoras (NASA POWER)")
-c = clima()
-c1, c2 = st.columns(2)
-producto = c1.selectbox("Cultivo", sorted(c["producto"].unique()))
-departamento = c2.selectbox("Zona", sorted(c.loc[c["producto"] == producto, "departamento"].unique()))
-z = c[(c["producto"] == producto) & (c["departamento"] == departamento)].copy()
-z = z[z["anio"] >= 2015]
-z["fecha"] = pd.to_datetime(dict(year=z["anio"], month=z["mes"], day=1))
-fig = go.Figure(go.Bar(x=z["fecha"], y=z["precipitacion_anomalia"],
-                       marker_color=[estilo.AZUL if v > 0 else estilo.TIERRA for v in z["precipitacion_anomalia"]],
-                       hovertemplate="%{x|%b %Y}: %{y:+.2f} mm/día vs normal<extra></extra>"))
-fig.update_layout(title="Lluvia vs lo normal (mm/día)", height=340)
-estilo.grafica(fig)
-st.caption(f"{producto} · zona de {departamento} · desde 2015.")
-estilo.explicacion(
-    "Cada barra es un mes. <b>Azul</b>: llovió más que el promedio de ese mes en esa zona; "
-    "<b>café</b>: llovió menos. La altura es la diferencia en milímetros por día.",
-    etiqueta="Cómo leerlo",
-)
-estilo.explicacion(
-    "NASA POWER promedia una cuadrícula de unos 50 km: mezcla valle y montaña. Por eso no "
-    "miramos la lluvia absoluta sino la <b>anomalía</b>: cuánto llovió más o menos que el "
-    "promedio de ese mismo mes en esa misma cuadrícula. Así el error de altura se cancela.",
-    etiqueta="Limitación",
-)
 estilo.pie()
