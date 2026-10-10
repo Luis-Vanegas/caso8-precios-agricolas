@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 from src.acquisition.ideam import NOMBRE_IDEAM
-from src.common.rutas import ultima_carpeta_cruda
+from src.common.rutas import CRUDO, archivos_mas_recientes
 
 log = logging.getLogger(__name__)
 
@@ -61,10 +61,23 @@ def a_vocabulario_config(texto: str) -> str:
 
 
 def leer(carpeta: Path | None = None) -> pd.DataFrame:
-    """Une los JSON agregados. La variable sale del nombre del archivo."""
-    carpeta = carpeta or ultima_carpeta_cruda("ideam")
+    """Une los JSON agregados. La variable sale del nombre del archivo.
+
+    Sin `carpeta`, toma la version mas reciente de CADA archivo entre todas las
+    descargas: si hoy fallo uno, se usa su ultima copia buena (ver
+    `archivos_mas_recientes`).
+    """
+    if carpeta:
+        archivos = sorted(carpeta.glob("*_*_*.json"))
+    else:
+        archivos = archivos_mas_recientes(CRUDO / "ideam", "*_*_*.json")
+        ultima = max(a.parent for a in archivos) if archivos else None
+        viejos = [a.name for a in archivos if a.parent != ultima]
+        if viejos:
+            log.warning("ideam: %d archivos vienen de una descarga anterior (fallaron en la ultima): %s",
+                        len(viejos), viejos[:5])
     partes = []
-    for archivo in sorted(carpeta.glob("*_*_*.json")):
+    for archivo in archivos:
         variable = archivo.stem.split("_")[0]
         filas = json.loads(archivo.read_text(encoding="utf-8"))
         if filas:
