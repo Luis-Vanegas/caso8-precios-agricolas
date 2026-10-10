@@ -33,6 +33,7 @@ menu = {
         st.Page("paginas/calidad.py", title="Calidad de datos", icon=":material/fact_check:"),
     ],
     "Contexto": [
+        st.Page("paginas/clima_hoy.py", title="Clima hoy", icon=":material/rainy:"),
         st.Page("paginas/clima.py", title="Clima y El Niño", icon=":material/thermostat:"),
         st.Page("paginas/comercio.py", title="Producción y comercio", icon=":material/public:"),
     ],

@@ -277,6 +277,46 @@ def variacion_departamentos(art_id: int, periodo: int) -> pd.DataFrame:
     """)
 
 
+# --- Clima de las zonas productoras -----------------------------------------
+
+
+@st.cache_data(ttl=TTL)
+def departamentos_clima() -> pd.DataFrame:
+    """Zonas productoras con clima descargado."""
+    return consultar("""
+        SELECT DISTINCT departamento, dpto_codigo
+        FROM fact_clima_diario ORDER BY departamento
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def clima_diario(dpto_codigo: str, dias: int = 60) -> pd.DataFrame:
+    """Lluvia y temperatura por dia de un departamento: lo observado y el pronostico.
+
+    `dias` acota solo lo observado; el pronostico (16 dias) entra completo.
+    """
+    return consultar(f"""
+        SELECT fecha, precipitacion_mm, temp_max, temp_min, tipo
+        FROM fact_clima_diario
+        WHERE dpto_codigo = '{dpto_codigo}'
+          AND (tipo = 'pronostico'
+               OR fecha >= (SELECT max(fecha) FROM fact_clima_diario
+                            WHERE tipo = 'observado') - INTERVAL '{int(dias)} days')
+        ORDER BY fecha
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def pronostico_estacional(dpto_codigo: str) -> pd.DataFrame:
+    """Lluvia esperada por mes (p10/p50/p90) y su diferencia con el promedio historico."""
+    return consultar(f"""
+        SELECT periodo, anio, mes, precip_p10, precip_p50, precip_p90, anomalia_p50
+        FROM fact_pronostico_estacional
+        WHERE dpto_codigo = '{dpto_codigo}'
+        ORDER BY periodo
+    """)
+
+
 @st.cache_data(ttl=TTL)
 def geojson_departamentos() -> dict:
     """Geometria de los 33 departamentos. La llave es `DPTO` (codigo DANE)."""

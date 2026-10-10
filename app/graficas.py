@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TINTA, VERDE
+from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TIERRA, TINTA, VERDE
 from src.indicators.volatilidad import UMBRAL_AMARILLA, UMBRAL_ROJA
 
 
@@ -188,6 +188,75 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     for y in (0.5, -0.5):
         fig.add_hline(y=y, line_dash="dot", line_color=GRIS, line_width=1)
     fig.update_layout(title="Índice ONI (°C sobre lo normal)", height=360)
+    return fig
+
+
+def clima_dia_a_dia(clima: pd.DataFrame) -> go.Figure:
+    """Lluvia (barras, eje izquierdo) y temperatura (lineas, eje derecho).
+
+    Lo observado va solido y el pronostico punteado, con el mismo color: es la
+    misma variable medida de dos maneras, no dos variables distintas.
+    """
+    fig = go.Figure()
+    obs = clima[clima["tipo"] == "observado"]
+    pro = clima[clima["tipo"] == "pronostico"]
+
+    fig.add_trace(go.Bar(x=obs["fecha"], y=obs["precipitacion_mm"], name="lluvia observada",
+                         marker_color=AZUL, opacity=.85,
+                         hovertemplate="%{x|%d %b}: %{y:.1f} mm<extra></extra>"))
+    if not pro.empty:
+        # El pronostico va en el mismo azul pero translucido y con borde: una
+        # barra de contorno se lee como "estimado" sin cambiar de color.
+        fig.add_trace(go.Bar(x=pro["fecha"], y=pro["precipitacion_mm"], name="lluvia pronosticada",
+                             marker_color="rgba(29,78,137,.30)",
+                             marker_line=dict(color=AZUL, width=1),
+                             hovertemplate="%{x|%d %b}: %{y:.1f} mm (pronóstico)<extra></extra>"))
+
+    for df, guion, etiqueta in ((obs, "solid", "observada"), (pro, "dot", "pronosticada")):
+        if df.empty:
+            continue
+        fig.add_trace(go.Scatter(x=df["fecha"], y=df["temp_max"], yaxis="y2", mode="lines",
+                                 name=f"temp. máxima {etiqueta}",
+                                 line=dict(color=TIERRA, width=1.8, dash=guion),
+                                 hovertemplate="%{x|%d %b}: %{y:.1f} °C<extra></extra>"))
+        fig.add_trace(go.Scatter(x=df["fecha"], y=df["temp_min"], yaxis="y2", mode="lines",
+                                 name=f"temp. mínima {etiqueta}",
+                                 line=dict(color=TIERRA, width=1.1, dash=guion), opacity=.6,
+                                 hovertemplate="%{x|%d %b}: %{y:.1f} °C<extra></extra>"))
+
+    # Linea que separa lo medido de lo pronosticado.
+    if not pro.empty and not obs.empty:
+        fig.add_vline(x=pro["fecha"].min(), line_dash="dot", line_color=GRIS, line_width=1.2)
+
+    fig.update_layout(
+        height=420, barmode="overlay",
+        yaxis=dict(title="lluvia (mm)"),
+        yaxis2=dict(title="temperatura (°C)", overlaying="y", side="right",
+                    gridcolor="rgba(0,0,0,0)"),
+        legend=dict(orientation="h", y=-0.18),
+    )
+    return fig
+
+
+def lluvia_esperada(estacional: pd.DataFrame) -> go.Figure:
+    """Lluvia esperada por mes: banda p10-p90 y la mediana p50.
+
+    La banda dice que tan de acuerdo estan los miembros del ensamble: ancha es
+    poca certeza. Se dibuja la banda y no solo la linea para que eso se vea.
+    """
+    e = _con_fecha(estacional)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p90"], mode="lines", name="p90",
+                             line=dict(width=0), hoverinfo="skip", showlegend=False))
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p10"], mode="lines", name="rango probable",
+                             line=dict(width=0), fill="tonexty",
+                             fillcolor="rgba(29,78,137,.15)", hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p50"], mode="lines+markers",
+                             name="lluvia esperada (mediana)",
+                             line=dict(color=AZUL, width=2.2, dash="dot"),
+                             hovertemplate="%{x|%b %Y}: %{y:.0f} mm<extra></extra>"))
+    fig.update_layout(height=360, yaxis_title="lluvia del mes (mm)",
+                      legend=dict(orientation="h", y=-0.2))
     return fig
 
 
