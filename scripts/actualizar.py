@@ -12,6 +12,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import os
 import logging
 import sys
 from pathlib import Path
@@ -29,7 +30,6 @@ from src.common.registro import conectar, registrar, resumen_frescura, ultima_ac
 # el flujo. Todas exponen el mismo par `estado()` / `descargar()`.
 FUENTES = {
     "faostat_bulk": faostat_bulk,
-    "faostat_api": faostat_api,
     "sipsa": sipsa,
     "sipsa_abastecimiento": sipsa_abastecimiento,
     "sipsa_semanal": sipsa_semanal,
@@ -40,6 +40,11 @@ FUENTES = {
     "pink_sheet": pink_sheet,
     "ideam": ideam,
 }
+# La API de FAOSTAT exige token. Sin el, fallaria TODOS los dias y la corrida
+# diaria quedaria siempre "con errores": el equipo dejaria de mirar el aviso y
+# no veria una falla real. La historia de FAOSTAT ya sale de `faostat_bulk`.
+if os.environ.get("FAOSTAT_API_KEY"):
+    FUENTES["faostat_api"] = faostat_api
 
 log = logging.getLogger("actualizar")
 
