@@ -396,3 +396,18 @@ declara como tal, no se rellena (regla 4 de `CLAUDE.md`).
 - Los archivos se agregaron a la carpeta de descarga existente `data/raw/ideam/2026-09-23/`
   (no se editó ninguno existente).
 - Temperatura (`sbwg-7ju4`): no descargada.
+
+## SIPSA abastecimiento y precios semanales — verificado el 2026-10-09
+
+Llamadas reales al mismo endpoint HTTPS de SIPSA (SOAP 1.2, sin argumentos).
+
+| Método | Tamaño | Filas | Cobertura | Campos |
+|---|---|---|---|---|
+| `promedioAbasSipsaMesMadr` | 40.033.487 bytes | 164.274 | 194 artículos, 34 centrales, 2020-02 a 2026-07 (57 meses) | `artiId`, `artiNombre`, `cantidadTon`, `fechaMesIni`, `fuenId`, `fuenNombre`, `futiId` |
+| `promediosSipsaSemanaMadr` | 67.518.722 bytes | 230.312 | 351 artículos, 80 mercados, solo 51 semanas (2025-10-11 a 2026-10-03) | `artiId`, `artiNombre`, `fechaIni`, `fuenId`, `fuenNombre`, `futiId`, `maximoKg`, `minimoKg`, `promedioKg` |
+
+- **Idempotencia:** cada método se llamó dos veces el mismo día y devolvió los mismos bytes y las mismas filas. Pese al sufijo `Madr`, no consumen la bandera `enviado`.
+- **Llave:** `artiId` es el mismo código en los dos métodos (97 artículos en común, 0 nombres distintos). Los códigos del precio diario (`codProducto` de `promediosSipsaCiudad`) son otro sistema.
+- **Unidades:** aunque el campo se llame `promedioKg`, el huevo y el bocadillo van por unidad, y el aceite, el jugo y el vinagre por litro (Metodología SIPSA-P, p. 16). Ejemplo: huevo rojo AA, mediana de 456 pesos (precio de un huevo).
+- **Ventana del semanal:** el servicio solo devuelve las últimas ~51 semanas; para tener historia hay que guardar cada descarga.
+- **Abastecimiento sin origen:** dice a qué central llegó el alimento, no de qué departamento salió.
