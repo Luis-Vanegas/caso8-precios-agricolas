@@ -71,7 +71,7 @@ Las 14 páginas cargan sin errores. Estas mejoras salen de recorrerlas con los d
 
 - [x] C2-17 **(la más importante)** "Semáforo de la canasta" usa los 33 productos del precio DIARIO (frutas y verduras), no la canasta familiar. Sumar una vista (o reemplazar) con `fact_precio_semanal` filtrado por `en_canasta` (286 artículos: arroz, huevo, pollo, carnes, aceite, panela, queso...), agrupable por `grupo_dane`. Ojo: el semanal solo tiene ~13 meses; mostrar variación % por semana o mes y declarar el periodo cubierto
 - [x] C2-18 "Mapa": los departamentos sin dato no se dibujan y Colombia se ve recortada. Dibujar los 33 departamentos y los sin dato en gris claro, con la leyenda "sin dato"
-- [ ] C2-19 "La cadena": el precio sale del semanal (13 meses) y solo coincide 7 meses con lluvia y toneladas. Cuando el artículo tiene par exacto en el precio diario (ver `sensibilidad.mapa_articulos`, 24 productos, p. ej. Papa criolla, Cebolla junca, Zanahoria), usar la serie mensual de `fact_precio_mayorista` desde 2020: ~50 meses de cruce en vez de 7
+- [x] C2-19 "La cadena": el precio sale del semanal (13 meses) y solo coincide 7 meses con lluvia y toneladas. Cuando el artículo tiene par exacto en el precio diario (ver `sensibilidad.mapa_articulos`, 24 productos, p. ej. Papa criolla, Cebolla junca, Zanahoria), usar la serie mensual de `fact_precio_mayorista` desde 2020: ~50 meses de cruce en vez de 7
 - [ ] C2-20 "Pronóstico": la línea del precio real une 2020 con 2022 con una recta a través del hueco de 2021. Cortarla en el hueco (regla 4 del proyecto: un hueco se declara, no se rellena; el semáforo ya lo hace bien)
 
 ## Cómo se integra

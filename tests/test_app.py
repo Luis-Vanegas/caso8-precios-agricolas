@@ -261,3 +261,24 @@ def test_el_mapa_dibuja_los_33_departamentos_y_los_sin_dato_en_gris():
     grises = [t for t in fig.data if t.name == "sin dato"]
     assert len(grises) == 1 and grises[0].showlegend
     assert set(grises[0].locations).isdisjoint({"05", "11"})
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_cadena_usa_el_precio_diario_cuando_el_articulo_tiene_par_exacto():
+    """C2-19: con el precio diario (desde 2020) la cadena cruza muchos mas meses.
+
+    El semanal solo coincide unos 7 meses con lluvia y toneladas. La zanahoria
+    tiene par exacto en el precio diario y Medellin tiene mercado diario.
+    """
+    import datos
+
+    assert datos.par_diario(54) == "Zanahoria"
+    assert datos.par_diario(162) is None          # "Papa superior" no tiene par exacto
+
+    df = datos.cadena(54, "05", "Zanahoria")
+    completos = df.dropna(subset=["lluvia_mm", "toneladas", "precio"])
+    assert len(completos) >= 24
+    assert int(completos["periodo"].min()) < 202101   # arranca antes del hueco de SIPSA
+
+    # Papa criolla no esta en el semanal, pero si en el diario: ahora tiene cadena.
+    assert 541 in set(datos.articulos_cadena()["art_id"])

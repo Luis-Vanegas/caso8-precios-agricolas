@@ -342,22 +342,87 @@ def variacion_canasta() -> pd.DataFrame:
 # --- La cadena: lluvia -> toneladas -> precio --------------------------------
 
 
+# El precio de la cadena puede salir de dos fuentes:
+# - el precio SEMANAL: tiene el mismo art_id que el abastecimiento, pero solo
+#   unos 13 meses (ventana movil del DANE);
+# - el precio DIARIO (fact_precio_mayorista): desde 2020, pero con otros nombres.
+#   Solo se usa cuando el nombre coincide exacto con el del abastecimiento
+#   (`mapa_articulos` de src/indicators/sensibilidad.py, 24 productos). Asi no se
+#   mezclan variedades: "Papa negra*" agrupa varias papas y no se empareja.
+
+
+@st.cache_data(ttl=TTL)
+def pares_diario() -> pd.DataFrame:
+    """Articulo del abastecimiento -> producto del precio diario, solo nombres identicos."""
+    from src.indicators.sensibilidad import mapa_articulos
+
+    productos = consultar("SELECT DISTINCT producto FROM fact_precio_mayorista")["producto"]
+    articulos = consultar("SELECT DISTINCT art_id, articulo FROM fact_abastecimiento")
+    return mapa_articulos(productos, articulos)
+
+
+def par_diario(art_id: int) -> str | None:
+    """Nombre del producto del precio diario que es el mismo articulo, o None."""
+    pares = pares_diario()
+    fila = pares[pares["art_id"] == art_id]
+    return None if fila.empty else str(fila["producto"].iloc[0])
+
+
+@st.cache_data(ttl=TTL)
+def mercados_diarios(dpto_codigo: str) -> list[str]:
+    """Mercados del precio diario que quedan en ese departamento.
+
+    config/mercados.csv dice el departamento de cada mercado por nombre, y
+    config/departamentos.csv traduce el nombre a codigo DANE.
+    """
+    codigos = pd.read_csv(CONFIG / "departamentos.csv", dtype=str)
+    mercados = mercados_geo().merge(codigos, on="departamento")
+    return mercados.loc[mercados["dpto_codigo"] == dpto_codigo, "mercado"].tolist()
+
+
+def fuente_precio(art_id: int, dpto_codigo: str) -> str | None:
+    """Producto del precio diario a usar en la cadena, o None si va el semanal.
+
+    Hacen falta las dos cosas: que el articulo tenga par exacto y que el
+    departamento tenga un mercado del precio diario (Cundinamarca no tiene).
+    """
+    producto = par_diario(art_id)
+    return producto if producto and mercados_diarios(dpto_codigo) else None
+
+
+def _sql_texto(valor: str) -> str:
+    """Comillas simples para SQL, escapando las de adentro."""
+    return "'" + valor.replace("'", "''") + "'"
+
+
 @st.cache_data(ttl=TTL)
 def articulos_cadena() -> pd.DataFrame:
     """Articulos con abastecimiento y precio: los unicos con cadena completa.
 
-    Se ordenan por cuantos meses de abastecimiento caen dentro de la ventana de
-    los precios semanales, no por toneladas: un articulo con mucho volumen pero
-    sin meses en comun no tiene cadena que mostrar.
+    Se ordenan por cuantos meses de abastecimiento tienen tambien precio, no por
+    toneladas: un articulo con mucho volumen pero sin meses en comun no tiene
+    cadena que mostrar. Los que tienen par en el precio diario cuentan sus
+    meses desde 2020; los demas, solo la ventana del semanal.
     """
-    return consultar("""
-        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
+    pares = pares_diario()
+    valores = ", ".join(f"({int(f.art_id)}, {_sql_texto(f.producto)})"
+                        for f in pares.itertuples()) or "(NULL, NULL)"
+    return consultar(f"""
+        WITH pares(art_id, producto) AS (VALUES {valores}),
+        meses_con_precio AS (
+            SELECT p.art_id, m.periodo
+            FROM pares p
+            JOIN (SELECT DISTINCT producto, periodo FROM fact_precio_mayorista) m USING (producto)
+            UNION
+            SELECT DISTINCT art_id, periodo FROM fact_precio_semanal
+            WHERE art_id NOT IN (SELECT art_id FROM pares WHERE art_id IS NOT NULL)
+        )
         SELECT a.art_id, any_value(a.articulo) AS articulo,
-               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
-                                   THEN a.periodo END) AS meses_comparables,
+               count(DISTINCT m.periodo) AS meses_comparables,
                sum(a.toneladas) AS toneladas
         FROM fact_abastecimiento a
-        WHERE a.art_id IN (SELECT DISTINCT art_id FROM fact_precio_semanal)
+        LEFT JOIN meses_con_precio m ON a.art_id = m.art_id AND a.periodo = m.periodo
+        WHERE a.art_id IN (SELECT art_id FROM meses_con_precio)
         GROUP BY a.art_id
         ORDER BY meses_comparables DESC, toneladas DESC
     """)
@@ -368,20 +433,22 @@ def departamentos_cadena(art_id: int) -> pd.DataFrame:
     """Departamentos con clima y abastecimiento **de ese articulo**.
 
     El orden depende del articulo elegido: un departamento puede tener mucho
-    abastecimiento en general y nada de este articulo. Primero los que si
-    tienen cadena para mostrar.
+    abastecimiento en general y nada de este articulo. Primero los que tienen
+    mas meses con las tres series a la vez (lluvia, toneladas y precio).
     """
-    return consultar(f"""
-        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
-        SELECT a.departamento, a.dpto_codigo,
-               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
-                                   THEN a.periodo END) AS meses_comparables
+    zonas = consultar(f"""
+        SELECT DISTINCT a.departamento, a.dpto_codigo
         FROM fact_abastecimiento a
         WHERE a.art_id = {int(art_id)}
           AND a.dpto_codigo IN (SELECT DISTINCT dpto_codigo FROM fact_clima_diario)
-        GROUP BY a.departamento, a.dpto_codigo
-        ORDER BY meses_comparables DESC, a.departamento
     """)
+    zonas["meses_comparables"] = [
+        len(cadena(art_id, c, fuente_precio(art_id, c))
+            .dropna(subset=["lluvia_mm", "toneladas", "precio"]))
+        for c in zonas["dpto_codigo"]
+    ]
+    return zonas.sort_values(["meses_comparables", "departamento"],
+                             ascending=[False, True]).reset_index(drop=True)
 
 
 # Un hallazgo se declara con q < 0,10. El q-valor ya corrige por haber probado
@@ -413,13 +480,31 @@ def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=TTL)
-def cadena(art_id: int, dpto_codigo: str) -> pd.DataFrame:
+def cadena(art_id: int, dpto_codigo: str, producto_diario: str | None = None) -> pd.DataFrame:
     """Lluvia, toneladas y precio del mismo articulo y departamento, mes por mes.
 
     Las tres series se unen por `periodo`, no por posicion de fila: cada una
     tiene su propia cobertura y sus propios huecos. Un mes sin dato queda nulo
     para que la grafica corte la linea en vez de inventar continuidad.
+
+    Si llega `producto_diario` (ver `fuente_precio`), el precio sale del precio
+    diario mensual de los mercados de ese departamento, desde 2020. Si no, del
+    precio semanal (unos 13 meses).
     """
+    mercados = mercados_diarios(dpto_codigo) if producto_diario else []
+    if mercados:
+        precio = f"""
+            SELECT periodo, median(precio_cop_kg) AS precio, 'kg' AS unidad
+            FROM fact_precio_mayorista
+            WHERE producto = {_sql_texto(producto_diario)}
+              AND mercado IN ({", ".join(_sql_texto(m) for m in mercados)})
+            GROUP BY periodo"""
+    else:
+        precio = f"""
+            SELECT periodo, median(precio) AS precio, any_value(unidad) AS unidad
+            FROM fact_precio_semanal
+            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
+            GROUP BY periodo"""
     return consultar(f"""
         WITH lluvia AS (
             SELECT anio * 100 + mes AS periodo, sum(precipitacion_mm) AS lluvia_mm
@@ -432,11 +517,7 @@ def cadena(art_id: int, dpto_codigo: str) -> pd.DataFrame:
             FROM fact_abastecimiento
             WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
             GROUP BY periodo
-        ), precio AS (
-            SELECT periodo, median(precio) AS precio, any_value(unidad) AS unidad
-            FROM fact_precio_semanal
-            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
-            GROUP BY periodo
+        ), precio AS ({precio}
         ), meses AS (
             SELECT periodo FROM lluvia
             UNION SELECT periodo FROM toneladas
