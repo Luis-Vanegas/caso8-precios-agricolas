@@ -277,6 +277,90 @@ def variacion_departamentos(art_id: int, periodo: int) -> pd.DataFrame:
     """)
 
 
+# --- La cadena: lluvia -> toneladas -> precio --------------------------------
+
+
+@st.cache_data(ttl=TTL)
+def articulos_cadena() -> pd.DataFrame:
+    """Articulos con abastecimiento y precio: los unicos con cadena completa.
+
+    Se ordenan por cuantos meses de abastecimiento caen dentro de la ventana de
+    los precios semanales, no por toneladas: un articulo con mucho volumen pero
+    sin meses en comun no tiene cadena que mostrar.
+    """
+    return consultar("""
+        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
+        SELECT a.art_id, any_value(a.articulo) AS articulo,
+               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
+                                   THEN a.periodo END) AS meses_comparables,
+               sum(a.toneladas) AS toneladas
+        FROM fact_abastecimiento a
+        WHERE a.art_id IN (SELECT DISTINCT art_id FROM fact_precio_semanal)
+        GROUP BY a.art_id
+        ORDER BY meses_comparables DESC, toneladas DESC
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def departamentos_cadena(art_id: int) -> pd.DataFrame:
+    """Departamentos con clima y abastecimiento **de ese articulo**.
+
+    El orden depende del articulo elegido: un departamento puede tener mucho
+    abastecimiento en general y nada de este articulo. Primero los que si
+    tienen cadena para mostrar.
+    """
+    return consultar(f"""
+        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
+        SELECT a.departamento, a.dpto_codigo,
+               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
+                                   THEN a.periodo END) AS meses_comparables
+        FROM fact_abastecimiento a
+        WHERE a.art_id = {int(art_id)}
+          AND a.dpto_codigo IN (SELECT DISTINCT dpto_codigo FROM fact_clima_diario)
+        GROUP BY a.departamento, a.dpto_codigo
+        ORDER BY meses_comparables DESC, a.departamento
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def cadena(art_id: int, dpto_codigo: str) -> pd.DataFrame:
+    """Lluvia, toneladas y precio del mismo articulo y departamento, mes por mes.
+
+    Las tres series se unen por `periodo`, no por posicion de fila: cada una
+    tiene su propia cobertura y sus propios huecos. Un mes sin dato queda nulo
+    para que la grafica corte la linea en vez de inventar continuidad.
+    """
+    return consultar(f"""
+        WITH lluvia AS (
+            SELECT anio * 100 + mes AS periodo, sum(precipitacion_mm) AS lluvia_mm
+            FROM (SELECT year(fecha) AS anio, month(fecha) AS mes, precipitacion_mm
+                  FROM fact_clima_diario
+                  WHERE dpto_codigo = '{dpto_codigo}' AND tipo = 'observado')
+            GROUP BY anio, mes
+        ), toneladas AS (
+            SELECT periodo, sum(toneladas) AS toneladas
+            FROM fact_abastecimiento
+            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
+            GROUP BY periodo
+        ), precio AS (
+            SELECT periodo, median(precio) AS precio, any_value(unidad) AS unidad
+            FROM fact_precio_semanal
+            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
+            GROUP BY periodo
+        ), meses AS (
+            SELECT periodo FROM lluvia
+            UNION SELECT periodo FROM toneladas
+            UNION SELECT periodo FROM precio
+        )
+        SELECT m.periodo, l.lluvia_mm, t.toneladas, p.precio, p.unidad
+        FROM meses m
+        LEFT JOIN lluvia l USING (periodo)
+        LEFT JOIN toneladas t USING (periodo)
+        LEFT JOIN precio p USING (periodo)
+        ORDER BY m.periodo
+    """)
+
+
 # --- Clima de las zonas productoras -----------------------------------------
 
 

@@ -191,6 +191,38 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     return fig
 
 
+def cadena_lluvia_oferta_precio(cadena: pd.DataFrame, unidad: str = "kg") -> go.Figure:
+    """Tres paneles apilados con el mismo eje X: lluvia, toneladas y precio.
+
+    Comparten el eje de tiempo para poder leer en vertical: si un mes llovio
+    mucho, ver que paso con las toneladas y con el precio en ese mismo mes y en
+    los siguientes. Cada serie corta donde no tiene dato.
+    """
+    from plotly.subplots import make_subplots
+
+    c = _con_fecha(cadena.assign(anio=cadena["periodo"] // 100, mes=cadena["periodo"] % 100))
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=.06,
+                        subplot_titles=("Lluvia en la zona productora (mm al mes)",
+                                        "Toneladas que entraron a la central",
+                                        f"Precio (COP por {unidad})"))
+
+    fig.add_trace(go.Bar(x=c["fecha"], y=c["lluvia_mm"], marker_color=AZUL, opacity=.85,
+                         name="lluvia",
+                         hovertemplate="%{x|%b %Y}: %{y:.0f} mm<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=c["fecha"], y=c["toneladas"], mode="lines+markers", name="toneladas",
+                             line=dict(color=TIERRA, width=2), marker=dict(size=4),
+                             connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: %{y:,.0f} t<extra></extra>"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=c["fecha"], y=c["precio"], mode="lines+markers", name="precio",
+                             line=dict(color=TINTA, width=2), marker=dict(size=5),
+                             connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: $%{y:,.0f}<extra></extra>"), row=3, col=1)
+
+    fig.update_layout(height=700, showlegend=False, bargap=.15)
+    fig.update_yaxes(rangemode="tozero")
+    return fig
+
+
 def clima_dia_a_dia(clima: pd.DataFrame) -> go.Figure:
     """Lluvia (barras, eje izquierdo) y temperatura (lineas, eje derecho).
 

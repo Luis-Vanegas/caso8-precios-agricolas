@@ -25,6 +25,7 @@ menu = {
         st.Page("paginas/semaforo.py", title="Semáforo de alertas", icon=":material/traffic:"),
         st.Page("paginas/canasta.py", title="Semáforo de la canasta", icon=":material/grid_on:"),
         st.Page("paginas/mapa.py", title="Mapa por departamento", icon=":material/map:"),
+        st.Page("paginas/cadena.py", title="La cadena", icon=":material/link:"),
         st.Page("paginas/producto.py", title="Detalle por producto", icon=":material/show_chart:"),
     ],
     "Cómo lo hicimos": [
