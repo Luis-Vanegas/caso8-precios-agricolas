@@ -191,17 +191,25 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     return fig
 
 
-def pronostico_con_banda(df: pd.DataFrame, ingenuo: pd.DataFrame | None = None) -> go.Figure:
-    """Precio observado, pronostico y su banda de confianza.
+def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
+    """Precio real, lo que el modelo habria dicho en el pasado, y el pronostico.
 
     Espera las columnas de `pronostico_precio` (docs/contrato_datos.md):
-    `periodo`, `tipo` ('real' o 'pronostico'), `valor`, `lim_inf`, `lim_sup`.
-    La banda se dibuja antes que las lineas para que quede detras.
+    `periodo`, `tipo` ('real', 'prueba' o 'pronostico'), `valor`, `lim_inf`,
+    `lim_sup`. La banda se dibuja primero para que quede detras de las lineas.
+
+    La serie `prueba` es la mas honesta de las tres: es lo que el modelo habria
+    pronosticado mes a mes en el pasado, asi que su distancia contra la linea
+    real se puede medir a ojo.
     """
-    real = _con_fecha(df[df["tipo"] == "real"].assign(
-        anio=lambda d: d["periodo"] // 100, mes=lambda d: d["periodo"] % 100))
-    pron = _con_fecha(df[df["tipo"] == "pronostico"].assign(
-        anio=lambda d: d["periodo"] // 100, mes=lambda d: d["periodo"] % 100))
+    def _fechas(tipo):
+        parte = df[df["tipo"] == tipo]
+        if parte.empty:
+            return parte.assign(fecha=pd.Series(dtype="datetime64[ns]"))
+        return _con_fecha(parte.assign(anio=lambda d: d["periodo"] // 100,
+                                       mes=lambda d: d["periodo"] % 100))
+
+    real, prueba, pron = _fechas("real"), _fechas("prueba"), _fechas("pronostico")
 
     fig = go.Figure()
     if not pron.empty and pron["lim_sup"].notna().any():
@@ -211,25 +219,25 @@ def pronostico_con_banda(df: pd.DataFrame, ingenuo: pd.DataFrame | None = None) 
                                  line=dict(width=0), fill="tonexty",
                                  fillcolor="rgba(29,78,137,.15)", name="rango probable",
                                  hoverinfo="skip"))
-    if ingenuo is not None and not ingenuo.empty:
-        i = _con_fecha(ingenuo.assign(anio=lambda d: d["periodo"] // 100,
-                                      mes=lambda d: d["periodo"] % 100))
-        fig.add_trace(go.Scatter(x=i["fecha"], y=i["valor"], mode="lines", name="modelo ingenuo",
+    if not prueba.empty:
+        fig.add_trace(go.Scatter(x=prueba["fecha"], y=prueba["valor"], mode="lines",
+                                 name="lo que el modelo habría dicho",
                                  line=dict(color=GRIS, width=1.4, dash="dot"),
-                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (ingenuo)<extra></extra>"))
+                                 connectgaps=False,
+                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (prueba)<extra></extra>"))
     fig.add_trace(go.Scatter(x=real["fecha"], y=real["valor"], mode="lines", name="precio real",
                              line=dict(color=TINTA, width=2), connectgaps=False,
                              hovertemplate="%{x|%b %Y}: $%{y:,.0f}<extra></extra>"))
     if not pron.empty:
         fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["valor"], mode="lines+markers",
                                  name="pronóstico", line=dict(color=AZUL, width=2.2, dash="dot"),
-                                 marker=dict(size=5),
+                                 marker=dict(size=6),
                                  hovertemplate="%{x|%b %Y}: $%{y:,.0f} (pronóstico)<extra></extra>"))
         if not real.empty:
             fig.add_vline(x=real["fecha"].max(), line_dash="dot", line_color=GRIS, line_width=1.2)
 
-    fig.update_layout(height=430, yaxis_title="precio (COP)",
-                      legend=dict(orientation="h", y=-0.2))
+    fig.update_layout(height=450, yaxis_title="precio (COP por kg)",
+                      legend=dict(orientation="h", y=-0.22))
     return fig
 
 

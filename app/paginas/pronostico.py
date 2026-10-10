@@ -1,8 +1,9 @@
-"""Pronostico de precio, con una condicion: solo se muestra si le gana al modelo ingenuo.
+"""Pronostico de precio y, sobre todo, si se le puede creer.
 
 El modelo ingenuo dice "el mes que viene va a costar lo mismo que este mes". Es
-dificil de ganar, y un modelo que no le gana no aporta nada: en ese caso esta
-pagina lo dice en vez de dibujarlo.
+dificil de ganar. Esta pagina muestra el pronostico y al lado el veredicto:
+cuanto se equivoca el modelo y si le gana al ingenuo. Cuando no le gana, lo que
+se publica es el ingenuo, y la pagina lo dice.
 """
 
 import streamlit as st
@@ -14,96 +15,100 @@ from datos import consultar, fecha, tabla_existe
 estilo.aplicar()
 estilo.encabezado(
     "Pronóstico de precio",
-    "Qué precio se espera para los próximos meses, y si el modelo realmente sirve.",
+    "Qué precio se espera para los próximos meses, y qué tanto se le puede creer.",
 )
 
 if not tabla_existe("pronostico_precio"):
     st.info(
         "**Disponible cuando se integre el modelo de pronóstico.** "
-        "Esta página lee la tabla `pronostico_precio`, que todavía no está en la base. "
-        "El modelo usa rezagos de lluvia, abastecimiento y el índice ONI, y se valida contra "
-        "el pasado antes de publicarse."
-    )
-    estilo.explicacion(
-        "Mientras no exista el modelo, la app no muestra ningún pronóstico. "
-        "Es a propósito: es mejor no decir nada que mostrar un número inventado."
+        "Esta página lee la tabla `pronostico_precio`, que todavía no está en la base."
     )
     estilo.pie()
     st.stop()
 
 estilo.explicacion(
-    "Un pronóstico sin comparación no se puede juzgar. Por eso acá se mide contra el "
-    "<b>modelo ingenuo</b>, que simplemente repite el último precio conocido. "
-    "Si el modelo no le gana al ingenuo en los datos del pasado, <b>no se muestra</b>: "
-    "se informa que no superó la prueba. El error se mide con el <b>MAE</b>, el promedio de "
-    "lo que se equivoca en pesos."
+    "Un pronóstico sin comparación no se puede juzgar. Acá se compara contra los modelos "
+    "<b>ingenuos</b>: «el mes que viene cuesta lo mismo que este» y «cuesta lo mismo que el "
+    "año pasado en este mes». El error se mide con el <b>MAE en porcentaje</b> sobre 24 meses "
+    "de prueba. Si el modelo no le gana al mejor ingenuo por al menos 5 %, "
+    "<b>lo que se publica es el ingenuo</b>, no el modelo."
 )
 
-series = consultar("""
-    SELECT art_id, any_value(articulo) AS articulo, mercado,
-           any_value(modelo) AS modelo,
-           any_value(mae_modelo) AS mae_modelo, any_value(mae_ingenuo) AS mae_ingenuo
-    FROM pronostico_precio
-    GROUP BY art_id, mercado
-    ORDER BY articulo, mercado
-""")
-
-if series.empty:
+productos = consultar("SELECT DISTINCT producto FROM pronostico_precio ORDER BY producto")
+if productos.empty:
     st.info("La tabla `pronostico_precio` existe pero está vacía.")
     estilo.pie()
     st.stop()
 
-series["etiqueta"] = series["articulo"] + " · " + series["mercado"].str.title()
-eleccion = st.selectbox("Artículo y mercado", series.index.tolist(),
-                        format_func=lambda i: series.loc[i, "etiqueta"])
-fila = series.loc[eleccion]
+opciones = productos["producto"].tolist()
+producto = st.selectbox("Producto", opciones,
+                        format_func=lambda p: p.replace("*", ""),
+                        index=opciones.index("Papa criolla") if "Papa criolla" in opciones else 0)
+nombre = producto.replace("*", "")
 
 df = consultar(f"""
-    SELECT periodo, tipo, valor, lim_inf, lim_sup
+    SELECT periodo, horizonte, tipo, valor, lim_inf, lim_sup, modelo,
+           mae_modelo, mae_ingenuo, gana_al_ingenuo
     FROM pronostico_precio
-    WHERE art_id = {int(fila['art_id'])} AND mercado = '{fila['mercado']}'
-    ORDER BY periodo
+    WHERE producto = '{producto.replace("'", "''")}'
+    ORDER BY periodo, horizonte
 """)
 
-mae_modelo, mae_ingenuo = fila["mae_modelo"], fila["mae_ingenuo"]
-gana = mae_modelo is not None and mae_ingenuo is not None and mae_modelo < mae_ingenuo
+# El veredicto es por horizonte: un modelo puede servir a un mes y no a tres.
+veredicto = (df[df["tipo"] == "pronostico"]
+             .groupby("horizonte")
+             .agg(modelo=("modelo", "first"), mae_modelo=("mae_modelo", "first"),
+                  mae_ingenuo=("mae_ingenuo", "first"),
+                  gana=("gana_al_ingenuo", "first"),
+                  periodo=("periodo", "first"))
+             .reset_index())
 
-estilo.fila_de_tarjetas([
-    estilo.tarjeta("Modelo", str(fila["modelo"] or "—"), "el que se validó"),
-    estilo.tarjeta("Error del modelo", estilo.pesos(mae_modelo) if mae_modelo else "—",
-                   "MAE en la validación"),
-    estilo.tarjeta("Error del ingenuo", estilo.pesos(mae_ingenuo) if mae_ingenuo else "—",
-                   "repetir el último precio"),
-    estilo.tarjeta("¿Le gana al ingenuo?", "Sí" if gana else "No",
-                   "si no, no se publica el pronóstico",
-                   color=estilo.VERDE if gana else estilo.ROJO),
-])
+gana_alguno = bool(veredicto["gana"].any()) if not veredicto.empty else False
 
-st.subheader(fila["etiqueta"])
+st.subheader(nombre)
 
-if not gana:
-    st.warning(
-        f"**Este modelo no le gana al modelo ingenuo** "
-        f"({estilo.pesos(mae_modelo) if mae_modelo else '—'} de error frente a "
-        f"{estilo.pesos(mae_ingenuo) if mae_ingenuo else '—'}), así que su pronóstico **no se "
-        "muestra**. Abajo queda solo el precio real. Un modelo que no supera a «mañana cuesta lo "
-        "mismo que hoy» no agrega información, y publicarlo daría una falsa sensación de certeza."
-    )
-    estilo.grafica(graficas.pronostico_con_banda(df[df["tipo"] == "real"]))
-else:
-    estilo.grafica(graficas.pronostico_con_banda(df))
-    st.caption(
-        "La línea negra es el precio real; la punteada azul, el pronóstico; la banda azul, el "
-        "rango probable (80 %). La línea gris vertical marca dónde termina lo observado. "
-        "Cuanto más ancha la banda, menos certeza."
-    )
-    futuro = df[df["tipo"] == "pronostico"]
-    if not futuro.empty:
-        st.caption(
-            f"Pronóstico de {fecha(int(futuro['periodo'].min()))} a "
-            f"{fecha(int(futuro['periodo'].max()))}. "
-            "Un pronóstico es un escenario probable, no una promesa: un paro, una helada o una "
-            "decisión de política pueden romperlo."
+if not veredicto.empty:
+    estilo.fila_de_tarjetas([
+        estilo.tarjeta(
+            f"A {int(f.horizonte)} mes" + ("es" if f.horizonte > 1 else ""),
+            f"{f.mae_modelo:.1f}%",
+            f"el ingenuo se equivoca {f.mae_ingenuo:.1f}%  ·  modelo: {f.modelo}",
+            color=estilo.VERDE if f.gana else estilo.ROJO,
         )
+        for f in veredicto.itertuples()
+    ])
+    st.caption(
+        "Cada tarjeta es un horizonte. El número es **cuánto se equivoca en promedio**, en "
+        "porcentaje: más bajo es mejor. **Verde** significa que el modelo le ganó al ingenuo por "
+        "al menos 5 %; **rojo**, que no, y en ese caso lo que se publica abajo es el ingenuo."
+    )
+
+if not gana_alguno:
+    st.warning(
+        f"**Para {nombre} el modelo no le gana a los ingenuos en ningún horizonte.** "
+        "Lo que se grafica abajo es el modelo ingenuo, que es lo mejor disponible. "
+        "Dicho sin vueltas: para este producto el proyecto **no sabe pronosticar mejor** que "
+        "repetir el último precio, y mostrar otra cosa sería inventar certeza."
+    )
+
+estilo.grafica(graficas.pronostico_con_banda(df))
+
+st.caption(
+    "Línea negra: el precio real. Línea gris punteada: **lo que el modelo habría pronosticado "
+    "mes a mes en el pasado** (ahí se ve cuánto le atina de verdad). Línea azul punteada con "
+    "banda: el pronóstico de los próximos meses, con su rango probable del 80 %. "
+    "La vertical gris marca dónde termina lo observado."
+)
+
+futuro = df[df["tipo"] == "pronostico"]
+if not futuro.empty:
+    st.caption(
+        f"Pronóstico de {fecha(int(futuro['periodo'].min()))} a "
+        f"{fecha(int(futuro['periodo'].max()))}, para el precio **nacional** (la mediana de los "
+        "mercados), no para una ciudad en particular. "
+        "Un pronóstico es un escenario probable, no una promesa: un paro, una helada o una "
+        "decisión de política pueden romperlo. Y la banda se ensancha con el horizonte porque "
+        "la incertidumbre crece."
+    )
 
 estilo.pie()

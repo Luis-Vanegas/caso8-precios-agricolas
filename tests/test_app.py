@@ -43,7 +43,7 @@ def test_cada_pagina_esta_en_el_menu():
 # Abrir la pagina no alcanza: dos errores reales de esta fase solo aparecian al
 # mover un control (un rango de anios sin alertas para algun producto, y un
 # departamento sin abastecimiento del articulo elegido).
-PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima_hoy", "cadena"]
+PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima_hoy", "cadena", "pronostico"]
 
 # Cuantos valores se prueban por control. El mapa tiene 284 articulos: recorrerlos
 # todos haria la prueba lenta sin encontrar nada nuevo.
