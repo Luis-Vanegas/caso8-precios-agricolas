@@ -37,3 +37,69 @@ def test_cada_pagina_esta_en_el_menu():
     assert texto.count("st.Page(") == len(PAGINAS)
     for pagina in PAGINAS:
         assert f"paginas/{pagina.name}" in texto, f"{pagina.name} no esta en el menu"
+
+
+# --- Catalogo de articulos (config/catalogo_articulos.csv) ---
+# El catalogo decide como se agrupan los precios en la app. Si se rompe, las
+# graficas promedian articulos distintos, que es justo lo que prohibe
+# docs/contrato_datos.md. Estas pruebas no usan red ni base de datos.
+
+CATALOGO = RAIZ / "config" / "catalogo_articulos.csv"
+CRUDO = RAIZ / "data" / "openrefine" / "catalogo_sipsa_crudo.csv"
+
+GRUPOS_DANE = {
+    "Verduras y hortalizas", "Frutas", "Tubérculos, raíces y plátanos",
+    "Granos y cereales", "Huevos y lácteos", "Carnes", "Pescados",
+    "Productos procesados",
+}
+UNIDADES = {"kg", "unidad", "litro"}
+DISTINGUE_POR = {"variedad", "calidad", "presentacion", "origen", "procesado", "unico"}
+
+
+def _leer_catalogo():
+    import csv
+    with open(CATALOGO, encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def test_el_catalogo_cubre_todos_los_articulos_del_crudo():
+    import csv
+    with open(CRUDO, encoding="utf-8-sig") as f:
+        crudo = {fila["art_id"] for fila in csv.DictReader(f)}
+    catalogo = {fila["art_id"] for fila in _leer_catalogo()}
+    assert catalogo == crudo, f"faltan o sobran art_id: {crudo ^ catalogo}"
+
+
+def test_los_art_id_no_se_repiten():
+    filas = _leer_catalogo()
+    assert len({f["art_id"] for f in filas}) == len(filas)
+
+
+def test_los_valores_estan_en_el_vocabulario_del_contrato():
+    for fila in _leer_catalogo():
+        assert fila["grupo_dane"] in GRUPOS_DANE, fila
+        assert fila["unidad"] in UNIDADES, fila
+        assert fila["distingue_por"] in DISTINGUE_POR, fila
+        assert fila["en_canasta"] in {"si", "no"}, fila
+
+
+def test_no_se_agrupa_por_la_primera_palabra_del_nombre():
+    # Las dos trampas que advierte docs/contrato_datos.md: "Papaya" empieza por
+    # "Papa" y el tomate de arbol no es tomate.
+    por_articulo = {f["articulo"]: f for f in _leer_catalogo()}
+    for articulo, fila in por_articulo.items():
+        if articulo.lower().startswith("papaya"):
+            assert fila["producto"] == "Papaya", fila
+    tomate_de_arbol = por_articulo["Tomate de árbol"]
+    assert tomate_de_arbol["producto"] != "Tomate"
+    assert tomate_de_arbol["grupo_dane"] == "Frutas"
+
+
+def test_el_huevo_se_mide_por_unidad_y_el_aceite_por_litro():
+    # Metodologia SIPSA-P: el campo de la API se llama promedioKg pero el huevo
+    # va por unidad y el aceite por litro. Mezclar unidades invalida la grafica.
+    for fila in _leer_catalogo():
+        if fila["articulo"].startswith("Huevo"):
+            assert fila["unidad"] == "unidad", fila
+        if fila["articulo"].startswith("Aceite"):
+            assert fila["unidad"] == "litro", fila
