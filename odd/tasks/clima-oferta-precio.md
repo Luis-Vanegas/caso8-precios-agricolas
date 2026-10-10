@@ -44,7 +44,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 
 ## Tareas de Claude 2 (app, diseño y herramientas)
 - [x] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
-- [ ] C2-02 `config/catalogo_articulos.csv` desde `data/openrefine/catalogo_sipsa_crudo.csv`: OpenRefine propone `producto` (clustering), una persona revisa cada grupo con las reglas de la sección "Jerarquía" de `docs/contrato_datos.md`; se completan `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`. JSON en `data/openrefine/` + guía actualizada
+- [x] C2-02 `config/catalogo_articulos.csv` desde `data/openrefine/catalogo_sipsa_crudo.csv`: OpenRefine propone `producto` (clustering), una persona revisa cada grupo con las reglas de la sección "Jerarquía" de `docs/contrato_datos.md`; se completan `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`. JSON en `data/openrefine/` + guía actualizada
 - [ ] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
 - [ ] C2-04 Página "Semáforo de la canasta": matriz producto × periodo con los datos que ya existen
 - [ ] C2-05 Página "Mapa": departamentos coloreados por **variación %** del precio (nunca por nivel: la misma "papa" es otra variedad en cada ciudad), con `dim_mercado` + GeoJSON
@@ -73,6 +73,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - 2026-10-09: investigación de variedades y unidades (ver "Jerarquía" en `docs/contrato_datos.md`); el catálogo pasa de nombres a `art_id`.
 - 2026-10-09: fuentes nuevas verificadas contra la API real (ver `docs/contrato_datos.md`). 106 pruebas en verde en `main`.
 - 2026-10-09 (Claude 2): C2-01 hecha, `DESIGN.md` en la raiz (commit 142b3ea). Siguiente de Claude 2: C2-02 (preparar archivo y guia para que el equipo corra OpenRefine) o C2-04 (semaforo de la canasta).
+- 2026-10-09 (Claude 2): C2-02 hecha (commit b05f1f0). `config/catalogo_articulos.csv` con 448 articulos en 171 productos, los 8 grupos DANE, unidad y `distingue_por`. Receta en `data/openrefine/receta_catalogo_articulos.json` y Parte 2 de `docs/guia_openrefine.md` para la revision humana (pendiente: que el equipo corra OpenRefine y exporte `catalogo_articulos_revisado.json`). 111 pruebas en verde. Dos errores encontrados y corregidos al generarlo: agrupar por la primera palabra metia las 5 papayas en "Papa", y el criterio suelto de `en_canasta` dejaba fuera al tomate de arbol (46 mercados); ahora entra por presencia (>= 20 mercados). Siguiente: C2-04 (semaforo de la canasta) o C2-03 (GeoJSON).
 
 ## Siguiente paso
 Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.
