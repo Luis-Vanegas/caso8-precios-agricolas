@@ -94,7 +94,8 @@ if not gana_alguno:
 estilo.grafica(graficas.pronostico_con_banda(df))
 
 st.caption(
-    "Línea negra: el precio real. Línea gris punteada: **lo que el modelo habría pronosticado "
+    "Línea negra: el precio real; se corta en 2021 porque SIPSA no publicó de enero de 2021 a "
+    "enero de 2022, y ese hueco se muestra, no se rellena. Línea gris punteada: **lo que el modelo habría pronosticado "
     "mes a mes en el pasado** (ahí se ve cuánto le atina de verdad). Línea azul punteada con "
     "banda: el pronóstico de los próximos meses, con su rango probable del 80 %. "
     "La vertical gris marca dónde termina lo observado."

@@ -214,6 +214,11 @@ def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
                                        mes=lambda d: d["periodo"] % 100))
 
     real, prueba, pron = _fechas("real"), _fechas("prueba"), _fechas("pronostico")
+    # El precio real tiene el hueco de SIPSA (2021). Igual que en `serie_precio`,
+    # se agregan los meses que faltan vacios para que la linea se corte ahi y no
+    # una 2020 con 2022 con una recta. No se rellena nada.
+    if not real.empty:
+        real = _completar_meses(real.drop(columns="fecha"))
 
     fig = go.Figure()
     if not pron.empty and pron["lim_sup"].notna().any():

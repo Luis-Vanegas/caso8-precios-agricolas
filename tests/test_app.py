@@ -282,3 +282,31 @@ def test_la_cadena_usa_el_precio_diario_cuando_el_articulo_tiene_par_exacto():
 
     # Papa criolla no esta en el semanal, pero si en el diario: ahora tiene cadena.
     assert 541 in set(datos.articulos_cadena()["art_id"])
+
+
+def test_el_pronostico_corta_la_linea_real_en_el_hueco_de_2021():
+    """C2-20: la linea del precio real no une 2020 con 2022 a traves del hueco.
+
+    Los meses que faltan entran vacios (NaN) para que Plotly corte la linea; no
+    se rellenan (regla 4 del proyecto). No usa la base.
+    """
+    import math
+
+    import pandas as pd
+
+    import graficas
+
+    df = pd.DataFrame({
+        "periodo": [202011, 202012, 202202, 202203],
+        "horizonte": [None] * 4, "tipo": ["real"] * 4, "valor": [100.0, 110.0, 120.0, 125.0],
+        "lim_inf": [None] * 4, "lim_sup": [None] * 4,
+    })
+    fig = graficas.pronostico_con_banda(df)
+    real = next(t for t in fig.data if t.name == "precio real")
+
+    fechas = pd.to_datetime(list(real.x))
+    valores = list(real.y)
+    assert len(fechas) == 17                        # nov 2020 a mar 2022, mes por mes
+    en_2021 = [v for f, v in zip(fechas, valores) if f.year == 2021]
+    assert len(en_2021) == 12 and all(v is None or math.isnan(v) for v in en_2021)
+    assert real.connectgaps is False
