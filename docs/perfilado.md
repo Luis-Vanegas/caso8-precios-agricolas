@@ -177,37 +177,37 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | zonas_puente         | producto_zona        | str                 |       9 |       0 |        0    |        4 |              |                  |
 | zonas_puente         | departamento         | str                 |       9 |       0 |        0    |        4 |              |                  |
 | sipsa_semanal        | art_id               | int64               |  230310 |       0 |        0    |      351 |      1       |   6764           |
-| sipsa_semanal        | articulo             | str                 |  230310 |       0 |        0    |      351 |    nan       |    nan           |
+| sipsa_semanal        | articulo             | str                 |  230310 |       0 |        0    |      351 |              |                  |
 | sipsa_semanal        | fuen_id              | int64               |  230310 |       0 |        0    |       80 |      1       |   7209           |
-| sipsa_semanal        | semana_inicio        | datetime64[us]      |  230310 |       0 |        0    |       51 |    nan       |    nan           |
+| sipsa_semanal        | semana_inicio        | datetime64[us]      |  230310 |       0 |        0    |       51 |              |                  |
 | sipsa_semanal        | precio               | int64               |  230310 |       0 |        0    |    20023 |    250       | 273333           |
 | sipsa_semanal        | precio_min           | int64               |  230310 |       0 |        0    |     6808 |    182       | 270000           |
 | sipsa_semanal        | precio_max           | int64               |  230310 |       0 |        0    |     6820 |    264       | 280000           |
-| sipsa_semanal        | unidad               | str                 |  230310 |       0 |        0    |        3 |    nan       |    nan           |
+| sipsa_semanal        | unidad               | str                 |  230310 |       0 |        0    |        3 |              |                  |
 | sipsa_semanal        | anio                 | int32               |  230310 |       0 |        0    |        2 |   2025       |   2026           |
 | sipsa_semanal        | mes                  | int32               |  230310 |       0 |        0    |       12 |      1       |     12           |
 | sipsa_semanal        | periodo              | int32               |  230310 |       0 |        0    |       13 | 202510       | 202610           |
-| sipsa_semanal        | mercado              | str                 |  230310 |       0 |        0    |       80 |    nan       |    nan           |
-| sipsa_semanal        | ciudad               | str                 |  230310 |       0 |        0    |       59 |    nan       |    nan           |
-| sipsa_semanal        | departamento         | str                 |  230310 |       0 |        0    |       24 |    nan       |    nan           |
-| sipsa_semanal        | dpto_codigo          | str                 |  230310 |       0 |        0    |       24 |    nan       |    nan           |
-| sipsa_semanal        | producto             | object              |  230310 |  230310 |      100    |        0 |    nan       |    nan           |
-| sipsa_semanal        | grupo_dane           | object              |  230310 |  230310 |      100    |        0 |    nan       |    nan           |
-| sipsa_semanal        | en_canasta           | object              |  230310 |  230310 |      100    |        0 |    nan       |    nan           |
+| sipsa_semanal        | mercado              | str                 |  230310 |       0 |        0    |       80 |              |                  |
+| sipsa_semanal        | ciudad               | str                 |  230310 |       0 |        0    |       59 |              |                  |
+| sipsa_semanal        | departamento         | str                 |  230310 |       0 |        0    |       24 |              |                  |
+| sipsa_semanal        | dpto_codigo          | str                 |  230310 |       0 |        0    |       24 |              |                  |
+| sipsa_semanal        | producto             | str                 |  230310 |       0 |        0    |      136 |              |                  |
+| sipsa_semanal        | grupo_dane           | str                 |  230310 |       0 |        0    |        8 |              |                  |
+| sipsa_semanal        | en_canasta           | bool                |  230310 |       0 |        0    |        2 |      0       |      1           |
 | sipsa_abastecimiento | art_id               | int64               |  164274 |       0 |        0    |      194 |      1       |   6746           |
-| sipsa_abastecimiento | articulo             | str                 |  164274 |       0 |        0    |      194 |    nan       |    nan           |
+| sipsa_abastecimiento | articulo             | str                 |  164274 |       0 |        0    |      194 |              |                  |
 | sipsa_abastecimiento | fuen_id              | int64               |  164274 |       0 |        0    |       32 |      1       |   4389           |
 | sipsa_abastecimiento | anio                 | int32               |  164274 |       0 |        0    |        6 |   2020       |   2026           |
 | sipsa_abastecimiento | mes                  | int32               |  164274 |       0 |        0    |       12 |      1       |     12           |
 | sipsa_abastecimiento | toneladas            | int64               |  164274 |       0 |        0    |     3717 |      0       |  29690           |
 | sipsa_abastecimiento | periodo              | int32               |  164274 |       0 |        0    |       57 | 202002       | 202607           |
-| sipsa_abastecimiento | mercado              | str                 |  164274 |       0 |        0    |       32 |    nan       |    nan           |
-| sipsa_abastecimiento | ciudad               | str                 |  164274 |       0 |        0    |       23 |    nan       |    nan           |
-| sipsa_abastecimiento | departamento         | str                 |  164274 |       0 |        0    |       21 |    nan       |    nan           |
-| sipsa_abastecimiento | dpto_codigo          | str                 |  164274 |       0 |        0    |       21 |    nan       |    nan           |
-| sipsa_abastecimiento | producto             | object              |  164274 |  164274 |      100    |        0 |    nan       |    nan           |
-| sipsa_abastecimiento | grupo_dane           | object              |  164274 |  164274 |      100    |        0 |    nan       |    nan           |
-| sipsa_abastecimiento | en_canasta           | object              |  164274 |  164274 |      100    |        0 |    nan       |    nan           |
+| sipsa_abastecimiento | mercado              | str                 |  164274 |       0 |        0    |       32 |              |                  |
+| sipsa_abastecimiento | ciudad               | str                 |  164274 |       0 |        0    |       23 |              |                  |
+| sipsa_abastecimiento | departamento         | str                 |  164274 |       0 |        0    |       21 |              |                  |
+| sipsa_abastecimiento | dpto_codigo          | str                 |  164274 |       0 |        0    |       21 |              |                  |
+| sipsa_abastecimiento | producto             | str                 |  164274 |       0 |        0    |      134 |              |                  |
+| sipsa_abastecimiento | grupo_dane           | str                 |  164274 |       0 |        0    |        8 |              |                  |
+| sipsa_abastecimiento | en_canasta           | bool                |  164274 |       0 |        0    |        2 |      0       |      1           |
 | clima_diario         | departamento         | str                 |   19912 |       0 |        0    |        8 |    nan       |    nan           |
 | clima_diario         | fecha                | datetime64[us]      |   19912 |       0 |        0    |     2489 |    nan       |    nan           |
 | clima_diario         | precipitacion_mm     | float64             |   19912 |       0 |        0    |      612 |      0       |    188.3         |

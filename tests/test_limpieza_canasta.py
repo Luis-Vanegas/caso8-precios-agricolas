@@ -43,6 +43,9 @@ def test_semanal_trae_unidad_mercado_y_departamento(tmp_path):
     assert huevo["dpto_codigo"] == "63"
     assert huevo["periodo"] == 202511
 
+    # El catalogo dice "si"/"no" (legible en OpenRefine); el contrato pide booleano
+    assert df["en_canasta"].dtype == bool
+
     papa = df[df["articulo"] == "Papa criolla limpia"].iloc[0]
     assert papa["art_id"] == 159
     assert papa["dpto_codigo"] == "81"            # Arauca (Arauca)

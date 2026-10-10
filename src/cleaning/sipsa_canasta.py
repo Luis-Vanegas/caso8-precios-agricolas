@@ -53,7 +53,15 @@ def _con_catalogo(df: pd.DataFrame) -> pd.DataFrame:
     if not ruta.exists():
         return df.assign(**{c: pd.NA for c in columnas})
     catalogo = pd.read_csv(ruta)[["art_id", *columnas]]
-    return df.merge(catalogo, on="art_id", how="left")
+    # En el CSV va "si"/"no" (legible al editarlo en OpenRefine); el contrato pide booleano
+    catalogo["en_canasta"] = catalogo["en_canasta"].eq("si")
+    salida = df.merge(catalogo, on="art_id", how="left")
+    nuevos = salida.loc[salida["producto"].isna(), "articulo"].unique()
+    if len(nuevos):
+        # El DANE agrega articulos: hay que homologarlos en el catalogo
+        log.warning("articulos sin homologar en config/catalogo_articulos.csv: %s", list(nuevos)[:10])
+    salida["en_canasta"] = salida["en_canasta"].fillna(False).astype(bool)
+    return salida
 
 
 def _con_mercado(df: pd.DataFrame) -> pd.DataFrame:
