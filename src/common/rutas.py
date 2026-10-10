@@ -29,19 +29,28 @@ def carpeta_cruda(fuente: str, dia: date | None = None) -> Path:
     return destino
 
 
+def carpetas_con_datos(base: Path) -> list[Path]:
+    """Carpetas de descarga que tienen algun archivo, de la mas vieja a la mas nueva.
+
+    Las vacias se saltan: `carpeta_cruda` crea la carpeta del dia ANTES de
+    descargar, asi que una descarga fallida deja una carpeta vacia que taparia
+    a la ultima buena (paso con IDEAM el 2026-10-08).
+    """
+    return sorted(d for d in base.glob("*") if d.is_dir() and any(d.iterdir()))
+
+
 def ultima_carpeta_cruda(fuente: str) -> Path:
-    """Carpeta de descarga mas reciente de una fuente, sin crear nada.
+    """Carpeta de descarga mas reciente (y con datos) de una fuente, sin crear nada.
 
     La limpieza corre en un dia distinto al de la descarga, asi que no puede
     asumir la carpeta de hoy.
     """
-    base = CRUDO / fuente
-    carpetas = sorted((d for d in base.glob("*") if d.is_dir()), reverse=True)
+    carpetas = carpetas_con_datos(CRUDO / fuente)
     if not carpetas:
         raise FileNotFoundError(
             f"no hay descargas de '{fuente}'. Correr primero scripts/carga_inicial.py"
         )
-    return carpetas[0]
+    return carpetas[-1]
 
 
 def carpeta_intermedia(fuente: str) -> Path:
