@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.common.registro import conectar
 from src.common.rutas import BASE_DUCKDB, RAIZ
 from src.integration.modelo import compactar, construir
-from src.indicators import sensibilidad
+from src.indicators import quiebres, sensibilidad
 from src.integration.verificacion import CHEQUEOS, correr_chequeos
 
 log = logging.getLogger("integrar")
@@ -38,13 +38,15 @@ def main(argv: list[str] | None = None) -> int:
         for tabla, filas in conteos.items():
             print(f"  {tabla:24} {filas:>10,} filas")
 
-        # Indicador estadistico: se calcula sobre el modelo ya construido.
-        try:
-            tabla = sensibilidad.construir(con)
-            con.execute("CREATE OR REPLACE TABLE indicador_sensibilidad_clima AS SELECT * FROM tabla")
-            print(f"  {'indicador_sensibilidad_clima':24} {len(tabla):>10,} filas")
-        except Exception as exc:   # falta una tabla opcional: el resto del modelo sigue sirviendo
-            log.warning("indicador_sensibilidad_clima omitido: %s: %s", type(exc).__name__, exc)
+        # Indicadores estadisticos: se calculan sobre el modelo ya construido.
+        for nombre, calcular in (("indicador_sensibilidad_clima", sensibilidad.construir),
+                                 ("indicador_quiebres", quiebres.construir)):
+            try:
+                tabla = calcular(con)
+                con.execute(f"CREATE OR REPLACE TABLE {nombre} AS SELECT * FROM tabla")
+                print(f"  {nombre:24} {len(tabla):>10,} filas")
+            except Exception as exc:   # falta una tabla opcional: el resto del modelo sigue sirviendo
+                log.warning("%s omitido: %s: %s", nombre, type(exc).__name__, exc)
 
     print("\n--- verificacion de integridad ---")
     fallos = correr_chequeos(con)
