@@ -20,6 +20,30 @@ Todas las tablas usan la llave de tiempo `periodo = anio * 100 + mes` (ej. `2025
 | Open-Meteo pronóstico | `api.open-meteo.com/v1/forecast` | 16 días, sin token |
 | Open-Meteo estacional | `seasonal-api.open-meteo.com/v1/seasonal` | ~6 meses, varios miembros de ensamble |
 
+## Jerarquía de productos y unidades (leer antes de cualquier tabla)
+
+Investigado el 2026-10-09 con los datos del DANE y la metodología SIPSA-P.
+
+```
+Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
+  └ Producto                  Papa criolla
+      └ Artículo (art_id)     Papa criolla limpia   <- aquí se analiza
+```
+
+- **Grupos DANE** (metodología SIPSA-P): Verduras y hortalizas · Frutas · Tubérculos, raíces y plátanos · Granos y cereales · Huevos y lácteos · Carnes · Pescados · Productos procesados.
+- **La llave es `art_id`** (el `artiId` del DANE), nunca el nombre. Es el mismo código en precios semanales y en abastecimiento (97 artículos en común, 0 diferencias de nombre).
+- Un artículo se distingue de otro del mismo producto por **variedad** (papa capira / suprema), **calidad** (huevo B / A / AA / extra según NTC 1240; arroz de primera / segunda), **presentación** (criolla limpia / sucia; plátano verde / maduro; fresco / congelado), **origen** (cebolla junca Aquitania / Berlín; nacional / importado) o **procesado** (arveja en vaina / seca / enlatada).
+- **Unidades del precio** (metodología SIPSA-P, p. 16): pesos por **kg**, salvo huevo y bocadillo (**por unidad**) y aceite, jugo y vinagre (**por litro**), aunque el campo de la API se llame `promedioKg`. El abastecimiento siempre va en toneladas.
+
+**Reglas**
+1. Se analiza siempre por artículo. **Nunca se promedian precios de artículos distintos.**
+2. Un valor de "producto" (ej. "la papa") es la **mediana de las variaciones %** de sus artículos, nunca el promedio de sus precios.
+3. Nunca se mezclan unidades distintas en una misma gráfica o cálculo.
+4. Los precios diarios (`promediosSipsaCiudad`, los 33 productos actuales) usan otros códigos. Indicio fuerte: su "Papa negra*" es una variedad distinta en cada ciudad (capira en Bogotá, Medellín y Cali; única en Barranquilla), y su "Papa criolla" es limpia en unas ciudades y sucia en otras. Por eso **entre ciudades se comparan variaciones %, nunca niveles de precio** (incluido el mapa).
+5. Nombres engañosos: el tomate de árbol **no** es tomate; "Papaya" empieza por "Papa". No se agrupa por la primera palabra del nombre.
+6. Artículos con 2 mercados o menos (43 de 351) no van al mapa.
+7. La correspondencia entre la granularidad de precios y de abastecimiento se declara a mano en el catálogo (ej. abastecimiento tiene una sola "Papa criolla" y una "Papa R-12" sin color; precios separa criolla limpia/sucia y R-12 negra/roja).
+
 ## Tablas que entrega Claude 1
 
 ### `fact_abastecimiento` (mensual)
@@ -29,8 +53,9 @@ Todas las tablas usan la llave de tiempo `periodo = anio * 100 + mes` (ej. `2025
 | `ciudad` | texto | Ciudad de la central |
 | `departamento` | texto | Departamento de la central |
 | `dpto_codigo` | texto(2) | Código DANE del departamento, ej. `05` (llave del mapa) |
-| `producto` | texto | Nombre SIPSA tal cual |
-| `producto_canonico` | texto | Nombre agrupado (ver `config/productos_canonicos.csv`); nulo si aún no está homologado |
+| `art_id` | entero | Código del artículo en el DANE (llave) |
+| `articulo` | texto | Nombre DANE tal cual, ej. `Papa criolla` |
+| `producto`, `grupo_dane` | texto | Del catálogo (`config/catalogo_articulos.csv`); nulo si aún no está homologado |
 | `anio`, `mes`, `periodo` | entero | Mes |
 | `toneladas` | decimal | Toneladas que entraron a la central ese mes |
 
@@ -38,11 +63,12 @@ Todas las tablas usan la llave de tiempo `periodo = anio * 100 + mes` (ej. `2025
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `mercado`, `ciudad`, `departamento`, `dpto_codigo` | texto | Igual que arriba |
-| `producto`, `producto_canonico` | texto | Igual que arriba |
-| `grupo` | texto | Grupo de la canasta (ej. `Cereales`, `Proteínas`, `Tubérculos`); nulo si no está homologado |
+| `art_id`, `articulo`, `producto`, `grupo_dane` | | Igual que arriba |
+| `en_canasta` | booleano | Del catálogo |
 | `semana_inicio` | fecha | Primer día de la semana |
 | `anio`, `mes`, `periodo` | entero | Mes al que pertenece la semana |
-| `precio_cop_kg`, `precio_min`, `precio_max` | decimal | Pesos por kilo |
+| `precio`, `precio_min`, `precio_max` | decimal | Pesos por `unidad` |
+| `unidad` | texto | `kg`, `unidad` o `litro` |
 
 ### `fact_clima_diario`
 | Columna | Tipo | Descripción |
@@ -66,7 +92,8 @@ Todas las tablas usan la llave de tiempo `periodo = anio * 100 + mes` (ej. `2025
 Una fila por producto (y departamento productor cuando aplique). Responde "¿qué tanto afecta el clima?".
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `producto`, `departamento` | texto | |
+| `art_id`, `articulo` | | Artículo (o producto del precio diario, con `art_id` nulo) |
+| `departamento` | texto | |
 | `variable` | texto | `lluvia`, `abastecimiento`, `oni` |
 | `rezago_meses` | entero | 0 a 6 |
 | `coeficiente` | decimal | Efecto estimado (signo = dirección) |
@@ -77,7 +104,7 @@ Una fila por producto (y departamento productor cuando aplique). Responde "¿qu�
 ### `indicador_quiebres` (prueba de Chow)
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `producto`, `mercado` | texto | |
+| `art_id`, `articulo`, `mercado` | | Siempre por artículo, nunca promedio de variedades |
 | `periodo_quiebre` | entero | Mes candidato a quiebre |
 | `f_chow`, `p_valor` | decimal | Estadístico F y su p |
 | `hay_quiebre` | booleano | `p_valor < 0,05` |
@@ -85,7 +112,7 @@ Una fila por producto (y departamento productor cuando aplique). Responde "¿qu�
 ### `pronostico_precio`
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `producto`, `mercado` | texto | |
+| `art_id`, `articulo`, `mercado` | | Siempre por artículo, nunca promedio de variedades |
 | `periodo` | entero | Mes |
 | `tipo` | texto | `real` o `pronostico` |
 | `valor`, `lim_inf`, `lim_sup` | decimal | Precio y banda (80 %) |
@@ -99,5 +126,5 @@ Una fila por producto (y departamento productor cuando aplique). Responde "¿qu�
 
 | Archivo | Columnas | Cómo se produce |
 |---|---|---|
-| `config/productos_canonicos.csv` | `producto_sipsa`, `producto_canonico`, `grupo`, `en_canasta` | OpenRefine (clustering de los 351 nombres), exportado a CSV; el JSON de operaciones va a `data/openrefine/` |
+| `config/catalogo_articulos.csv` | `art_id`, `articulo`, `producto`, `grupo_dane`, `unidad`, `distingue_por` (`variedad`/`calidad`/`presentacion`/`origen`/`procesado`/`unico`), `en_canasta`, `nota` | Parte de `data/openrefine/catalogo_sipsa_crudo.csv` (448 artículos, ya generado por Claude 1 con `unidad_sugerida`). OpenRefine **propone** `producto` con clustering y **una persona revisa** cada grupo contra las reglas de arriba. El JSON de operaciones va a `data/openrefine/` |
 | `config/geo/colombia_departamentos.geojson` | propiedad `DPTO` = código DANE | Descarga verificada; documentar origen y licencia en `docs/fuentes_app.md` (archivo propio de Claude 2) |
