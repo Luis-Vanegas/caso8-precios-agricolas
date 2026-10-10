@@ -191,6 +191,48 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     return fig
 
 
+def pronostico_con_banda(df: pd.DataFrame, ingenuo: pd.DataFrame | None = None) -> go.Figure:
+    """Precio observado, pronostico y su banda de confianza.
+
+    Espera las columnas de `pronostico_precio` (docs/contrato_datos.md):
+    `periodo`, `tipo` ('real' o 'pronostico'), `valor`, `lim_inf`, `lim_sup`.
+    La banda se dibuja antes que las lineas para que quede detras.
+    """
+    real = _con_fecha(df[df["tipo"] == "real"].assign(
+        anio=lambda d: d["periodo"] // 100, mes=lambda d: d["periodo"] % 100))
+    pron = _con_fecha(df[df["tipo"] == "pronostico"].assign(
+        anio=lambda d: d["periodo"] // 100, mes=lambda d: d["periodo"] % 100))
+
+    fig = go.Figure()
+    if not pron.empty and pron["lim_sup"].notna().any():
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["lim_sup"], mode="lines",
+                                 line=dict(width=0), hoverinfo="skip", showlegend=False))
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["lim_inf"], mode="lines",
+                                 line=dict(width=0), fill="tonexty",
+                                 fillcolor="rgba(29,78,137,.15)", name="rango probable",
+                                 hoverinfo="skip"))
+    if ingenuo is not None and not ingenuo.empty:
+        i = _con_fecha(ingenuo.assign(anio=lambda d: d["periodo"] // 100,
+                                      mes=lambda d: d["periodo"] % 100))
+        fig.add_trace(go.Scatter(x=i["fecha"], y=i["valor"], mode="lines", name="modelo ingenuo",
+                                 line=dict(color=GRIS, width=1.4, dash="dot"),
+                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (ingenuo)<extra></extra>"))
+    fig.add_trace(go.Scatter(x=real["fecha"], y=real["valor"], mode="lines", name="precio real",
+                             line=dict(color=TINTA, width=2), connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: $%{y:,.0f}<extra></extra>"))
+    if not pron.empty:
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["valor"], mode="lines+markers",
+                                 name="pronóstico", line=dict(color=AZUL, width=2.2, dash="dot"),
+                                 marker=dict(size=5),
+                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (pronóstico)<extra></extra>"))
+        if not real.empty:
+            fig.add_vline(x=real["fecha"].max(), line_dash="dot", line_color=GRIS, line_width=1.2)
+
+    fig.update_layout(height=430, yaxis_title="precio (COP)",
+                      legend=dict(orientation="h", y=-0.2))
+    return fig
+
+
 def cadena_lluvia_oferta_precio(cadena: pd.DataFrame, unidad: str = "kg") -> go.Figure:
     """Tres paneles apilados con el mismo eje X: lluvia, toneladas y precio.
 
