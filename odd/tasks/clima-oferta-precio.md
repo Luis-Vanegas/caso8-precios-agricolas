@@ -72,6 +72,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - 2026-10-09 C1-01 (inline, 1 módulo + prueba): RED (módulo inexistente) -> GREEN 3/3; suite 109 en verde; descarga real por `actualizar.py`: 164274 filas, último mes 2026-07, 3 llamadas idénticas (40033487 bytes).
 - 2026-10-09: investigación de variedades y unidades (ver "Jerarquía" en `docs/contrato_datos.md`); el catálogo pasa de nombres a `art_id`.
 - 2026-10-09: fuentes nuevas verificadas contra la API real (ver `docs/contrato_datos.md`). 106 pruebas en verde en `main`.
+- 2026-10-09 (Claude 2): C2-01 hecha, `DESIGN.md` en la raiz (commit 142b3ea). Siguiente de Claude 2: C2-02 (preparar archivo y guia para que el equipo corra OpenRefine) o C2-04 (semaforo de la canasta).
 
 ## Siguiente paso
 Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.
