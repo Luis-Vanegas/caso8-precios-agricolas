@@ -39,6 +39,56 @@ def test_cada_pagina_esta_en_el_menu():
         assert f"paginas/{pagina.name}" in texto, f"{pagina.name} no esta en el menu"
 
 
+# Paginas con controles cuyo valor por defecto no recorre todos los casos.
+# Abrir la pagina no alcanza: dos errores reales de esta fase solo aparecian al
+# mover un control (un rango de anios sin alertas para algun producto, y un
+# departamento sin abastecimiento del articulo elegido).
+PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima_hoy", "cadena"]
+
+# Cuantos valores se prueban por control. El mapa tiene 284 articulos: recorrerlos
+# todos haria la prueba lenta sin encontrar nada nuevo.
+VALORES_POR_CONTROL = 3
+
+
+@pytest.mark.skipif(not (RAIZ / "data" / "processed" / "caso8.duckdb").exists(),
+                    reason="falta la base DuckDB")
+@pytest.mark.parametrize("nombre", PAGINAS_CON_CONTROLES)
+def test_mover_los_controles_no_rompe_la_pagina(nombre):
+    """Mueve cada control de la pagina y exige que siga sin excepciones.
+
+    Recorre los primeros valores de cada selector y los extremos del deslizador:
+    el primero y el ultimo son los que descubren los casos vacios.
+    """
+    pagina = APP / "paginas" / f"{nombre}.py"
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+
+    for indice in range(len(app.selectbox)):
+        opciones = list(app.selectbox[indice].options)
+        if not opciones:
+            continue
+        a_probar = opciones[:VALORES_POR_CONTROL] + opciones[-1:]
+        for valor in dict.fromkeys(a_probar):
+            app.selectbox[indice].set_value(valor).run()
+            assert not app.exception, (
+                f"{nombre}: el selector {indice} con el valor {valor!r} rompio la pagina: "
+                f"{[e.message for e in app.exception]}"
+            )
+
+    for indice in range(len(app.select_slider)):
+        opciones = list(app.select_slider[indice].options)
+        if len(opciones) < 2:
+            continue
+        # El rango mas amplio y el mas angosto: el amplio entra en los huecos de
+        # datos, el angosto deja fuera a casi todas las series.
+        for rango in ((opciones[0], opciones[-1]), (opciones[0], opciones[0])):
+            app.select_slider[indice].set_value(rango).run()
+            assert not app.exception, (
+                f"{nombre}: el deslizador con el rango {rango} rompio la pagina: "
+                f"{[e.message for e in app.exception]}"
+            )
+
+
 # --- Catalogo de articulos (config/catalogo_articulos.csv) ---
 # El catalogo decide como se agrupan los precios en la app. Si se rompe, las
 # graficas promedian articulos distintos, que es justo lo que prohibe
