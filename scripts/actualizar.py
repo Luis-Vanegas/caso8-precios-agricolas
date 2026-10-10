@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.acquisition import (
     faostat_api, faostat_bulk, ideam, nasa_power, nasa_power_diario, oni, pink_sheet, sipsa,
-    sipsa_abastecimiento,
+    sipsa_abastecimiento, sipsa_semanal,
 )
 from src.common.modelos import ResultadoDescarga
 from src.common.registro import conectar, registrar, resumen_frescura, ultima_actualizacion_fuente
@@ -32,6 +32,7 @@ FUENTES = {
     "faostat_api": faostat_api,
     "sipsa": sipsa,
     "sipsa_abastecimiento": sipsa_abastecimiento,
+    "sipsa_semanal": sipsa_semanal,
     "nasa_power": nasa_power,
     "nasa_power_diario": nasa_power_diario,
     "oni": oni,
