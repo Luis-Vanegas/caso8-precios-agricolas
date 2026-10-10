@@ -89,17 +89,20 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 | `anomalia_p50` | decimal | `precip_p50` menos el promedio histórico de ese mes |
 
 ### `indicador_sensibilidad_clima`
-Una fila por producto (y departamento productor cuando aplique). Responde "¿qué tanto afecta el clima?".
+Una fila por eslabón, producto, departamento y rezago. Responde "¿qué tanto afecta el clima?".
+Método y razones en `src/indicators/sensibilidad.py`. **Lo que cuenta como hallazgo es `q_valor < 0,1`**, no el p-valor solo.
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `art_id`, `articulo` | | Artículo (o producto del precio diario, con `art_id` nulo) |
+| `eslabon` | texto | `oni->lluvia`, `lluvia->oferta`, `oferta->precio`, `lluvia->precio` |
+| `producto`, `art_id` | | Producto del precio diario y su artículo de abastecimiento (solo si el nombre es idéntico); nulos en `oni->lluvia` |
 | `departamento` | texto | |
 | `variable` | texto | `lluvia`, `abastecimiento`, `oni` |
 | `rezago_meses` | entero | 0 a 6 |
 | `coeficiente` | decimal | Efecto estimado (signo = dirección) |
 | `p_valor` | decimal | Significancia |
 | `n` | entero | Meses usados |
-| `metodo` | texto | Ej. `panel_efectos_fijos`, `spearman` |
+| `q_valor` | decimal | p-valor corregido por pruebas múltiples (Benjamini-Hochberg, dentro de cada eslabón) |
+| `metodo` | texto | `correlacion_pearson`, `regresion_estacional` o `panel_efectos_fijos` |
 
 ### `indicador_quiebres` (prueba de Chow)
 | Columna | Tipo | Descripción |

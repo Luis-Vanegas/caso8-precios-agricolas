@@ -37,7 +37,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - [x] C1-00 Catálogo crudo de 448 artículos por `art_id` con `unidad_sugerida` en `data/openrefine/catalogo_sipsa_crudo.csv` (excepción al reparto: lo genera Claude 1 una sola vez)
 - [x] C1-04 Limpieza de las tres fuentes por `art_id` con columna `unidad` + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
 - [x] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
-- [ ] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
+- [x] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
 - [ ] C1-07 `indicador_quiebres`: prueba de Chow de quiebre estructural (ej. El Niño 2023-24)
 - [ ] C1-08 `pronostico_precio`: modelo con rezagos de lluvia, abastecimiento y ONI, validado contra el ingenuo estacional
 - [ ] C1-09 `actualizar.py` diario para las fuentes nuevas + documentación en `docs/verificacion_api.md`
@@ -61,6 +61,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
 
 ## Progreso y evidencia
+- 2026-10-09 C1-06 (inline): `src/indicators/sensibilidad.py`, 4 eslabones, sin scipy/statsmodels. Panel solo en oferta->precio (la lluvia de la zona es igual para todos los mercados: un panel por mercado inflaría n). RED -> GREEN 7/7 (recupera efectos sintéticos conocidos); suite 137. Real, 140 pruebas, hallazgos con q<0,1: ONI->lluvia 27/56 (todas negativas: El Niño seca); oferta->precio 4/24 (chócolo, zanahoria, elasticidad ~-0,05); lluvia->precio 1/36 (tomate, Norte de Santander, rezago 3, -7 % por mm/día); lluvia->oferta 0/24.
 - 2026-10-09 C1-05 (inline): 4 tablas opcionales en el modelo + `dpto_codigo` y `departamento` en `dim_mercado`; 10 chequeos nuevos (29 en total). RED -> GREEN; suite 130. `integrar.py` real: los 29 chequeos OK, base 12,1 MB.
 - 2026-10-09 C1-04 (inline): `sipsa_canasta.py` + `clima_open_meteo.py` + `config/departamentos.csv` (33, códigos DANE) + `config/mercados_sipsa.csv` (81 mercados por `fuen_id`, 24 departamentos). RED -> GREEN 8/8; suite 125. `preparar.py` real: semanal 230310, abastecimiento 164274, clima diario 19912, estacional 40. El `dpto_codigo` de `dim_mercado` se une en C1-05 desde `config/departamentos.csv`. Bug previo corregido: una carpeta cruda vacía tapaba la última buena (IDEAM quedaba vacío).
 - 2026-10-09 C1-03 (inline): RED -> GREEN 5/5; suite 117 en verde; descarga real: 24 archivos, 19784 días observados hasta 2026-10-08.
