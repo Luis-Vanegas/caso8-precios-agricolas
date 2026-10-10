@@ -168,6 +168,25 @@ def test_el_geojson_cruza_con_los_departamentos_de_la_base():
     assert all(isinstance(c, str) and len(c) == 2 for c in codigos_geo)
 
 
+def test_la_papa_criolla_es_su_propio_producto():
+    """La papa criolla no va dentro de "Papa": es otra especie.
+
+    La papa criolla es Solanum phureja y la papa comun Solanum tuberosum. El
+    DANE las publica aparte, y se nota en el propio catalogo: el abastecimiento
+    trae dos cajones separados, `Papa criolla` (541) y `Papas negras otras`
+    (498). Juntarlas haria que la mediana de "la papa" mezcle dos especies con
+    precios muy distintos (la criolla vale el doble).
+    """
+    por_id = {f["art_id"]: f for f in _leer_catalogo()}
+    for art_id in ("159", "161", "541"):
+        assert por_id[art_id]["producto"] == "Papa criolla", por_id[art_id]
+
+    # Y al reves: ninguna papa negra debe caer en "Papa criolla".
+    for fila in _leer_catalogo():
+        if fila["producto"] == "Papa criolla":
+            assert "criolla" in fila["articulo"].lower(), fila
+
+
 def test_el_huevo_se_mide_por_unidad_y_el_aceite_por_litro():
     # Metodologia SIPSA-P: el campo de la API se llama promedioKg pero el huevo
     # va por unidad y el aceite por litro. Mezclar unidades invalida la grafica.
