@@ -5,6 +5,38 @@ base y construimos una app que avisa cuando el precio de un alimento se mueve de
 
 Proyecto académico — Adquisición e Integración de Datos, Ingeniería en Ciencia de Datos, ITM.
 
+## ¿Dónde está cada cosa?
+
+Cada carpeta tiene un `LEEME.md` corto que explica su contenido. Los términos técnicos
+(raw, fact, puente, q-valor…) están en el [glosario](documentos/LEEME.md#glosario).
+
+| Carpeta | Qué hay | Cuándo abrirla |
+|---|---|---|
+| [`app/`](app/LEEME.md) | La app Streamlit: menú, páginas, estilo y gráficas | Para cambiar o revisar lo que se ve en pantalla |
+| [`config/`](config/LEEME.md) | Tablas de referencia hechas a mano: homologación SIPSA-FAO, mercados, zonas productoras | Para agregar un producto o un mercado |
+| [`data/`](data/LEEME.md) | Los datos: crudos, intermedios y la base final | Para consultar la base o revisar qué se descargó |
+| [`docs/`](docs/LEEME.md) | Documentación técnica, guías y material de sustentación | Para entender una decisión o preparar la sustentación |
+| [`documentos/`](documentos/LEEME.md) | Material de consulta: artículos, guía del curso, presentaciones, borradores del informe | Para buscar bibliografía o el material del curso |
+| [`odd/`](odd/LEEME.md) | Listas de tareas del proyecto | Para saber qué falta y quién lo hace |
+| [`powerquery/`](powerquery/LEEME.md) | Consultas de Power Query (entregable en Excel) | Para el paso de integración en Excel |
+| [`scripts/`](scripts/LEEME.md) | Los comandos que se ejecutan: descargar, limpiar, integrar | Para actualizar los datos |
+| [`src/`](src/LEEME.md) | El código del pipeline, una subcarpeta por etapa | Para entender o cambiar cómo se procesan los datos |
+| [`tests/`](tests/LEEME.md) | Pruebas automáticas (ninguna usa internet) | Para comprobar que nada se rompió |
+
+**La base de datos** es `data/processed/caso8.duckdb`. Para consultarla desde la terminal
+(primero **cerrar la app**: Windows bloquea el archivo mientras Streamlit lo tiene abierto):
+
+```powershell
+.venv\Scripts\python.exe -c "import duckdb; con = duckdb.connect('data/processed/caso8.duckdb', read_only=True); print(con.sql('SHOW TABLES'))"
+```
+
+**Actualizar los datos** (descargar → limpiar → integrar en un solo paso; detalle en
+[docs/actualizacion_diaria.md](docs/actualizacion_diaria.md)):
+
+```powershell
+.venv\Scripts\python.exe scripts\diario.py
+```
+
 ## Para el equipo: correr la app en 5 pasos (Windows)
 
 Requisitos: [Python 3.11+](https://www.python.org/downloads/) (marcar "Add to PATH") y [Git](https://git-scm.com/downloads).

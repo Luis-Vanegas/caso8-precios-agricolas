@@ -11,3 +11,7 @@ data/interim/
 scratch_*
 entrega_AE2/
 data/diario.log
+
+# PDF grandes: git no filtra por tamano. No subir PDF de mas de 10 MB (ver documentos/LEEME.md).
+# Un PDF pesado que debe quedarse solo en el equipo se nombra <nombre>_grande.pdf.
+documentos/**/*_grande.pdf
