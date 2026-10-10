@@ -101,6 +101,6 @@ def mostrar() -> None:
             st.caption(
                 "Un mes más seco de lo normal en la zona productora puede adelantar o reducir una "
                 "cosecha, y eso **a veces** mueve el precio semanas después. Esta página muestra el "
-                "clima; la relación con el precio se analiza en «La cadena» y no es una predicción."
+                "clima; la relación con el precio se analiza en «¿Cuánto afecta el clima?» y no es una predicción."
             )
 

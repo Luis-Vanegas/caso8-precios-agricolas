@@ -78,6 +78,7 @@ Semánticos (nunca se neutralizan ni se reutilizan para decorar):
 | Mapa | cambio % de precio por departamento | divergente `AZUL` → `#FFFFFF` → `ROJO`, centrada en 0 y simétrica; sin dato: `#E6E0D2` con trama o nota |
 | Clima hoy | lluvia / temperatura | lluvia en `AZUL`, temperatura en `TIERRA`; pronóstico con línea punteada del mismo color |
 | La cadena | lluvia → toneladas → precio | tres paneles apilados con el mismo eje X; lluvia `AZUL`, toneladas `TIERRA`, precio `TINTA` |
+| ¿Cuánto afecta el clima? | un hallazgo por tarjeta (`cifra`) + tablas | sin escala de color: solo la tarjeta de El Niño lleva borde `ROJO`; los hallazgos se cuentan "N de M" para que se vea también lo que no apareció |
 | Pronóstico | observado, pronóstico, banda, ingenuo | observado `TINTA`; pronóstico `AZUL`; banda `AZUL` al 15 % de opacidad del relleno; ingenuo `GRIS` punteado |
 
 Un hueco de datos (p. ej. SIPSA 2021-01 a 2022-01) se ve como hueco: la línea se corta, nunca se une.

@@ -27,7 +27,7 @@ menu = {
     ],
     "Por qué pasa": [
         st.Page("paginas/clima.py", title="Clima", icon=":material/rainy:"),
-        st.Page("paginas/cadena.py", title="La cadena", icon=":material/link:"),
+        st.Page("paginas/efecto_clima.py", title="¿Cuánto afecta el clima?", icon=":material/insights:"),
     ],
     "Qué viene y cómo se hizo": [
         st.Page("paginas/pronostico.py", title="Pronóstico", icon=":material/trending_up:"),

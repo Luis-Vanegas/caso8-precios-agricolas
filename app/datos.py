@@ -479,6 +479,63 @@ def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
     """)
 
 
+# --- ¿Cuanto afecta el clima? (indicador_sensibilidad_clima e indicador_quiebres) ---
+
+
+@st.cache_data(ttl=TTL)
+def sensibilidad_resumen() -> pd.DataFrame:
+    """Una fila por eslabon: cuantas pruebas se hicieron y cuantas se sostienen.
+
+    `hallazgos` cuenta solo q < UMBRAL_Q; `bajan` y `suben` separan los hallazgos
+    por el signo del efecto (negativo = cuando sube lo primero, baja lo segundo).
+    """
+    return consultar(f"""
+        SELECT eslabon,
+               count(*) AS pruebas,
+               count(*) FILTER (q_valor < {UMBRAL_Q}) AS hallazgos,
+               count(*) FILTER (q_valor < {UMBRAL_Q} AND coeficiente < 0) AS bajan,
+               count(*) FILTER (q_valor < {UMBRAL_Q} AND coeficiente > 0) AS suben,
+               count(DISTINCT departamento) AS departamentos,
+               count(DISTINCT departamento) FILTER (q_valor < {UMBRAL_Q}) AS departamentos_hallazgo,
+               count(DISTINCT producto) AS productos
+        FROM indicador_sensibilidad_clima
+        GROUP BY eslabon
+    """).set_index("eslabon")
+
+
+@st.cache_data(ttl=TTL)
+def sensibilidad_hallazgos() -> pd.DataFrame:
+    """Solo las relaciones que se sostienen (q < UMBRAL_Q), de la mas segura a la menos."""
+    return consultar(f"""
+        SELECT eslabon, producto, departamento, rezago_meses, coeficiente, q_valor, n, metodo
+        FROM indicador_sensibilidad_clima
+        WHERE q_valor < {UMBRAL_Q}
+        ORDER BY eslabon, q_valor
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def quiebres_resumen() -> pd.DataFrame:
+    """Una fila por fecha probada: cuantos productos cambiaron su ritmo o su volatilidad.
+
+    `ritmo` y `volatilidad` cuentan los quiebres que se sostienen (q < UMBRAL_Q).
+    `ritmo_p` y `volatilidad_p` cuentan los que tienen p < 0,05 sin corregir: con
+    33 productos, uno o dos salen asi por puro azar.
+    """
+    return consultar(f"""
+        SELECT periodo_quiebre, any_value(fase_que_empieza) AS fase,
+               count(DISTINCT producto) AS productos,
+               count(DISTINCT producto) FILTER (q_valor < {UMBRAL_Q}) AS con_quiebre,
+               count(*) FILTER (que_cambia = 'ritmo' AND q_valor < {UMBRAL_Q}) AS ritmo,
+               count(*) FILTER (que_cambia = 'volatilidad' AND q_valor < {UMBRAL_Q}) AS volatilidad,
+               count(*) FILTER (que_cambia = 'ritmo' AND p_valor < 0.05) AS ritmo_p,
+               count(*) FILTER (que_cambia = 'volatilidad' AND p_valor < 0.05) AS volatilidad_p
+        FROM indicador_quiebres
+        GROUP BY periodo_quiebre
+        ORDER BY periodo_quiebre
+    """)
+
+
 @st.cache_data(ttl=TTL)
 def cadena(art_id: int, dpto_codigo: str, producto_diario: str | None = None) -> pd.DataFrame:
     """Lluvia, toneladas y precio del mismo articulo y departamento, mes por mes.

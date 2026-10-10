@@ -43,7 +43,7 @@ def test_cada_pagina_esta_en_el_menu():
 # Abrir la pagina no alcanza: dos errores reales de esta fase solo aparecian al
 # mover un control (un rango de anios sin alertas para algun producto, y un
 # departamento sin abastecimiento del articulo elegido).
-PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima", "cadena", "pronostico", "como_lo_hicimos"]
+PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima", "efecto_clima", "pronostico", "como_lo_hicimos"]
 
 # Cuantos valores se prueban por control. El mapa tiene 284 articulos: recorrerlos
 # todos haria la prueba lenta sin encontrar nada nuevo.
@@ -358,7 +358,7 @@ def test_la_app_tiene_7_paginas():
     app/secciones/ (una funcion mostrar() por antigua pagina)."""
     assert len(PAGINAS) == 7, [p.stem for p in PAGINAS]
     for seccion in ("detalle_producto", "clima_hoy", "el_nino", "sensor",
-                    "recorrido", "calidad", "comercio"):
+                    "recorrido", "calidad", "comercio", "cadena"):
         assert (APP / "secciones" / f"{seccion}.py").exists(), seccion
 
 
@@ -374,3 +374,47 @@ def test_las_paginas_fusionadas_traen_sus_secciones(nombre, pestanas):
     etiquetas = [t.label for t in app.tabs]
     for esperada in pestanas:
         assert any(e.startswith(esperada) for e in etiquetas), (esperada, etiquetas)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_pagina_del_efecto_del_clima_dice_lo_que_midio():
+    """C2-24: la respuesta al reto en pantalla, con los numeros de la base.
+
+    Solo cuenta como hallazgo q < 0,1 (docs/contrato_datos.md). Los numeros se
+    leen de la base: si el pipeline cambia, la prueba sigue valiendo.
+    """
+    import duckdb
+
+    con = duckdb.connect(str(BASE), read_only=True)
+    oni_total, oni_hallazgos, oni_positivos = con.execute("""
+        SELECT count(*), count(*) FILTER (q_valor < 0.1),
+               count(*) FILTER (q_valor < 0.1 AND coeficiente > 0)
+        FROM indicador_sensibilidad_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
+    lluvia_precio = con.execute("""
+        SELECT producto, departamento, rezago_meses FROM indicador_sensibilidad_clima
+        WHERE eslabon = 'lluvia->precio' AND q_valor < 0.1""").fetchall()
+    oferta_baja = [p for (p,) in con.execute("""
+        SELECT producto FROM indicador_sensibilidad_clima
+        WHERE eslabon = 'oferta->precio' AND q_valor < 0.1 AND coeficiente < 0""").fetchall()]
+    productos_nino, quiebres_nino = con.execute("""
+        SELECT count(DISTINCT producto), count(DISTINCT producto) FILTER (q_valor < 0.1)
+        FROM indicador_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
+    con.close()
+
+    app = _abrir("efecto_clima")
+    pantalla = _textos(app) + _html(app)
+
+    assert f"{oni_hallazgos} de {oni_total}" in pantalla
+    assert oni_positivos == 0            # todas negativas: El Nino seca
+    minusculas = pantalla.lower()
+    for producto, departamento, rezago in lluvia_precio:
+        assert producto.replace("*", "").strip().lower() in minusculas
+        assert departamento in pantalla
+        assert f"{rezago} meses" in pantalla
+    for producto in oferta_baja:
+        assert producto.split()[0].lower() in minusculas   # "Chócolo mazorca" -> "chócolo"
+    assert f"{quiebres_nino} de {productos_nino}" in pantalla
+    assert "correlación no es causalidad" in pantalla.lower()
+    # Trae la grafica de la cadena (antes pagina aparte).
+    assert any(t.label.startswith("La cadena") for t in app.tabs)
+    assert any(s.label == "Artículo" for s in app.selectbox)
