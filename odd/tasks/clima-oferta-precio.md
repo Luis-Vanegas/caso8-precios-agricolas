@@ -86,12 +86,12 @@ Problemas vistos en vivo por Claude 1: el Inicio es una columna larga de tarjeta
 6. **Pronóstico**: igual que hoy.
 7. **Cómo lo hicimos**: recorrido + calidad de datos + producción y comercio (FAO) como secciones.
 
-- [ ] C2-21 Componente `estilo.para_presentar(texto)`: un recuadro arriba de CADA página con 2-3 líneas en lenguaje simple: qué muestra y qué decir al presentar ("Si te preguntan…"). Que sirva de guion de memoria
-- [ ] C2-22 Inicio nuevo (punto 1). Toda tarjeta con número dice en palabras qué es, en la misma tarjeta (ej. "2,2 °C → el Pacífico está 2,2 °C más caliente de lo normal: hay El Niño")
-- [ ] C2-23 Fusiones de las páginas 2, 4 y 7 + menú de 7 páginas en `app/streamlit_app.py`
-- [ ] C2-24 Página nueva "¿Cuánto afecta el clima?" (punto 5)
-- [ ] C2-25 Revisar TODAS las unidades en pantalla: cada °C, %, mm o $ con su significado al lado. Nada de jerga (z, q, p, MAE) sin traducir
-- [ ] C2-26 `tests/test_app.py` con las 7 páginas; verificar en el navegador con capturas antes del PR
+- [x] C2-21 Componente `estilo.para_presentar(texto)`: un recuadro arriba de CADA página con 2-3 líneas en lenguaje simple: qué muestra y qué decir al presentar ("Si te preguntan…"). Que sirva de guion de memoria
+- [x] C2-22 Inicio nuevo (punto 1). Toda tarjeta con número dice en palabras qué es, en la misma tarjeta (ej. "2,2 °C → el Pacífico está 2,2 °C más caliente de lo normal: hay El Niño")
+- [x] C2-23 Fusiones de las páginas 2, 4 y 7 + menú de 7 páginas en `app/streamlit_app.py`
+- [x] C2-24 Página nueva "¿Cuánto afecta el clima?" (punto 5)
+- [x] C2-25 Revisar TODAS las unidades en pantalla: cada °C, %, mm o $ con su significado al lado. Nada de jerga (z, q, p, MAE) sin traducir
+- [ ] C2-26 `tests/test_app.py` con las 7 páginas; verificar en el navegador con capturas antes del PR (pruebas hechas; falta la verificación en el navegador, la hace Claude 2 desde la sesión principal)
 
 ## Cómo se integra
 1. Cada uno trabaja en su carpeta y su rama. Commits pequeños, Conventional Commits, sin atribución de IA.
@@ -132,6 +132,8 @@ Problemas vistos en vivo por Claude 1: el Inicio es una columna larga de tarjeta
   - Antes del PR, el rebase sobre `main` con C1-06 a C1-09 rompio `app/paginas/pronostico.py`: la tabla `pronostico_precio` quedo con `producto` + `horizonte` + `gana_al_ingenuo` en vez del `art_id`/`articulo` del contrato original. **La prueba de humo lo atrapo.** Adaptada (commit en el PR): tarjeta por horizonte, MAE en % y no en pesos, y cuando el modelo no gana se grafica el ingenuo diciendo que lo es. Verificado contra la tabla real: los 33 productos abren; el aviso sale en 19 y no en los 14 que ganan.
   - Con `indicador_sensibilidad_clima` ya en la base, la pagina de la cadena muestra lo medido por eslabon (efecto, rezago, q-valor) en vez de solo prometerlo. Solo los eslabones que cruzan por `art_id`/departamento; `lluvia->precio` se declara aparte porque uso los nombres de los precios diarios.
   - No pude correr `preparar.py` en mi carpeta: `data/raw/` no se versiona y solo existe en la de Claude 1. El pedido de rellenar `producto`/`grupo_dane`/`en_canasta` queda confirmado como trabajo de Claude 1 (ahora el catalogo ya esta en `main`).
+
+- 2026-10-10 (Claude 2): C2-21 a C2-25 hechas, C2-26 a medias (falta el navegador). Ruta: escritor delegado (más de 2 archivos no triviales). **De 14 a 7 páginas**: Inicio, Canasta, Mapa, Clima, ¿Cuánto afecta el clima?, Pronóstico, Cómo lo hicimos. Commits: `adc4ad0` (C2-21/22 inicio + `estilo.para_presentar`, `cifra`, `decimal`), `e56fa6c` (C2-23 fusiones: 7 páginas absorbidas pasan a `app/secciones/` como `mostrar()` en pestañas; la cadena pasa igual en C2-24), `962f453` (C2-24 página nueva), `806523e` (C2-25 unidades y jerga). Suite 188 en verde; `tests/test_app.py` 45 (las 7 páginas abren, se mueven sus controles, un solo guion "Para presentar" por página, ninguna palabra de jerga sin traducir en la misma frase). RED observado en C2-24 (la página no existía). Lo que muestran con la base real: Inicio (sep 2026) 7 de 33 productos con alerta, 22 de 33 más caros que en sep 2025 (mediana +15 %), 286 artículos de la canasta (151 de 282 subieron), ONI +2,2 °C; la tabla ya no repite el plátano (sale una vez, "Ibagué y 4 mercados más"). ¿Cuánto afecta el clima?: ONI→lluvia 27 de 56 (todas negativas, 6 de 8 zonas), tomate de Norte de Santander 3 meses (~7 % más barato por 1 mm/día más), chócolo y zanahoria 2 de 24 (10 % más toneladas → 0,4-0,5 % más barato), 0 de 33 quiebres al empezar El Niño (jun 2023); todo leído de la base. Hallazgo que se muestra y no estaba en el pedido: pimentón y remolacha salen al revés (más toneladas, precio un poco más alto, q≈0,095). Pendiente fuera de mi alcance: `docs/sensor_ideam.md` aún apunta a `app/paginas/sensor.py` (ahora `app/secciones/sensor.py`).
 
 ## Siguiente paso
 Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.
