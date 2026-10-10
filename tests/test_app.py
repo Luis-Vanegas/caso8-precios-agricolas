@@ -195,3 +195,41 @@ def test_el_huevo_se_mide_por_unidad_y_el_aceite_por_litro():
             assert fila["unidad"] == "unidad", fila
         if fila["articulo"].startswith("Aceite"):
             assert fila["unidad"] == "litro", fila
+
+
+# --- Mejoras de la revision en vivo (C2-17 a C2-20) ---
+
+BASE = RAIZ / "data" / "processed" / "caso8.duckdb"
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _textos(app) -> str:
+    """Todo el texto visible de una pagina simulada, en un solo string."""
+    partes = [e.value for e in list(app.markdown) + list(app.caption) + list(app.info)
+              + list(app.warning)]
+    return "\n".join(str(p) for p in partes)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_canasta_familiar_usa_el_precio_semanal_y_declara_su_periodo():
+    """C2-17: la canasta familiar (arroz, huevo, carnes...) sale del precio semanal.
+
+    El periodo cubierto se lee de la base, no se escribe a mano: la ventana del
+    DANE se mueve cada semana.
+    """
+    import duckdb
+
+    con = duckdb.connect(str(BASE), read_only=True)
+    desde, hasta = con.execute(
+        "SELECT min(semana_inicio), max(semana_inicio) FROM fact_precio_semanal WHERE en_canasta"
+    ).fetchone()
+    con.close()
+
+    pagina = APP / "paginas" / "canasta.py"
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+
+    assert any("canasta familiar" in t.label.lower() for t in app.tabs)
+    texto = _textos(app)
+    for dia in (desde, hasta):
+        assert f"{dia.day} {MESES[dia.month - 1]} {dia.year}" in texto

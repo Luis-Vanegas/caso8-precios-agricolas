@@ -406,6 +406,38 @@ def matriz_semaforo(matriz: pd.DataFrame, glifos: pd.DataFrame, detalle: pd.Data
     return fig
 
 
+def matriz_variacion(tabla: pd.DataFrame, etiquetas: list[str], detalle: pd.DataFrame) -> go.Figure:
+    """Matriz fila x mes pintada por la variacion % contra el mes anterior.
+
+    Igual que el mapa: escala divergente y simetrica alrededor de cero (azul =
+    bajo, rojo = subio, blanco = casi igual). Una celda sin dato queda vacia y
+    se ve el fondo, nunca un color que insinue "no cambio".
+    """
+    valores = tabla.to_numpy(dtype=float)
+    tope = max(5.0, float(np.nanmax(np.abs(valores)))) if np.isfinite(valores).any() else 5.0
+    # El numero va dentro de la celda: el color nunca va solo.
+    texto = tabla.map(lambda v: f"{v:+.0f}%" if pd.notna(v) else "")
+    fig = go.Figure(go.Heatmap(
+        z=valores, x=etiquetas, y=tabla.index.tolist(),
+        text=texto.values, texttemplate="%{text}", textfont=dict(size=11),
+        customdata=detalle.values,
+        hovertemplate="<b>%{y}</b><br>%{x}<br>%{customdata}<extra></extra>",
+        zmin=-tope, zmax=tope,
+        colorscale=[(0, AZUL), (0.5, "#FFFFFF"), (1, ROJO)],
+        colorbar=dict(title=dict(text="% frente al<br>mes anterior", side="right"),
+                      ticksuffix="%", thickness=14, outlinewidth=0),
+        xgap=2, ygap=2,
+    ))
+    fig.update_layout(
+        height=max(320, 26 * len(tabla) + 140),
+        xaxis=dict(side="top", tickangle=-45, gridcolor="rgba(0,0,0,0)", ticks=""),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=8, r=8, t=80, b=8),
+    )
+    return fig
+
+
 def barras_horizontales(df: pd.DataFrame, x: str, y: str, titulo: str, color: str = VERDE,
                         formato: str = ".0%") -> go.Figure:
     """Ranking simple: una barra por fila, ordenado de mayor a menor."""

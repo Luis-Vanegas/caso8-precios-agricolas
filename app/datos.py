@@ -277,6 +277,68 @@ def variacion_departamentos(art_id: int, periodo: int) -> pd.DataFrame:
     """)
 
 
+# --- Canasta familiar con el precio semanal ----------------------------------
+# Los precios diarios solo traen 33 productos (frutas y verduras). La canasta
+# familiar (arroz, huevo, pollo, carnes, aceite, panela, queso...) solo esta en
+# el precio semanal, marcada con `en_canasta` en el catalogo.
+
+
+def fecha_dia(dia) -> str:
+    """Timestamp -> '11 oct 2025'. Para declarar el periodo cubierto."""
+    meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+    return f"{dia.day} {meses[dia.month - 1]} {dia.year}"
+
+
+@st.cache_data(ttl=TTL)
+def cobertura_canasta() -> pd.Series:
+    """Primera y ultima semana, articulos y mercados de la canasta familiar.
+
+    Se lee de la base y no se escribe a mano: la ventana del DANE se corre
+    cada semana.
+    """
+    return consultar("""
+        SELECT min(semana_inicio) AS desde, max(semana_inicio) AS hasta,
+               count(DISTINCT art_id) AS articulos, count(DISTINCT mercado) AS mercados
+        FROM fact_precio_semanal
+        WHERE en_canasta
+    """).iloc[0]
+
+
+@st.cache_data(ttl=TTL)
+def variacion_canasta() -> pd.DataFrame:
+    """Variacion % mensual de cada articulo de la canasta familiar.
+
+    Paso a paso, igual que el mapa:
+    1. precio del mes de cada articulo en cada mercado (mediana de sus semanas);
+    2. variacion % de ese mercado contra el mes anterior del calendario;
+    3. la variacion del articulo es la mediana de las variaciones de sus mercados.
+    Nunca se promedian precios de mercados distintos (docs/contrato_datos.md).
+    """
+    anterior = _MES_ANTERIOR.format(p="a.periodo")
+    return consultar(f"""
+        WITH mensual AS (
+            SELECT art_id, mercado, periodo, median(precio) AS precio,
+                   any_value(articulo) AS articulo, any_value(grupo_dane) AS grupo_dane,
+                   any_value(unidad) AS unidad
+            FROM fact_precio_semanal
+            WHERE en_canasta
+            GROUP BY art_id, mercado, periodo
+        ), comparado AS (
+            SELECT a.art_id, a.articulo, a.grupo_dane, a.unidad, a.periodo,
+                   (a.precio / b.precio - 1) * 100 AS variacion
+            FROM mensual a
+            JOIN mensual b
+              ON a.art_id = b.art_id AND a.mercado = b.mercado AND b.periodo = {anterior}
+        )
+        SELECT art_id, any_value(articulo) AS articulo, any_value(grupo_dane) AS grupo_dane,
+               any_value(unidad) AS unidad, periodo,
+               count(*) AS mercados, median(variacion) AS variacion
+        FROM comparado
+        GROUP BY art_id, periodo
+        ORDER BY grupo_dane, articulo, periodo
+    """)
+
+
 # --- La cadena: lluvia -> toneladas -> precio --------------------------------
 
 
