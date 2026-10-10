@@ -74,6 +74,25 @@ Las 14 páginas cargan sin errores. Estas mejoras salen de recorrerlas con los d
 - [x] C2-19 "La cadena": el precio sale del semanal (13 meses) y solo coincide 7 meses con lluvia y toneladas. Cuando el artículo tiene par exacto en el precio diario (ver `sensibilidad.mapa_articulos`, 24 productos, p. ej. Papa criolla, Cebolla junca, Zanahoria), usar la serie mensual de `fact_precio_mayorista` desde 2020: ~50 meses de cruce en vez de 7
 - [x] C2-20 "Pronóstico": la línea del precio real une 2020 con 2022 con una recta a través del hueco de 2021. Cortarla en el hueco (regla 4 del proyecto: un hueco se declara, no se rellena; el semáforo ya lo hace bien)
 
+### Rediseño para presentar (pedido del usuario 2026-10-10)
+Problemas vistos en vivo por Claude 1: el Inicio es una columna larga de tarjetas rojas con el mismo producto repetido (plátano hartón verde 3 veces, una por mercado) y jerga (`z = +2.9`); su mapa de puntos casi no se ve; dice "vigilamos 33 productos" cuando la canasta ya tiene 286. En "Clima y El Niño" las tarjetas `2,2 °C` y `0,5 °C` no dicen qué son. Son 14 páginas que se pisan (2 semáforos, 2 de clima, 3 de "cómo lo hicimos"). Y lo más grave: `indicador_sensibilidad_clima` e `indicador_quiebres` NO tienen página, y son la respuesta al reto.
+
+**Estructura nueva: de 14 a 7 páginas** (no se borra código útil: se fusiona)
+1. **Inicio**: qué pasó este mes en 4 números + una tabla corta (máx. 5 filas) de lo que más se movió, UNA fila por producto (no por mercado), con flecha, % y dónde. Sin `z`. Sin el mapa de puntos (el mapa vive en su página). Absorbe "Lo que va de 2026" y "Semáforo de alertas".
+2. **Canasta**: semáforo por grupo DANE + al elegir un artículo, su detalle (absorbe "Detalle por producto").
+3. **Mapa**: igual que hoy.
+4. **Clima**: clima de hoy + El Niño en una página (absorbe "Clima hoy" y "Clima y El Niño"; el sensor IDEAM va como sección).
+5. **¿Cuánto afecta el clima?** NUEVA: lee `indicador_sensibilidad_clima` (solo `q_valor < 0,1`) y `indicador_quiebres`, + la gráfica de "La cadena". Mensajes: El Niño seca las zonas (27/56); el tomate reacciona a la lluvia con 3 meses de rezago; más oferta de chócolo y zanahoria baja su precio; no hubo un "quiebre" de precios al empezar El Niño.
+6. **Pronóstico**: igual que hoy.
+7. **Cómo lo hicimos**: recorrido + calidad de datos + producción y comercio (FAO) como secciones.
+
+- [ ] C2-21 Componente `estilo.para_presentar(texto)`: un recuadro arriba de CADA página con 2-3 líneas en lenguaje simple: qué muestra y qué decir al presentar ("Si te preguntan…"). Que sirva de guion de memoria
+- [ ] C2-22 Inicio nuevo (punto 1). Toda tarjeta con número dice en palabras qué es, en la misma tarjeta (ej. "2,2 °C → el Pacífico está 2,2 °C más caliente de lo normal: hay El Niño")
+- [ ] C2-23 Fusiones de las páginas 2, 4 y 7 + menú de 7 páginas en `app/streamlit_app.py`
+- [ ] C2-24 Página nueva "¿Cuánto afecta el clima?" (punto 5)
+- [ ] C2-25 Revisar TODAS las unidades en pantalla: cada °C, %, mm o $ con su significado al lado. Nada de jerga (z, q, p, MAE) sin traducir
+- [ ] C2-26 `tests/test_app.py` con las 7 páginas; verificar en el navegador con capturas antes del PR
+
 ## Cómo se integra
 1. Cada uno trabaja en su carpeta y su rama. Commits pequeños, Conventional Commits, sin atribución de IA.
 2. Antes de abrir un PR: `git fetch origin` + `git rebase origin/main` + `pytest` en verde.
