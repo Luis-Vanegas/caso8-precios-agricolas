@@ -45,7 +45,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 ## Tareas de Claude 2 (app, diseño y herramientas)
 - [x] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
 - [x] C2-02 `config/catalogo_articulos.csv` desde `data/openrefine/catalogo_sipsa_crudo.csv`: OpenRefine propone `producto` (clustering), una persona revisa cada grupo con las reglas de la sección "Jerarquía" de `docs/contrato_datos.md`; se completan `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`. JSON en `data/openrefine/` + guía actualizada
-- [ ] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
+- [x] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
 - [x] C2-04 Página "Semáforo de la canasta": matriz producto × periodo con los datos que ya existen
 - [ ] C2-05 Página "Mapa": departamentos coloreados por **variación %** del precio (nunca por nivel: la misma "papa" es otra variedad en cada ciudad), con `dim_mercado` + GeoJSON
 - [ ] C2-06 Página "Clima hoy": lee `fact_clima_diario` y `fact_pronostico_estacional` (aviso si aún no existen)
@@ -76,6 +76,9 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - 2026-10-09 (Claude 2): C2-02 hecha (commit b05f1f0). `config/catalogo_articulos.csv` con 448 articulos en 171 productos, los 8 grupos DANE, unidad y `distingue_por`. Receta en `data/openrefine/receta_catalogo_articulos.json` y Parte 2 de `docs/guia_openrefine.md` para la revision humana (pendiente: que el equipo corra OpenRefine y exporte `catalogo_articulos_revisado.json`). 111 pruebas en verde. Dos errores encontrados y corregidos al generarlo: agrupar por la primera palabra metia las 5 papayas en "Papa", y el criterio suelto de `en_canasta` dejaba fuera al tomate de arbol (46 mercados); ahora entra por presencia (>= 20 mercados). Siguiente: C2-04 (semaforo de la canasta) o C2-03 (GeoJSON).
 
 - 2026-10-09 (Claude 2): C2-04 hecha (commit ab82c29). Pagina `app/paginas/canasta.py`: matriz producto x periodo, celda = peor alerta entre los mercados del producto (nunca promedio de precios), hueco de SIPSA incluido vacio. Calculo en `datos.matriz_canasta` y dibujo en `graficas.matriz_semaforo`. 112 pruebas en verde. Un error encontrado al verificar: `cuantas` solo traia los productos que se encendieron alguna vez, asi que un rango sin alertas para algun producto reventaba con KeyError; la prueba de humo no lo detecto porque el rango por defecto si los tenia todos. Ajuste de `DESIGN.md`: celda sin dato blanca y sin texto "s/d". Pendiente: verificacion visual en el navegador (puerto 8502) por una persona.
+
+- 2026-10-09 (Claude 2): rebase sobre `origin/main` con C1-05 fusionado, sin conflictos. 137 pruebas en verde; verificado en la base: `fact_abastecimiento` 164.274, `fact_precio_semanal` 230.310, `fact_clima_diario` 19.912, `fact_pronostico_estacional` 40, y `dim_mercado` ya trae `dpto_codigo`.
+- 2026-10-09 (Claude 2): C2-03 hecha (commit 6a74a1d). `config/geo/colombia_departamentos.geojson` (gist de John Guerra, 33 features, 1,5 MB) + `docs/fuentes_app.md`. Verificado contra el archivo real: los 33 codigos `DPTO` calzan exactamente con `config/departamentos.csv`, pero 3 de los 33 nombres no (Bogota, Narino, San Andres), asi que el mapa une por codigo. El gist **no declara licencia**: queda anotada la ruta al MGN del DANE como alternativa oficial si el curso la exige. Siguiente: C2-05 (mapa) o C2-06 (clima hoy), que ya tienen sus tablas en la base.
 
 ## Siguiente paso
 Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.
