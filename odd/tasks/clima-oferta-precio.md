@@ -59,12 +59,12 @@ Objetivo: que un integrante que abre el repo sepa en 1 minuto dónde está cada 
 
 **Regla: NO renombrar** carpetas ni archivos de código o datos (`src/`, `src/acquisition/`, `data/raw/`, `data/interim/`, `data/processed/`, `config/*.csv`, módulos y nombres de Python). De esos nombres dependen los imports, las 170 pruebas y el pipeline; en código se queda el inglés técnico. Lo que se agrega en español es una capa de navegación encima.
 
-- [ ] C2-11 `README.md`: sección "¿Dónde está cada cosa?" al principio (tabla carpeta → qué hay → cuándo abrirla), incluyendo dónde está la base (`data/processed/caso8.duckdb`), cómo abrirla y los comandos de `scripts/diario.py`
-- [ ] C2-12 Un `LEEME.md` corto (5-15 líneas, en español) en cada carpeta de primer nivel y en `data/`, `src/` y `docs/`: qué hay, qué NO tocar (ej. `data/raw` es inmutable) y a dónde ir después. En `src/` traducir los nombres: acquisition = adquisición, cleaning = limpieza, integration = integración, indicators = indicadores, profiling = perfilado
-- [ ] C2-13 Carpeta `documentos/` para material humano, con `LEEME.md` en cada subcarpeta: `articulos/` (PDF de referencia; mover ahí el de Malau 2021 si su licencia lo permite: es acceso abierto CC BY 3.0), `curso/` (guía AE2 y rúbricas), `presentaciones/`, `informe/` (borradores del equipo; recordar que el informe lo redacta el equipo). Sumar a `.gitignore` los PDF de más de 10 MB si los hubiera
-- [ ] C2-14 `docs/LEEME.md`: índice de los 17 documentos agrupados (guías para el equipo / técnicos / sustentación). NO mover los archivos de `docs/`: el código y otros documentos los citan por su ruta
-- [ ] C2-15 Glosario en `documentos/LEEME.md` o en el `README.md`: raw, interim, processed, fact, dim, puente, backtest, q-valor, art_id, fuen_id, ENSO/ONI, en una línea cada uno
-- [ ] C2-16 Verificar: `pytest` en verde, la app abre, y ningún enlace de los documentos nuevos apunta a un archivo inexistente
+- [x] C2-11 `README.md`: sección "¿Dónde está cada cosa?" al principio (tabla carpeta → qué hay → cuándo abrirla), incluyendo dónde está la base (`data/processed/caso8.duckdb`), cómo abrirla y los comandos de `scripts/diario.py`
+- [x] C2-12 Un `LEEME.md` corto (5-15 líneas, en español) en cada carpeta de primer nivel y en `data/`, `src/` y `docs/`: qué hay, qué NO tocar (ej. `data/raw` es inmutable) y a dónde ir después. En `src/` traducir los nombres: acquisition = adquisición, cleaning = limpieza, integration = integración, indicators = indicadores, profiling = perfilado
+- [x] C2-13 Carpeta `documentos/` para material humano, con `LEEME.md` en cada subcarpeta: `articulos/` (PDF de referencia; mover ahí el de Malau 2021 si su licencia lo permite: es acceso abierto CC BY 3.0), `curso/` (guía AE2 y rúbricas), `presentaciones/`, `informe/` (borradores del equipo; recordar que el informe lo redacta el equipo). Sumar a `.gitignore` los PDF de más de 10 MB si los hubiera
+- [x] C2-14 `docs/LEEME.md`: índice de los 17 documentos agrupados (guías para el equipo / técnicos / sustentación). NO mover los archivos de `docs/`: el código y otros documentos los citan por su ruta
+- [x] C2-15 Glosario en `documentos/LEEME.md` o en el `README.md`: raw, interim, processed, fact, dim, puente, backtest, q-valor, art_id, fuen_id, ENSO/ONI, en una línea cada uno
+- [x] C2-16 Verificar: `pytest` en verde, la app abre, y ningún enlace de los documentos nuevos apunta a un archivo inexistente
 
 ## Cómo se integra
 1. Cada uno trabaja en su carpeta y su rama. Commits pequeños, Conventional Commits, sin atribución de IA.
