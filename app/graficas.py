@@ -191,6 +191,36 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     return fig
 
 
+def mapa_departamentos(variacion: pd.DataFrame, geojson: dict) -> go.Figure:
+    """Departamentos coloreados por variacion % del precio, contra el mes anterior.
+
+    La escala es divergente y **simetrica alrededor de cero**: si no lo fuera, un
+    mismo color significaria "subio" en un mes y "bajo" en otro. Azul = bajo,
+    rojo = subio, blanco = sin cambio.
+
+    Un departamento sin dato no se dibuja: queda el fondo del mapa. Nunca se
+    pinta de un color de la escala, que insinuaria "sin cambio".
+    """
+    # El limite lo fija el departamento que mas se movio, con un piso de 5 % para
+    # que un mes tranquilo no se vea como una crisis de colores.
+    tope = max(5.0, float(variacion["variacion"].abs().max() or 0))
+    fig = go.Figure(go.Choropleth(
+        geojson=geojson, locations=variacion["dpto_codigo"], featureidkey="properties.DPTO",
+        z=variacion["variacion"],
+        customdata=np.stack([variacion["departamento"], variacion["mercados"]], axis=-1),
+        hovertemplate=("<b>%{customdata[0]}</b><br>%{z:+.1f}% frente al mes anterior"
+                       "<br>mediana de %{customdata[1]} mercado(s)<extra></extra>"),
+        zmin=-tope, zmax=tope,
+        colorscale=[(0, AZUL), (0.5, "#FFFFFF"), (1, ROJO)],
+        marker_line_color=BORDE, marker_line_width=0.6,
+        colorbar=dict(title=dict(text="% frente al<br>mes anterior", side="right"),
+                      ticksuffix="%", thickness=14, len=0.8, outlinewidth=0),
+    ))
+    fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(height=620, margin=dict(l=0, r=0, t=10, b=0), dragmode=False)
+    return fig
+
+
 def matriz_semaforo(matriz: pd.DataFrame, glifos: pd.DataFrame, detalle: pd.DataFrame,
                     etiquetas: list[str]) -> go.Figure:
     """Matriz producto x periodo: una celda por mes, pintada con su estado.

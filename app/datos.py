@@ -194,6 +194,98 @@ def _detalle(severidad, encendidas, mercados, nombre: dict) -> str:
     return texto
 
 
+# --- Mapa por departamento ---------------------------------------------------
+# El mapa colorea por VARIACION %, nunca por nivel de precio: la misma "papa" es
+# otra variedad en cada ciudad, asi que comparar niveles entre departamentos
+# compara cosas distintas (regla 4 de docs/contrato_datos.md).
+
+# Un articulo que se vende en 2 departamentos o menos no va al mapa: con dos
+# puntos no hay nada que leer geograficamente (regla 6 del contrato).
+MINIMO_DEPARTAMENTOS = 3
+
+# El mes anterior en el calendario. En enero hay que saltar a diciembre del anio
+# pasado: 202601 - 89 = 202512. Nunca se usa la fila anterior de la tabla.
+_MES_ANTERIOR = "CASE WHEN {p} % 100 = 1 THEN {p} - 89 ELSE {p} - 1 END"
+
+_PRECIO_MENSUAL = """
+    SELECT art_id, articulo, dpto_codigo, departamento, mercado, periodo,
+           median(precio) AS precio, any_value(unidad) AS unidad
+    FROM fact_precio_semanal
+    GROUP BY art_id, articulo, dpto_codigo, departamento, mercado, periodo
+"""
+
+
+@st.cache_data(ttl=TTL)
+def articulos_del_mapa() -> pd.DataFrame:
+    """Articulos que aparecen en suficientes departamentos para dibujar un mapa."""
+    return consultar(f"""
+        SELECT art_id, any_value(articulo) AS articulo, any_value(unidad) AS unidad,
+               count(DISTINCT dpto_codigo) AS departamentos
+        FROM fact_precio_semanal
+        GROUP BY art_id
+        HAVING count(DISTINCT dpto_codigo) >= {MINIMO_DEPARTAMENTOS}
+        ORDER BY articulo
+    """)
+
+
+# Un mes de SIPSA semanal trae 4 o 5 semanas. Con menos, el mes todavia no
+# termino y su promedio no es comparable contra un mes completo.
+SEMANAS_MES_COMPLETO = 4
+
+
+@st.cache_data(ttl=TTL)
+def periodos_semanal() -> pd.DataFrame:
+    """Meses de los precios semanales, del mas nuevo al mas viejo, con `parcial`.
+
+    Se excluye el mes mas viejo: sin el mes anterior no hay variacion que mostrar.
+    """
+    df = consultar("""
+        SELECT periodo, count(DISTINCT semana_inicio) AS semanas
+        FROM fact_precio_semanal
+        GROUP BY periodo ORDER BY periodo
+    """)
+    df = df.iloc[1:].copy()
+    df["parcial"] = df["semanas"] < SEMANAS_MES_COMPLETO
+    return df.sort_values("periodo", ascending=False).reset_index(drop=True)
+
+
+@st.cache_data(ttl=TTL)
+def variacion_departamentos(art_id: int, periodo: int) -> pd.DataFrame:
+    """Variacion % del precio de un articulo por departamento, contra el mes anterior.
+
+    Un departamento puede tener varios mercados (Antioquia tiene 11). El valor
+    del departamento es la **mediana de las variaciones %** de sus mercados, no
+    el promedio de sus precios: promediar precios de mercados distintos esta
+    prohibido por el contrato de datos.
+    """
+    anterior = _MES_ANTERIOR.format(p="a.periodo")
+    return consultar(f"""
+        WITH mensual AS ({_PRECIO_MENSUAL}),
+        comparado AS (
+            SELECT a.dpto_codigo, a.departamento, a.mercado, a.unidad,
+                   (a.precio / b.precio - 1) * 100 AS variacion
+            FROM mensual a
+            JOIN mensual b
+              ON a.art_id = b.art_id AND a.mercado = b.mercado AND b.periodo = {anterior}
+            WHERE a.art_id = {int(art_id)} AND a.periodo = {int(periodo)}
+        )
+        SELECT dpto_codigo, departamento, any_value(unidad) AS unidad,
+               count(*) AS mercados, median(variacion) AS variacion
+        FROM comparado
+        GROUP BY dpto_codigo, departamento
+        ORDER BY variacion DESC
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def geojson_departamentos() -> dict:
+    """Geometria de los 33 departamentos. La llave es `DPTO` (codigo DANE)."""
+    import json
+
+    ruta = CONFIG / "geo" / "colombia_departamentos.geojson"
+    return json.loads(ruta.read_text(encoding="utf-8"))
+
+
 @st.cache_data(ttl=TTL)
 def mercados_geo() -> pd.DataFrame:
     """Coordenadas aproximadas (centro urbano) de cada mercado, para el mapa."""
