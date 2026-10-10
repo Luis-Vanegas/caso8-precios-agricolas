@@ -322,6 +322,34 @@ def departamentos_cadena(art_id: int) -> pd.DataFrame:
     """)
 
 
+# Un hallazgo se declara con q < 0,10. El q-valor ya corrige por haber probado
+# muchas parejas: con 140 pruebas, algunos p pequenos salen por azar.
+UMBRAL_Q = 0.10
+
+
+@st.cache_data(ttl=TTL)
+def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
+    """Lo que midieron los indicadores para este articulo y departamento.
+
+    Solo los eslabones que se pueden cruzar sin inventar correspondencias:
+    `oferta->precio` y `lluvia->oferta` van por `art_id`, y `oni->lluvia` por
+    departamento. El eslabon `lluvia->precio` se calculo sobre los nombres de
+    los precios diarios, que usan otros codigos, asi que no se cruza por art_id.
+    """
+    if not tabla_existe("indicador_sensibilidad_clima"):
+        return pd.DataFrame()
+    dpto = departamento.replace("'", "''")
+    return consultar(f"""
+        SELECT eslabon, variable, rezago_meses, coeficiente, p_valor, q_valor, n, metodo
+        FROM indicador_sensibilidad_clima
+        WHERE (eslabon = 'oferta->precio' AND art_id = {int(art_id)})
+           OR (eslabon = 'lluvia->oferta' AND art_id = {int(art_id)}
+               AND departamento = '{dpto}')
+           OR (eslabon = 'oni->lluvia' AND departamento = '{dpto}')
+        ORDER BY q_valor
+    """)
+
+
 @st.cache_data(ttl=TTL)
 def cadena(art_id: int, dpto_codigo: str) -> pd.DataFrame:
     """Lluvia, toneladas y precio del mismo articulo y departamento, mes por mes.

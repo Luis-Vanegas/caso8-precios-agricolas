@@ -8,7 +8,8 @@ import streamlit as st
 
 import estilo
 import graficas
-from datos import articulos_cadena, cadena, departamentos_cadena, fecha, tabla_existe
+from datos import (UMBRAL_Q, articulos_cadena, cadena, departamentos_cadena, fecha,
+                   sensibilidad_cadena, tabla_existe)
 
 estilo.aplicar()
 estilo.encabezado(
@@ -105,5 +106,64 @@ st.caption(
     "encima del hueco: SIPSA no publicó entre enero de 2021 y enero de 2022, y ese vacío es "
     "parte del resultado."
 )
+
+# --- Lo que midieron los indicadores -----------------------------------------
+st.subheader("¿Y esto se midió, o es solo mirar la gráfica?")
+
+medido = sensibilidad_cadena(art_id, nombres[codigo])
+
+if medido.empty:
+    st.info(
+        "Para esta combinación no hay ninguna medición en `indicador_sensibilidad_clima`. "
+        "La gráfica de arriba sirve para explorar, no para concluir."
+    )
+else:
+    ESLABON = {
+        "oni->lluvia": "El Niño / La Niña → lluvia en la zona",
+        "lluvia->oferta": "lluvia → toneladas que llegan",
+        "oferta->precio": "toneladas que llegan → precio",
+    }
+    tabla = medido.assign(
+        eslabon=medido["eslabon"].map(ESLABON).fillna(medido["eslabon"]),
+        hallazgo=medido["q_valor"] < UMBRAL_Q,
+    )
+    hallazgos = int(tabla["hallazgo"].sum())
+
+    st.dataframe(
+        tabla[["eslabon", "rezago_meses", "coeficiente", "q_valor", "n", "hallazgo", "metodo"]],
+        column_config={
+            "eslabon": "Eslabón",
+            "rezago_meses": st.column_config.NumberColumn("Rezago (meses)", format="%d"),
+            "coeficiente": st.column_config.NumberColumn("Efecto estimado", format="%+.4f"),
+            "q_valor": st.column_config.NumberColumn("q-valor", format="%.4f"),
+            "n": st.column_config.NumberColumn("Meses usados", format="%d"),
+            "hallazgo": st.column_config.CheckboxColumn("¿Se sostiene?"),
+            "metodo": "Método",
+        },
+        width="stretch", hide_index=True,
+        height=min(420, 36 * (len(tabla) + 1) + 3),
+    )
+
+    if hallazgos:
+        st.caption(
+            f"**{hallazgos} de {len(tabla)}** relaciones se sostienen estadísticamente "
+            f"(q < {UMBRAL_Q:g}). El **signo** del efecto dice la dirección: negativo en "
+            "«toneladas → precio» significa que cuando llega más producto, el precio baja, que es "
+            "lo que uno esperaría. El **rezago** es cuántos meses después aparece el efecto."
+        )
+    else:
+        st.caption(
+            f"**Ninguna de las {len(tabla)} relaciones se sostiene** con q < {UMBRAL_Q:g}. "
+            "Dicho claro: para este artículo y departamento, los datos **no alcanzan** para "
+            "afirmar que el clima mueva el precio. Es un resultado válido y hay que reportarlo "
+            "así, no buscar otro corte hasta que algo dé significativo."
+        )
+
+    st.caption(
+        "El **q-valor** no es el p-valor: corrige por haber probado muchas parejas a la vez. "
+        "Con 140 pruebas, unos cuantos p pequeños aparecen por puro azar, y el q descuenta eso. "
+        "El eslabón «lluvia → precio» se calculó sobre los nombres de los precios diarios, que "
+        "usan otros códigos, así que no aparece acá."
+    )
 
 estilo.pie()
