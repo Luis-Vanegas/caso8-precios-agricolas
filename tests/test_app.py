@@ -233,3 +233,31 @@ def test_la_canasta_familiar_usa_el_precio_semanal_y_declara_su_periodo():
     texto = _textos(app)
     for dia in (desde, hasta):
         assert f"{dia.day} {MESES[dia.month - 1]} {dia.year}" in texto
+
+
+def test_el_mapa_dibuja_los_33_departamentos_y_los_sin_dato_en_gris():
+    """C2-18: un departamento sin dato se dibuja gris, con leyenda "sin dato".
+
+    Si no se dibuja, Colombia se ve recortada. No usa la base: arma la figura con
+    dos departamentos inventados y el GeoJSON real.
+    """
+    import json
+
+    import pandas as pd
+
+    import graficas
+
+    geo = json.loads((RAIZ / "config" / "geo" / "colombia_departamentos.geojson")
+                     .read_text(encoding="utf-8"))
+    variacion = pd.DataFrame({"dpto_codigo": ["05", "11"], "departamento": ["Antioquia", "Bogota"],
+                              "mercados": [11, 4], "variacion": [3.2, -1.5]})
+    fig = graficas.mapa_departamentos(variacion, geo)
+
+    dibujados = set()
+    for traza in fig.data:
+        dibujados |= set(traza.locations)
+    assert len(dibujados) == 33
+
+    grises = [t for t in fig.data if t.name == "sin dato"]
+    assert len(grises) == 1 and grises[0].showlegend
+    assert set(grises[0].locations).isdisjoint({"05", "11"})

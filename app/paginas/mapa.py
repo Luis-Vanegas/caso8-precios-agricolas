@@ -86,8 +86,9 @@ estilo.fila_de_tarjetas([
 st.subheader(f"{articulo} · {fecha(periodo)}")
 estilo.grafica(graficas.mapa_departamentos(df, geojson_departamentos()))
 st.caption(
-    "**Rojo**: el precio subió. **Azul**: bajó. **Blanco**: casi no cambió. Un departamento sin "
-    "color no tiene dato de este artículo. Cuando un departamento tiene varios mercados "
+    "**Rojo**: el precio subió. **Azul**: bajó. **Blanco**: casi no cambió. **Gris claro**: "
+    "sin dato; ese departamento no tiene mercado que venda este artículo, o le falta el mes "
+    "anterior para comparar. Se dibuja igual para que el mapa muestre el país completo. Cuando un departamento tiene varios mercados "
     "(Antioquia tiene 11), el valor es la **mediana** de sus variaciones, nunca el promedio de "
     "sus precios. Pasá el mouse para ver el dato exacto."
 )
