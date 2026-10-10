@@ -118,13 +118,59 @@ CHEQUEOS: dict[str, str] = {
                              AND c.anio = f.anio AND c.mes = f.mes
         )
     """,
+    # El mapa une por codigo DANE: un mercado sin codigo queda fuera del mapa.
+    "mercado_sin_codigo_de_departamento": """
+        SELECT mercado FROM dim_mercado WHERE dpto_codigo IS NULL
+    """,
+}
+
+
+# Chequeos de las tablas nuevas (fase clima -> oferta -> precio). Como esas tablas
+# son opcionales en el modelo, cada chequeo corre solo si su tabla existe.
+CHEQUEOS_OPCIONALES: dict[str, tuple[str, str]] = {
+    "semanal_clave_duplicada": ("fact_precio_semanal", """
+        SELECT art_id, fuen_id, semana_inicio FROM fact_precio_semanal
+        GROUP BY ALL HAVING count(*) > 1
+    """),
+    "semanal_unidad_invalida": ("fact_precio_semanal", """
+        SELECT DISTINCT unidad FROM fact_precio_semanal
+        WHERE unidad IS NULL OR unidad NOT IN ('kg', 'unidad', 'litro')
+    """),
+    # Metodologia SIPSA-P: el huevo va por unidad. Marcarlo kg lo leeria mil veces mal.
+    "semanal_huevo_que_no_va_por_unidad": ("fact_precio_semanal", """
+        SELECT DISTINCT articulo FROM fact_precio_semanal
+        WHERE lower(articulo) LIKE 'huevo%' AND unidad <> 'unidad'
+    """),
+    "semanal_precio_no_positivo": ("fact_precio_semanal", """
+        SELECT art_id, fuen_id, semana_inicio FROM fact_precio_semanal WHERE precio <= 0
+    """),
+    "semanal_sin_departamento": ("fact_precio_semanal", """
+        SELECT DISTINCT fuen_id FROM fact_precio_semanal WHERE dpto_codigo IS NULL
+    """),
+    "abastecimiento_clave_duplicada": ("fact_abastecimiento", """
+        SELECT art_id, fuen_id, anio, mes FROM fact_abastecimiento
+        GROUP BY ALL HAVING count(*) > 1
+    """),
+    "abastecimiento_toneladas_negativas": ("fact_abastecimiento", """
+        SELECT art_id, fuen_id, periodo FROM fact_abastecimiento WHERE toneladas < 0
+    """),
+    "clima_diario_sin_codigo": ("fact_clima_diario", """
+        SELECT DISTINCT departamento FROM fact_clima_diario WHERE dpto_codigo IS NULL
+    """),
+    "estacional_percentiles_desordenados": ("fact_pronostico_estacional", """
+        SELECT departamento, periodo FROM fact_pronostico_estacional
+        WHERE NOT (precip_p10 <= precip_p50 AND precip_p50 <= precip_p90)
+    """),
 }
 
 
 def correr_chequeos(con: duckdb.DuckDBPyConnection) -> dict[str, Resultado]:
     """Corre todos los chequeos y devuelve el resultado de cada uno."""
     salida: dict[str, Resultado] = {}
-    for nombre, consulta in CHEQUEOS.items():
+    existentes = {fila[0] for fila in con.execute("SELECT table_name FROM duckdb_tables()").fetchall()}
+    a_correr = dict(CHEQUEOS)
+    a_correr.update({n: sql for n, (tabla, sql) in CHEQUEOS_OPCIONALES.items() if tabla in existentes})
+    for nombre, consulta in a_correr.items():
         try:
             filas = con.execute(consulta).fetchall()
         except duckdb.Error as exc:
