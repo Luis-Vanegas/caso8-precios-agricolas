@@ -411,3 +411,16 @@ Llamadas reales al mismo endpoint HTTPS de SIPSA (SOAP 1.2, sin argumentos).
 - **Unidades:** aunque el campo se llame `promedioKg`, el huevo y el bocadillo van por unidad, y el aceite, el jugo y el vinagre por litro (Metodología SIPSA-P, p. 16). Ejemplo: huevo rojo AA, mediana de 456 pesos (precio de un huevo).
 - **Ventana del semanal:** el servicio solo devuelve las últimas ~51 semanas; para tener historia hay que guardar cada descarga.
 - **Abastecimiento sin origen:** dice a qué central llegó el alimento, no de qué departamento salió.
+
+## Open-Meteo — verificado el 2026-10-09
+
+Sin token. Un punto por departamento productor (coordenadas de `config/zonas_productoras.json`). Variables diarias `precipitation_sum` (mm), `temperature_2m_max` y `temperature_2m_min` (°C), `timezone=America/Bogota`.
+
+| Consulta | Endpoint | Resultado real (Tunja) |
+|---|---|---|
+| Observado | `archive-api.open-meteo.com/v1/archive` | 2473 días, 2020-01-01 a 2026-10-08 (ayer), 0 vacíos |
+| Pronóstico | `api.open-meteo.com/v1/forecast` | 16 días |
+| Estacional | `seasonal-api.open-meteo.com/v1/seasonal` | 183 días (2026-10-09 a 2027-04-09); serie base + 50 miembros (`precipitation_sum_member01` … `_member50`); 6 días vacíos al final |
+
+- La primera descarga completa (8 departamentos × 3 consultas = 24 archivos) trajo 19784 días observados (8 × 2473).
+- El primer día del estacional no coincide con el del pronóstico (19,7 vs. 8,8 mm en Tunja el 2026-10-09): son modelos distintos. El estacional sirve para meses, no para días.

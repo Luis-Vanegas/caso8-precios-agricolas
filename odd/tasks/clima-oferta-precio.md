@@ -33,7 +33,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 ## Tareas de Claude 1 (datos y estadística)
 - [x] C1-01 Adquisición `sipsa_abastecimiento.py` (método `promedioAbasSipsaMesMadr`) + fixture recortada + prueba
 - [x] C1-02 Adquisición `sipsa_semanal.py` (método `promediosSipsaSemanaMadr`) que acumula snapshots (la API solo da 12 meses)
-- [ ] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
+- [x] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
 - [x] C1-00 Catálogo crudo de 448 artículos por `art_id` con `unidad_sugerida` en `data/openrefine/catalogo_sipsa_crudo.csv` (excepción al reparto: lo genera Claude 1 una sola vez)
 - [ ] C1-04 Limpieza de las tres fuentes por `art_id` con columna `unidad` + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
 - [ ] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
@@ -61,6 +61,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
 
 ## Progreso y evidencia
+- 2026-10-09 C1-03 (inline): RED -> GREEN 5/5; suite 117 en verde; descarga real: 24 archivos, 19784 días observados hasta 2026-10-08.
 - 2026-10-09 C1-02 (inline): RED -> GREEN 3/3; suite 112 en verde; descarga real: 230312 filas, última semana 2026-10-03. La historia se acumula por carpetas diarias en `data/raw/sipsa_semanal/`.
 - 2026-10-09 C1-01 (inline, 1 módulo + prueba): RED (módulo inexistente) -> GREEN 3/3; suite 109 en verde; descarga real por `actualizar.py`: 164274 filas, último mes 2026-07, 3 llamadas idénticas (40033487 bytes).
 - 2026-10-09: investigación de variedades y unidades (ver "Jerarquía" en `docs/contrato_datos.md`); el catálogo pasa de nombres a `art_id`.
