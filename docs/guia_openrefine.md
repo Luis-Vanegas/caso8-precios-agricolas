@@ -149,6 +149,82 @@ Ese es el archivo que entra a Power Query en la Fase 3.
 
 ---
 
+## Parte 2 — Catálogo de artículos (448 artículos por `art_id`)
+
+Esta parte es independiente de la homologación con FAO y es la que alimenta
+`config/catalogo_articulos.csv`, el archivo que la app usa para agrupar precios.
+
+### Por qué existe
+
+Las fuentes nuevas (precios semanales y abastecimiento) publican **448 artículos**, no 33
+productos. "Papa capira", "Papa criolla limpia" y "Papa suprema" son tres artículos distintos
+del mismo producto, con precios distintos. Sin una tabla que diga cuál pertenece a cuál, la app
+termina promediando variedades, que es justo lo que `docs/contrato_datos.md` prohíbe.
+
+### El archivo de entrada y el borrador
+
+- Entrada: `data/openrefine/catalogo_sipsa_crudo.csv` (448 artículos con `unidad_sugerida`).
+- Borrador ya generado: `config/catalogo_articulos.csv`, con las columnas del contrato
+  (`producto`, `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`, `nota`).
+
+**El borrador es una propuesta, no la versión final.** Lo que se revisa a mano es la asignación
+de `producto` y `grupo_dane` artículo por artículo. El reto pide ver el criterio humano, y acá
+es donde está.
+
+### Las dos trampas que ya costaron un error
+
+1. **"Papaya" empieza por "Papa".** Agrupar por la primera palabra del nombre mete las cinco
+   papayas en el producto "Papa", grupo "Tubérculos". Pasó al generar el borrador y lo detectó
+   `test_no_se_agrupa_por_la_primera_palabra_del_nombre` en `tests/test_app.py`.
+2. **El tomate de árbol no es tomate.** Es una fruta, no una verdura, y es el artículo con más
+   mercados de todo el catálogo (46).
+
+Por eso la regla del borrador es **gana el nombre más específico**, nunca el más corto.
+
+### Pasos en OpenRefine
+
+1. `Create Project` → `This Computer` → `data/openrefine/catalogo_sipsa_crudo.csv`.
+   Encoding `UTF-8`; verificá que `Ahuyamín (Sakata)` y `Ñame criollo` se lean bien.
+2. Aplicá la receta `data/openrefine/receta_catalogo_articulos.json`
+   (`Undo / Redo` → `Apply...`). Agrega columnas de apoyo: `candidato_producto`,
+   `es_residual`, `es_animal_en_pie`, `en_canasta_por_presencia` y `cobertura`.
+   **No la ejecuté** (no tengo OpenRefine instalado): verificá que las seis operaciones pasen.
+3. Sobre `candidato_producto`: `Facet` → `Text facet` → `Cluster`, con
+   `key collision` + `fingerprint` y después `nearest neighbor` + `levenshtein` radio 2.
+   El clustering **propone** grupos; vos decidís. Ojo con los falsos positivos: `Papa`/`Papaya`,
+   `Limón`/`Limón mandarino`, `Mora`/`Mostaza`.
+4. Revisá primero los artículos con `cobertura = amplia` (los que mueven la app) y dejá para el
+   final los de `cobertura = minima`.
+5. Para cada grupo decidí `producto` y `grupo_dane` usando los 8 grupos oficiales de la sección
+   "Jerarquía de productos y unidades" de `docs/contrato_datos.md`. Si no estás de acuerdo con el
+   borrador, cambialo y escribí el motivo en `nota`.
+6. `Undo / Redo` → `Extract...` → guardá el JSON en
+   `data/openrefine/catalogo_articulos_revisado.json` (ese archivo se versiona).
+7. `Export` → `Comma-separated value` sobre `config/catalogo_articulos.csv`, conservando solo las
+   ocho columnas del contrato.
+
+### Antes de dar por cerrado el archivo
+
+```
+..\AdquiDatos\.venv\Scripts\python.exe -m pytest tests/test_app.py -q
+```
+
+Las pruebas del catálogo fallan si queda un `art_id` repetido, un grupo que no es de los 8, una
+unidad distinta de `kg`/`unidad`/`litro`, una papaya clasificada como papa, o un huevo medido
+en kilos.
+
+### Criterios del borrador, para que el equipo los acepte o los cambie
+
+| Columna | Cómo se decidió |
+|---|---|
+| `producto` | Nombre más específico que coincide con el del artículo, nunca la primera palabra |
+| `grupo_dane` | Los 8 grupos de la metodología SIPSA-P |
+| `unidad` | `unidad_sugerida` del archivo crudo (huevo y bocadillo por unidad; aceite, jugo y vinagre por litro) |
+| `distingue_por` | Qué separa al artículo de sus hermanos: `variedad`, `calidad`, `presentacion`, `origen`, `procesado` o `unico` |
+| `en_canasta` | `si` si el artículo se vende en **20 mercados o más**, o si la regla del producto ya lo marcaba. Quedan fuera las categorías residuales ("Frutas otras") y los animales en pie |
+
+---
+
 ## Si el mapeo cambia
 
 Si editás `config/homologacion_productos.csv`, corré esto para que la validación se ejecute

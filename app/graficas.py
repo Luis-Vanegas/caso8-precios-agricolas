@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TINTA, VERDE
+from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TIERRA, TINTA, VERDE
 from src.indicators.volatilidad import UMBRAL_AMARILLA, UMBRAL_ROJA
 
 
@@ -188,6 +188,221 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     for y in (0.5, -0.5):
         fig.add_hline(y=y, line_dash="dot", line_color=GRIS, line_width=1)
     fig.update_layout(title="Índice ONI (°C sobre lo normal)", height=360)
+    return fig
+
+
+def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
+    """Precio real, lo que el modelo habria dicho en el pasado, y el pronostico.
+
+    Espera las columnas de `pronostico_precio` (docs/contrato_datos.md):
+    `periodo`, `tipo` ('real', 'prueba' o 'pronostico'), `valor`, `lim_inf`,
+    `lim_sup`. La banda se dibuja primero para que quede detras de las lineas.
+
+    La serie `prueba` es la mas honesta de las tres: es lo que el modelo habria
+    pronosticado mes a mes en el pasado, asi que su distancia contra la linea
+    real se puede medir a ojo.
+    """
+    def _fechas(tipo):
+        parte = df[df["tipo"] == tipo]
+        if parte.empty:
+            return parte.assign(fecha=pd.Series(dtype="datetime64[ns]"))
+        return _con_fecha(parte.assign(anio=lambda d: d["periodo"] // 100,
+                                       mes=lambda d: d["periodo"] % 100))
+
+    real, prueba, pron = _fechas("real"), _fechas("prueba"), _fechas("pronostico")
+
+    fig = go.Figure()
+    if not pron.empty and pron["lim_sup"].notna().any():
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["lim_sup"], mode="lines",
+                                 line=dict(width=0), hoverinfo="skip", showlegend=False))
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["lim_inf"], mode="lines",
+                                 line=dict(width=0), fill="tonexty",
+                                 fillcolor="rgba(29,78,137,.15)", name="rango probable",
+                                 hoverinfo="skip"))
+    if not prueba.empty:
+        fig.add_trace(go.Scatter(x=prueba["fecha"], y=prueba["valor"], mode="lines",
+                                 name="lo que el modelo habría dicho",
+                                 line=dict(color=GRIS, width=1.4, dash="dot"),
+                                 connectgaps=False,
+                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (prueba)<extra></extra>"))
+    fig.add_trace(go.Scatter(x=real["fecha"], y=real["valor"], mode="lines", name="precio real",
+                             line=dict(color=TINTA, width=2), connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: $%{y:,.0f}<extra></extra>"))
+    if not pron.empty:
+        fig.add_trace(go.Scatter(x=pron["fecha"], y=pron["valor"], mode="lines+markers",
+                                 name="pronóstico", line=dict(color=AZUL, width=2.2, dash="dot"),
+                                 marker=dict(size=6),
+                                 hovertemplate="%{x|%b %Y}: $%{y:,.0f} (pronóstico)<extra></extra>"))
+        if not real.empty:
+            fig.add_vline(x=real["fecha"].max(), line_dash="dot", line_color=GRIS, line_width=1.2)
+
+    fig.update_layout(height=450, yaxis_title="precio (COP por kg)",
+                      legend=dict(orientation="h", y=-0.22))
+    return fig
+
+
+def cadena_lluvia_oferta_precio(cadena: pd.DataFrame, unidad: str = "kg") -> go.Figure:
+    """Tres paneles apilados con el mismo eje X: lluvia, toneladas y precio.
+
+    Comparten el eje de tiempo para poder leer en vertical: si un mes llovio
+    mucho, ver que paso con las toneladas y con el precio en ese mismo mes y en
+    los siguientes. Cada serie corta donde no tiene dato.
+    """
+    from plotly.subplots import make_subplots
+
+    c = _con_fecha(cadena.assign(anio=cadena["periodo"] // 100, mes=cadena["periodo"] % 100))
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=.06,
+                        subplot_titles=("Lluvia en la zona productora (mm al mes)",
+                                        "Toneladas que entraron a la central",
+                                        f"Precio (COP por {unidad})"))
+
+    fig.add_trace(go.Bar(x=c["fecha"], y=c["lluvia_mm"], marker_color=AZUL, opacity=.85,
+                         name="lluvia",
+                         hovertemplate="%{x|%b %Y}: %{y:.0f} mm<extra></extra>"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=c["fecha"], y=c["toneladas"], mode="lines+markers", name="toneladas",
+                             line=dict(color=TIERRA, width=2), marker=dict(size=4),
+                             connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: %{y:,.0f} t<extra></extra>"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=c["fecha"], y=c["precio"], mode="lines+markers", name="precio",
+                             line=dict(color=TINTA, width=2), marker=dict(size=5),
+                             connectgaps=False,
+                             hovertemplate="%{x|%b %Y}: $%{y:,.0f}<extra></extra>"), row=3, col=1)
+
+    fig.update_layout(height=700, showlegend=False, bargap=.15)
+    fig.update_yaxes(rangemode="tozero")
+    return fig
+
+
+def clima_dia_a_dia(clima: pd.DataFrame) -> go.Figure:
+    """Lluvia (barras, eje izquierdo) y temperatura (lineas, eje derecho).
+
+    Lo observado va solido y el pronostico punteado, con el mismo color: es la
+    misma variable medida de dos maneras, no dos variables distintas.
+    """
+    fig = go.Figure()
+    obs = clima[clima["tipo"] == "observado"]
+    pro = clima[clima["tipo"] == "pronostico"]
+
+    fig.add_trace(go.Bar(x=obs["fecha"], y=obs["precipitacion_mm"], name="lluvia observada",
+                         marker_color=AZUL, opacity=.85,
+                         hovertemplate="%{x|%d %b}: %{y:.1f} mm<extra></extra>"))
+    if not pro.empty:
+        # El pronostico va en el mismo azul pero translucido y con borde: una
+        # barra de contorno se lee como "estimado" sin cambiar de color.
+        fig.add_trace(go.Bar(x=pro["fecha"], y=pro["precipitacion_mm"], name="lluvia pronosticada",
+                             marker_color="rgba(29,78,137,.30)",
+                             marker_line=dict(color=AZUL, width=1),
+                             hovertemplate="%{x|%d %b}: %{y:.1f} mm (pronóstico)<extra></extra>"))
+
+    for df, guion, etiqueta in ((obs, "solid", "observada"), (pro, "dot", "pronosticada")):
+        if df.empty:
+            continue
+        fig.add_trace(go.Scatter(x=df["fecha"], y=df["temp_max"], yaxis="y2", mode="lines",
+                                 name=f"temp. máxima {etiqueta}",
+                                 line=dict(color=TIERRA, width=1.8, dash=guion),
+                                 hovertemplate="%{x|%d %b}: %{y:.1f} °C<extra></extra>"))
+        fig.add_trace(go.Scatter(x=df["fecha"], y=df["temp_min"], yaxis="y2", mode="lines",
+                                 name=f"temp. mínima {etiqueta}",
+                                 line=dict(color=TIERRA, width=1.1, dash=guion), opacity=.6,
+                                 hovertemplate="%{x|%d %b}: %{y:.1f} °C<extra></extra>"))
+
+    # Linea que separa lo medido de lo pronosticado.
+    if not pro.empty and not obs.empty:
+        fig.add_vline(x=pro["fecha"].min(), line_dash="dot", line_color=GRIS, line_width=1.2)
+
+    fig.update_layout(
+        height=420, barmode="overlay",
+        yaxis=dict(title="lluvia (mm)"),
+        yaxis2=dict(title="temperatura (°C)", overlaying="y", side="right",
+                    gridcolor="rgba(0,0,0,0)"),
+        legend=dict(orientation="h", y=-0.18),
+    )
+    return fig
+
+
+def lluvia_esperada(estacional: pd.DataFrame) -> go.Figure:
+    """Lluvia esperada por mes: banda p10-p90 y la mediana p50.
+
+    La banda dice que tan de acuerdo estan los miembros del ensamble: ancha es
+    poca certeza. Se dibuja la banda y no solo la linea para que eso se vea.
+    """
+    e = _con_fecha(estacional)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p90"], mode="lines", name="p90",
+                             line=dict(width=0), hoverinfo="skip", showlegend=False))
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p10"], mode="lines", name="rango probable",
+                             line=dict(width=0), fill="tonexty",
+                             fillcolor="rgba(29,78,137,.15)", hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=e["fecha"], y=e["precip_p50"], mode="lines+markers",
+                             name="lluvia esperada (mediana)",
+                             line=dict(color=AZUL, width=2.2, dash="dot"),
+                             hovertemplate="%{x|%b %Y}: %{y:.0f} mm<extra></extra>"))
+    fig.update_layout(height=360, yaxis_title="lluvia del mes (mm)",
+                      legend=dict(orientation="h", y=-0.2))
+    return fig
+
+
+def mapa_departamentos(variacion: pd.DataFrame, geojson: dict) -> go.Figure:
+    """Departamentos coloreados por variacion % del precio, contra el mes anterior.
+
+    La escala es divergente y **simetrica alrededor de cero**: si no lo fuera, un
+    mismo color significaria "subio" en un mes y "bajo" en otro. Azul = bajo,
+    rojo = subio, blanco = sin cambio.
+
+    Un departamento sin dato no se dibuja: queda el fondo del mapa. Nunca se
+    pinta de un color de la escala, que insinuaria "sin cambio".
+    """
+    # El limite lo fija el departamento que mas se movio, con un piso de 5 % para
+    # que un mes tranquilo no se vea como una crisis de colores.
+    tope = max(5.0, float(variacion["variacion"].abs().max() or 0))
+    fig = go.Figure(go.Choropleth(
+        geojson=geojson, locations=variacion["dpto_codigo"], featureidkey="properties.DPTO",
+        z=variacion["variacion"],
+        customdata=np.stack([variacion["departamento"], variacion["mercados"]], axis=-1),
+        hovertemplate=("<b>%{customdata[0]}</b><br>%{z:+.1f}% frente al mes anterior"
+                       "<br>mediana de %{customdata[1]} mercado(s)<extra></extra>"),
+        zmin=-tope, zmax=tope,
+        colorscale=[(0, AZUL), (0.5, "#FFFFFF"), (1, ROJO)],
+        marker_line_color=BORDE, marker_line_width=0.6,
+        colorbar=dict(title=dict(text="% frente al<br>mes anterior", side="right"),
+                      ticksuffix="%", thickness=14, len=0.8, outlinewidth=0),
+    ))
+    fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(height=620, margin=dict(l=0, r=0, t=10, b=0), dragmode=False)
+    return fig
+
+
+def matriz_semaforo(matriz: pd.DataFrame, glifos: pd.DataFrame, detalle: pd.DataFrame,
+                    etiquetas: list[str]) -> go.Figure:
+    """Matriz producto x periodo: una celda por mes, pintada con su estado.
+
+    Recibe las tres tablas ya armadas por `datos.matriz_canasta` (severidad,
+    glifo y texto del tooltip) para no mezclar calculo con dibujo.
+
+    La escala es categorica, no continua: 0 verde, 1 amarilla, 2 roja. Plotly
+    necesita los cortes en fracciones del rango, de ahi los tercios.
+    """
+    fig = go.Figure(go.Heatmap(
+        z=matriz.values, x=etiquetas, y=matriz.index.tolist(),
+        text=glifos.values, texttemplate="%{text}",
+        textfont=dict(size=13, color="white"),
+        customdata=detalle.values,
+        hovertemplate="<b>%{y}</b><br>%{x}<br>%{customdata}<extra></extra>",
+        zmin=0, zmax=2,
+        colorscale=[(0, VERDE), (1 / 3, VERDE), (1 / 3, AMARILLO), (2 / 3, AMARILLO),
+                    (2 / 3, ROJO), (1, ROJO)],
+        showscale=False,
+        xgap=2, ygap=2,
+    ))
+    # Un mes sin dato queda como hueco (z vacio): se ve el fondo blanco de la
+    # grafica, nunca un color que insinue "sin alerta".
+    fig.update_layout(
+        height=max(380, 24 * len(matriz) + 140),
+        xaxis=dict(side="top", tickangle=-60, gridcolor="rgba(0,0,0,0)", ticks=""),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=8, r=8, t=90, b=8),
+    )
     return fig
 
 

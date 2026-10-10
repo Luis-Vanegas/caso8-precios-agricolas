@@ -125,6 +125,319 @@ def ultimo_mes_cerrado() -> int:
     return int(consultar(f"SELECT max(periodo) AS p FROM fact_precio_mayorista {filtro}")["p"][0])
 
 
+SEVERIDAD = {"verde": 0, "amarilla": 1, "roja": 2}
+GLIFO = {0: "", 1: "●", 2: "▲"}
+
+
+@st.cache_data(ttl=TTL)
+def matriz_canasta(desde: int, hasta: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[str]]:
+    """Matriz producto x periodo con el estado del semaforo de cada mes.
+
+    Un producto se vende en varios mercados y cada mercado tiene su propia
+    alerta. La celda muestra la *peor* alerta del mes: un semaforo avisa por el
+    caso mas grave, no por el promedio. No se promedian precios de mercados
+    distintos (lo prohibe docs/contrato_datos.md).
+
+    Devuelve (severidad, glifos, detalle, etiquetas):
+    - severidad: 0 verde, 1 amarilla, 2 roja, vacio si el mes no tiene dato
+    - glifos:    el signo que acompana al color (el color nunca va solo)
+    - detalle:   texto del tooltip
+    - etiquetas: los meses ya legibles ('ago 2026')
+
+    Los meses del hueco de SIPSA (2021-01 a 2022-01) se incluyen vacios para que
+    el hueco se vea como hueco y no se lea como "sin alertas".
+    """
+    df = con_indicadores()
+    df = df[(df["periodo"] >= desde) & (df["periodo"] <= hasta)]
+    # `alerta` es Categorical: hay que pasar por str antes de mapear (regla de CLAUDE.md).
+    df = df.assign(severidad=df["alerta"].astype(str).map(SEVERIDAD))
+    df = df.dropna(subset=["severidad"])
+
+    peor = df.groupby(["producto", "periodo"])["severidad"].max().unstack("periodo")
+    encendidas = df[df["severidad"] > 0]
+    cuantas = encendidas.groupby(["producto", "periodo"]).size().unstack("periodo")
+    total = df.groupby(["producto", "periodo"]).size().unstack("periodo")
+
+    # Todos los meses del rango, incluso los que ninguna serie reporta.
+    meses = [p for a in range(desde // 100, hasta // 100 + 1)
+             for m in range(1, 13) if desde <= (p := a * 100 + m) <= hasta]
+    peor = peor.reindex(columns=meses)
+
+    # Los productos con mas meses en alerta van arriba: el hallazgo primero.
+    orden = (peor > 0).sum(axis=1).sort_values(ascending=False).index
+    peor = peor.loc[orden]
+    # `cuantas` solo trae los productos que se encendieron alguna vez, asi que se
+    # reindexa contra la matriz completa (si no, falta un producto y revienta).
+    cuantas = cuantas.reindex(index=orden, columns=meses)
+    total = total.reindex(index=orden, columns=meses)
+
+    peor.index = peor.index.str.replace("*", "", regex=False)
+    glifos = peor.map(lambda v: GLIFO.get(v, "") if pd.notna(v) else "")
+    nombre = {0: "sin alerta", 1: "alerta amarilla", 2: "alerta roja"}
+    detalle = pd.DataFrame(
+        [[_detalle(peor.iat[i, j], cuantas.iat[i, j], total.iat[i, j], nombre)
+          for j in range(peor.shape[1])] for i in range(peor.shape[0])],
+        index=peor.index, columns=peor.columns,
+    )
+    return peor, glifos, detalle, [fecha(p) for p in meses]
+
+
+def _detalle(severidad, encendidas, mercados, nombre: dict) -> str:
+    """Texto del tooltip de una celda."""
+    if pd.isna(severidad):
+        return "sin dato este mes"
+    texto = nombre[int(severidad)]
+    if severidad > 0 and pd.notna(encendidas):
+        texto += f" en {int(encendidas)} de {int(mercados)} mercados"
+    elif pd.notna(mercados):
+        texto += f" en {int(mercados)} mercados"
+    return texto
+
+
+# --- Mapa por departamento ---------------------------------------------------
+# El mapa colorea por VARIACION %, nunca por nivel de precio: la misma "papa" es
+# otra variedad en cada ciudad, asi que comparar niveles entre departamentos
+# compara cosas distintas (regla 4 de docs/contrato_datos.md).
+
+# Un articulo que se vende en 2 departamentos o menos no va al mapa: con dos
+# puntos no hay nada que leer geograficamente (regla 6 del contrato).
+MINIMO_DEPARTAMENTOS = 3
+
+# El mes anterior en el calendario. En enero hay que saltar a diciembre del anio
+# pasado: 202601 - 89 = 202512. Nunca se usa la fila anterior de la tabla.
+_MES_ANTERIOR = "CASE WHEN {p} % 100 = 1 THEN {p} - 89 ELSE {p} - 1 END"
+
+_PRECIO_MENSUAL = """
+    SELECT art_id, articulo, dpto_codigo, departamento, mercado, periodo,
+           median(precio) AS precio, any_value(unidad) AS unidad
+    FROM fact_precio_semanal
+    GROUP BY art_id, articulo, dpto_codigo, departamento, mercado, periodo
+"""
+
+
+@st.cache_data(ttl=TTL)
+def articulos_del_mapa() -> pd.DataFrame:
+    """Articulos que aparecen en suficientes departamentos para dibujar un mapa."""
+    return consultar(f"""
+        SELECT art_id, any_value(articulo) AS articulo, any_value(unidad) AS unidad,
+               count(DISTINCT dpto_codigo) AS departamentos
+        FROM fact_precio_semanal
+        GROUP BY art_id
+        HAVING count(DISTINCT dpto_codigo) >= {MINIMO_DEPARTAMENTOS}
+        ORDER BY articulo
+    """)
+
+
+# Un mes de SIPSA semanal trae 4 o 5 semanas. Con menos, el mes todavia no
+# termino y su promedio no es comparable contra un mes completo.
+SEMANAS_MES_COMPLETO = 4
+
+
+@st.cache_data(ttl=TTL)
+def periodos_semanal() -> pd.DataFrame:
+    """Meses de los precios semanales, del mas nuevo al mas viejo, con `parcial`.
+
+    Se excluye el mes mas viejo: sin el mes anterior no hay variacion que mostrar.
+    """
+    df = consultar("""
+        SELECT periodo, count(DISTINCT semana_inicio) AS semanas
+        FROM fact_precio_semanal
+        GROUP BY periodo ORDER BY periodo
+    """)
+    df = df.iloc[1:].copy()
+    df["parcial"] = df["semanas"] < SEMANAS_MES_COMPLETO
+    return df.sort_values("periodo", ascending=False).reset_index(drop=True)
+
+
+@st.cache_data(ttl=TTL)
+def variacion_departamentos(art_id: int, periodo: int) -> pd.DataFrame:
+    """Variacion % del precio de un articulo por departamento, contra el mes anterior.
+
+    Un departamento puede tener varios mercados (Antioquia tiene 11). El valor
+    del departamento es la **mediana de las variaciones %** de sus mercados, no
+    el promedio de sus precios: promediar precios de mercados distintos esta
+    prohibido por el contrato de datos.
+    """
+    anterior = _MES_ANTERIOR.format(p="a.periodo")
+    return consultar(f"""
+        WITH mensual AS ({_PRECIO_MENSUAL}),
+        comparado AS (
+            SELECT a.dpto_codigo, a.departamento, a.mercado, a.unidad,
+                   (a.precio / b.precio - 1) * 100 AS variacion
+            FROM mensual a
+            JOIN mensual b
+              ON a.art_id = b.art_id AND a.mercado = b.mercado AND b.periodo = {anterior}
+            WHERE a.art_id = {int(art_id)} AND a.periodo = {int(periodo)}
+        )
+        SELECT dpto_codigo, departamento, any_value(unidad) AS unidad,
+               count(*) AS mercados, median(variacion) AS variacion
+        FROM comparado
+        GROUP BY dpto_codigo, departamento
+        ORDER BY variacion DESC
+    """)
+
+
+# --- La cadena: lluvia -> toneladas -> precio --------------------------------
+
+
+@st.cache_data(ttl=TTL)
+def articulos_cadena() -> pd.DataFrame:
+    """Articulos con abastecimiento y precio: los unicos con cadena completa.
+
+    Se ordenan por cuantos meses de abastecimiento caen dentro de la ventana de
+    los precios semanales, no por toneladas: un articulo con mucho volumen pero
+    sin meses en comun no tiene cadena que mostrar.
+    """
+    return consultar("""
+        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
+        SELECT a.art_id, any_value(a.articulo) AS articulo,
+               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
+                                   THEN a.periodo END) AS meses_comparables,
+               sum(a.toneladas) AS toneladas
+        FROM fact_abastecimiento a
+        WHERE a.art_id IN (SELECT DISTINCT art_id FROM fact_precio_semanal)
+        GROUP BY a.art_id
+        ORDER BY meses_comparables DESC, toneladas DESC
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def departamentos_cadena(art_id: int) -> pd.DataFrame:
+    """Departamentos con clima y abastecimiento **de ese articulo**.
+
+    El orden depende del articulo elegido: un departamento puede tener mucho
+    abastecimiento en general y nada de este articulo. Primero los que si
+    tienen cadena para mostrar.
+    """
+    return consultar(f"""
+        WITH ventana AS (SELECT min(periodo) AS desde FROM fact_precio_semanal)
+        SELECT a.departamento, a.dpto_codigo,
+               count(DISTINCT CASE WHEN a.periodo >= (SELECT desde FROM ventana)
+                                   THEN a.periodo END) AS meses_comparables
+        FROM fact_abastecimiento a
+        WHERE a.art_id = {int(art_id)}
+          AND a.dpto_codigo IN (SELECT DISTINCT dpto_codigo FROM fact_clima_diario)
+        GROUP BY a.departamento, a.dpto_codigo
+        ORDER BY meses_comparables DESC, a.departamento
+    """)
+
+
+# Un hallazgo se declara con q < 0,10. El q-valor ya corrige por haber probado
+# muchas parejas: con 140 pruebas, algunos p pequenos salen por azar.
+UMBRAL_Q = 0.10
+
+
+@st.cache_data(ttl=TTL)
+def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
+    """Lo que midieron los indicadores para este articulo y departamento.
+
+    Solo los eslabones que se pueden cruzar sin inventar correspondencias:
+    `oferta->precio` y `lluvia->oferta` van por `art_id`, y `oni->lluvia` por
+    departamento. El eslabon `lluvia->precio` se calculo sobre los nombres de
+    los precios diarios, que usan otros codigos, asi que no se cruza por art_id.
+    """
+    if not tabla_existe("indicador_sensibilidad_clima"):
+        return pd.DataFrame()
+    dpto = departamento.replace("'", "''")
+    return consultar(f"""
+        SELECT eslabon, variable, rezago_meses, coeficiente, p_valor, q_valor, n, metodo
+        FROM indicador_sensibilidad_clima
+        WHERE (eslabon = 'oferta->precio' AND art_id = {int(art_id)})
+           OR (eslabon = 'lluvia->oferta' AND art_id = {int(art_id)}
+               AND departamento = '{dpto}')
+           OR (eslabon = 'oni->lluvia' AND departamento = '{dpto}')
+        ORDER BY q_valor
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def cadena(art_id: int, dpto_codigo: str) -> pd.DataFrame:
+    """Lluvia, toneladas y precio del mismo articulo y departamento, mes por mes.
+
+    Las tres series se unen por `periodo`, no por posicion de fila: cada una
+    tiene su propia cobertura y sus propios huecos. Un mes sin dato queda nulo
+    para que la grafica corte la linea en vez de inventar continuidad.
+    """
+    return consultar(f"""
+        WITH lluvia AS (
+            SELECT anio * 100 + mes AS periodo, sum(precipitacion_mm) AS lluvia_mm
+            FROM (SELECT year(fecha) AS anio, month(fecha) AS mes, precipitacion_mm
+                  FROM fact_clima_diario
+                  WHERE dpto_codigo = '{dpto_codigo}' AND tipo = 'observado')
+            GROUP BY anio, mes
+        ), toneladas AS (
+            SELECT periodo, sum(toneladas) AS toneladas
+            FROM fact_abastecimiento
+            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
+            GROUP BY periodo
+        ), precio AS (
+            SELECT periodo, median(precio) AS precio, any_value(unidad) AS unidad
+            FROM fact_precio_semanal
+            WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
+            GROUP BY periodo
+        ), meses AS (
+            SELECT periodo FROM lluvia
+            UNION SELECT periodo FROM toneladas
+            UNION SELECT periodo FROM precio
+        )
+        SELECT m.periodo, l.lluvia_mm, t.toneladas, p.precio, p.unidad
+        FROM meses m
+        LEFT JOIN lluvia l USING (periodo)
+        LEFT JOIN toneladas t USING (periodo)
+        LEFT JOIN precio p USING (periodo)
+        ORDER BY m.periodo
+    """)
+
+
+# --- Clima de las zonas productoras -----------------------------------------
+
+
+@st.cache_data(ttl=TTL)
+def departamentos_clima() -> pd.DataFrame:
+    """Zonas productoras con clima descargado."""
+    return consultar("""
+        SELECT DISTINCT departamento, dpto_codigo
+        FROM fact_clima_diario ORDER BY departamento
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def clima_diario(dpto_codigo: str, dias: int = 60) -> pd.DataFrame:
+    """Lluvia y temperatura por dia de un departamento: lo observado y el pronostico.
+
+    `dias` acota solo lo observado; el pronostico (16 dias) entra completo.
+    """
+    return consultar(f"""
+        SELECT fecha, precipitacion_mm, temp_max, temp_min, tipo
+        FROM fact_clima_diario
+        WHERE dpto_codigo = '{dpto_codigo}'
+          AND (tipo = 'pronostico'
+               OR fecha >= (SELECT max(fecha) FROM fact_clima_diario
+                            WHERE tipo = 'observado') - INTERVAL '{int(dias)} days')
+        ORDER BY fecha
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def pronostico_estacional(dpto_codigo: str) -> pd.DataFrame:
+    """Lluvia esperada por mes (p10/p50/p90) y su diferencia con el promedio historico."""
+    return consultar(f"""
+        SELECT periodo, anio, mes, precip_p10, precip_p50, precip_p90, anomalia_p50
+        FROM fact_pronostico_estacional
+        WHERE dpto_codigo = '{dpto_codigo}'
+        ORDER BY periodo
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def geojson_departamentos() -> dict:
+    """Geometria de los 33 departamentos. La llave es `DPTO` (codigo DANE)."""
+    import json
+
+    ruta = CONFIG / "geo" / "colombia_departamentos.geojson"
+    return json.loads(ruta.read_text(encoding="utf-8"))
+
+
 @st.cache_data(ttl=TTL)
 def mercados_geo() -> pd.DataFrame:
     """Coordenadas aproximadas (centro urbano) de cada mercado, para el mapa."""

@@ -23,6 +23,10 @@ menu = {
         st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
         st.Page("paginas/anio_actual.py", title="Lo que va de 2026", icon=":material/calendar_month:"),
         st.Page("paginas/semaforo.py", title="Semáforo de alertas", icon=":material/traffic:"),
+        st.Page("paginas/canasta.py", title="Semáforo de la canasta", icon=":material/grid_on:"),
+        st.Page("paginas/mapa.py", title="Mapa por departamento", icon=":material/map:"),
+        st.Page("paginas/cadena.py", title="La cadena", icon=":material/link:"),
+        st.Page("paginas/pronostico.py", title="Pronóstico", icon=":material/trending_up:"),
         st.Page("paginas/producto.py", title="Detalle por producto", icon=":material/show_chart:"),
     ],
     "Cómo lo hicimos": [
@@ -31,6 +35,7 @@ menu = {
         st.Page("paginas/calidad.py", title="Calidad de datos", icon=":material/fact_check:"),
     ],
     "Contexto": [
+        st.Page("paginas/clima_hoy.py", title="Clima hoy", icon=":material/rainy:"),
         st.Page("paginas/clima.py", title="Clima y El Niño", icon=":material/thermostat:"),
         st.Page("paginas/comercio.py", title="Producción y comercio", icon=":material/public:"),
     ],

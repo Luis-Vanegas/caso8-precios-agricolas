@@ -1,0 +1,62 @@
+[
+  {
+    "op": "core/text-transform",
+    "description": "Quitar espacios sobrantes en articulo",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "columnName": "articulo",
+    "expression": "value.trim()",
+    "onError": "keep-original",
+    "repeat": false,
+    "repeatCount": 10
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Primera palabra del nombre, solo como punto de partida del clustering: NO sirve como producto final (Papaya empieza por Papa y el tomate de arbol no es tomate)",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "articulo",
+    "expression": "grel:value.split(' ')[0].replace(',', '')",
+    "newColumnName": "candidato_producto",
+    "columnInsertIndex": 2,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Marcar categorias residuales del abastecimiento (Frutas otras, Papas negras otras, ...): no son productos, son cajones y no van a la canasta",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "articulo",
+    "expression": "grel:if(value.toLowercase().contains('otros') || value.toLowercase().contains('otras'), 'si', 'no')",
+    "newColumnName": "es_residual",
+    "columnInsertIndex": 3,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Marcar animales en pie (res, cerdo, pollo, gallina): se transan en el mercado pero no son articulos de canasta",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "articulo",
+    "expression": "grel:if(value.toLowercase().endsWith('en pie'), 'si', 'no')",
+    "newColumnName": "es_animal_en_pie",
+    "columnInsertIndex": 4,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Propuesta de en_canasta por presencia: un articulo que se vende en 20 mercados o mas es parte de la canasta real. Las categorias residuales no tienen precio, asi que nunca entran por aqui",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "mercados_precio",
+    "expression": "grel:if(isBlank(value), 'no', if(toNumber(value) >= 20, 'si', 'no'))",
+    "newColumnName": "en_canasta_por_presencia",
+    "columnInsertIndex": 8,
+    "onError": "set-to-blank"
+  },
+  {
+    "op": "core/column-addition",
+    "description": "Cobertura del articulo para saber a cuales vale la pena dedicarles revision humana primero",
+    "engineConfig": { "facets": [], "mode": "row-based" },
+    "baseColumnName": "mercados_precio",
+    "expression": "grel:if(isBlank(value), 'solo_abastecimiento', if(toNumber(value) >= 20, 'amplia', if(toNumber(value) >= 3, 'media', 'minima')))",
+    "newColumnName": "cobertura",
+    "columnInsertIndex": 9,
+    "onError": "set-to-blank"
+  }
+]

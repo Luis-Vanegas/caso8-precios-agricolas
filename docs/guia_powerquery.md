@@ -110,6 +110,66 @@ agregaciones del mismo dato.
 La razón sirve como **validación cruzada de unidades y consistencia**, que es para lo que se usa
 acá. Detalle completo en `docs/verificacion_api.md`.
 
+## Consulta nueva: abastecimiento (toneladas que llegan a las centrales)
+
+`powerquery/07_SipsaAbastecimiento.pq` es independiente de `BaseIntegrada`: solo necesita el
+parámetro `CarpetaProyecto`. Se puede crear sin tocar las otras seis consultas.
+
+| # | Consulta | Archivo | Depende de |
+|---|---|---|---|
+| 7 | `SipsaAbastecimiento` | `07_SipsaAbastecimiento.pq` | parámetro |
+
+### Qué hace
+
+Toma las 164.274 filas de `data/interim/sipsa/sipsa_abastecimiento.csv` (una por artículo,
+central y mes) y produce el total por **artículo, departamento y mes**, con la variación % frente
+al mes anterior.
+
+### Resultado esperado
+
+Si tu Power Query da estas cifras, quedó bien:
+
+| Comprobación | Valor |
+|---|---:|
+| Filas de entrada con `toneladas > 0` | 154.314 |
+| Filas de salida (artículo × departamento × mes) | 117.782 |
+| Artículos distintos | 194 |
+| Departamentos distintos | 21 |
+| Meses distintos | 57 |
+| Toneladas totales | 28.326.866 |
+| Filas con `variacion_toneladas` calculable | 86.232 |
+| Filas sin mes anterior (variación nula) | 31.550 |
+
+Los cinco artículos con más toneladas, para revisar de un vistazo:
+
+| Artículo | Toneladas |
+|---|---:|
+| Papa superior | 2.235.888 |
+| Plátano hartón verde | 1.794.061 |
+| Tomate chonto | 1.200.699 |
+| Arroz | 982.836 |
+| Zanahoria | 954.958 |
+
+### Las tres trampas de esta consulta
+
+1. **`dpto_codigo` tiene que quedar como texto.** Es el código DANE de dos dígitos. Si Excel lo
+   lee como número, Antioquia pasa de `05` a `5` y deja de cruzar con el GeoJSON del mapa y con
+   `config/departamentos.csv`. En el código M está forzado a `type text`.
+2. **El mes anterior se calcula en el calendario, no con la fila anterior.** SIPSA no publicó
+   entre enero de 2021 y enero de 2022: la fila anterior de la tabla puede ser de trece meses
+   antes. Por eso el código M arma `periodo_anterior` (`si mes = 1 entonces periodo − 89`) y se
+   une consigo mismo por esa llave, en vez de usar un índice.
+3. **31.550 filas quedan sin variación y está bien.** Son los meses sin mes anterior: el primero
+   de cada serie y los dos bordes del hueco de 2021. No se rellenan con cero, porque cero
+   significaría "no cambió" y lo que pasa es "no se sabe".
+
+### Por qué `producto` y `grupo_dane` vienen vacías
+
+El CSV trae esas columnas pero **hoy están vacías en las 164.274 filas**. No es un error de la
+consulta: se llenan cuando `scripts/preparar.py` corre con `config/catalogo_articulos.csv`
+disponible. Mientras no estén, agrupá por `art_id` y `articulo`, que son la llave real.
+**Nunca agrupes por la primera palabra del nombre:** «Papaya» empieza por «Papa».
+
 ## Al actualizar los datos
 
 Corré en orden y después `Datos` → `Actualizar todo` en Excel:
