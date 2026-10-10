@@ -92,7 +92,7 @@ Muestras reales guardadas para la app: `app/ejemplos/ideam_lectura_cruda_sensor.
 | Limpieza por estación | `src/cleaning/ideam.py` → `leer()`, `limpiar()` (completitud ≥ 0,8, rango físico) |
 | Mediana por departamento y anomalía | `src/cleaning/ideam.py` → `a_departamento()` |
 | Tablas del modelo | `src/integration/modelo.py` → `dim_estacion_ideam`, `fact_sensor_ideam` |
-| Página de la app | `app/paginas/sensor.py` |
+| Página de la app | `app/secciones/sensor.py` (pestaña "Sensor IDEAM" de la página Clima) |
 
 Decisiones de limpieza para defender: **completitud relativa** (cada mes contra la mediana de lecturas de esa misma estación y sensor, mínimo 0,8), **rango físico** (lluvia negativa = falla del sensor, se marca, no se corrige) y **mediana entre estaciones** (una estación descalibrada no arrastra al departamento como lo haría un promedio).
 
