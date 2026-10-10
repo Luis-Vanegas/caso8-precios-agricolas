@@ -43,7 +43,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - [x] C1-09 `actualizar.py` diario para las fuentes nuevas + documentación en `docs/verificacion_api.md`
 
 ## Tareas de Claude 2 (app, diseño y herramientas)
-- [ ] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
+- [x] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
 - [ ] C2-02 `config/catalogo_articulos.csv` desde `data/openrefine/catalogo_sipsa_crudo.csv`: OpenRefine propone `producto` (clustering), una persona revisa cada grupo con las reglas de la sección "Jerarquía" de `docs/contrato_datos.md`; se completan `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`. JSON en `data/openrefine/` + guía actualizada
 - [ ] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
 - [ ] C2-04 Página "Semáforo de la canasta": matriz producto × periodo con los datos que ya existen
