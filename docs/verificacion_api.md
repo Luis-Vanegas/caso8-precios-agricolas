@@ -396,3 +396,32 @@ declara como tal, no se rellena (regla 4 de `CLAUDE.md`).
 - Los archivos se agregaron a la carpeta de descarga existente `data/raw/ideam/2026-09-23/`
   (no se editó ninguno existente).
 - Temperatura (`sbwg-7ju4`): no descargada.
+
+## SIPSA abastecimiento y precios semanales — verificado el 2026-10-09
+
+Llamadas reales al mismo endpoint HTTPS de SIPSA (SOAP 1.2, sin argumentos).
+
+| Método | Tamaño | Filas | Cobertura | Campos |
+|---|---|---|---|---|
+| `promedioAbasSipsaMesMadr` | 40.033.487 bytes | 164.274 | 194 artículos, 34 centrales, 2020-02 a 2026-07 (57 meses) | `artiId`, `artiNombre`, `cantidadTon`, `fechaMesIni`, `fuenId`, `fuenNombre`, `futiId` |
+| `promediosSipsaSemanaMadr` | 67.518.722 bytes | 230.312 | 351 artículos, 80 mercados, solo 51 semanas (2025-10-11 a 2026-10-03) | `artiId`, `artiNombre`, `fechaIni`, `fuenId`, `fuenNombre`, `futiId`, `maximoKg`, `minimoKg`, `promedioKg` |
+
+- **Idempotencia:** cada método se llamó dos veces el mismo día y devolvió los mismos bytes y las mismas filas. Pese al sufijo `Madr`, no consumen la bandera `enviado`.
+- **Llave:** `artiId` es el mismo código en los dos métodos (97 artículos en común, 0 nombres distintos). Los códigos del precio diario (`codProducto` de `promediosSipsaCiudad`) son otro sistema.
+- **Unidades:** aunque el campo se llame `promedioKg`, el huevo y el bocadillo van por unidad, y el aceite, el jugo y el vinagre por litro (Metodología SIPSA-P, p. 16). Ejemplo: huevo rojo AA, mediana de 456 pesos (precio de un huevo).
+- **Ventana del semanal:** el servicio solo devuelve las últimas ~51 semanas; para tener historia hay que guardar cada descarga.
+- **Duplicados de la fuente:** en el semanal del 2026-10-09 hay 2 filas con el mismo artículo, mercado y semana y precios distintos (Aguacate Hass: 8067 y 8688; Aguacate papelillo: 6900 y 9000, en Tibasosa, semana del 2026-08-08). La limpieza conserva uno y lo avisa en el log.
+- **Abastecimiento sin origen:** dice a qué central llegó el alimento, no de qué departamento salió.
+
+## Open-Meteo — verificado el 2026-10-09
+
+Sin token. Un punto por departamento productor (coordenadas de `config/zonas_productoras.json`). Variables diarias `precipitation_sum` (mm), `temperature_2m_max` y `temperature_2m_min` (°C), `timezone=America/Bogota`.
+
+| Consulta | Endpoint | Resultado real (Tunja) |
+|---|---|---|
+| Observado | `archive-api.open-meteo.com/v1/archive` | 2473 días, 2020-01-01 a 2026-10-08 (ayer), 0 vacíos |
+| Pronóstico | `api.open-meteo.com/v1/forecast` | 16 días |
+| Estacional | `seasonal-api.open-meteo.com/v1/seasonal` | 183 días (2026-10-09 a 2027-04-09); serie base + 50 miembros (`precipitation_sum_member01` … `_member50`); 6 días vacíos al final |
+
+- La primera descarga completa (8 departamentos × 3 consultas = 24 archivos) trajo 19784 días observados (8 × 2473).
+- El primer día del estacional no coincide con el del pronóstico (19,7 vs. 8,8 mm en Tunja el 2026-10-09): son modelos distintos. El estacional sirve para meses, no para días.

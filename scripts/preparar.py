@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.cleaning import complementarias, faostat, homologacion
 from src.cleaning import ideam as limpieza_ideam
 from src.cleaning import sipsa as limpieza_sipsa
+from src.cleaning import clima_open_meteo, sipsa_canasta
 from src.common.rutas import RAIZ, carpeta_intermedia
 from src.profiling.perfil import (
     comercio_imposible,
@@ -54,6 +55,10 @@ CLAVES = {
     "zonas_puente": ["producto_sipsa", "producto_zona", "departamento"],
     "ideam_estaciones": ["variable", "codigoestacion", "codigosensor", "anio", "mes"],
     "ideam_depto": ["variable", "departamento", "anio", "mes"],
+    "sipsa_semanal": ["art_id", "fuen_id", "semana_inicio"],
+    "sipsa_abastecimiento": ["art_id", "fuen_id", "anio", "mes"],
+    "clima_diario": ["departamento", "fecha"],
+    "clima_estacional": ["departamento", "anio", "mes"],
 }
 
 
@@ -107,6 +112,11 @@ def construir() -> dict[str, pd.DataFrame]:
         ("enso", complementarias.limpiar_enso),
         ("insumos", complementarias.limpiar_insumos),
         ("zonas_puente", complementarias.puente_zona_sipsa),
+        # Fuentes nuevas de la fase clima -> oferta -> precio
+        ("sipsa_semanal", sipsa_canasta.limpiar_semanal),
+        ("sipsa_abastecimiento", sipsa_canasta.limpiar_abastecimiento),
+        ("clima_diario", clima_open_meteo.limpiar_diario),
+        ("clima_estacional", clima_open_meteo.limpiar_estacional),
     ):
         try:
             tablas[nombre] = funcion()

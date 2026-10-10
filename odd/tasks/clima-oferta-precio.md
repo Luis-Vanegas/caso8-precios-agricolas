@@ -31,11 +31,11 @@ Compartidos (cada uno edita solo su sección): `TASKS.md`, este archivo.
 Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la agrega a `requirements.txt`.
 
 ## Tareas de Claude 1 (datos y estadística)
-- [ ] C1-01 Adquisición `sipsa_abastecimiento.py` (método `promedioAbasSipsaMesMadr`) + fixture recortada + prueba
-- [ ] C1-02 Adquisición `sipsa_semanal.py` (método `promediosSipsaSemanaMadr`) que acumula snapshots (la API solo da 12 meses)
-- [ ] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
+- [x] C1-01 Adquisición `sipsa_abastecimiento.py` (método `promedioAbasSipsaMesMadr`) + fixture recortada + prueba
+- [x] C1-02 Adquisición `sipsa_semanal.py` (método `promediosSipsaSemanaMadr`) que acumula snapshots (la API solo da 12 meses)
+- [x] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
 - [x] C1-00 Catálogo crudo de 448 artículos por `art_id` con `unidad_sugerida` en `data/openrefine/catalogo_sipsa_crudo.csv` (excepción al reparto: lo genera Claude 1 una sola vez)
-- [ ] C1-04 Limpieza de las tres fuentes por `art_id` con columna `unidad` + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
+- [x] C1-04 Limpieza de las tres fuentes por `art_id` con columna `unidad` + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
 - [ ] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
 - [ ] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
 - [ ] C1-07 `indicador_quiebres`: prueba de Chow de quiebre estructural (ej. El Niño 2023-24)
@@ -61,6 +61,10 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
 
 ## Progreso y evidencia
+- 2026-10-09 C1-04 (inline): `sipsa_canasta.py` + `clima_open_meteo.py` + `config/departamentos.csv` (33, códigos DANE) + `config/mercados_sipsa.csv` (81 mercados por `fuen_id`, 24 departamentos). RED -> GREEN 8/8; suite 125. `preparar.py` real: semanal 230310, abastecimiento 164274, clima diario 19912, estacional 40. El `dpto_codigo` de `dim_mercado` se une en C1-05 desde `config/departamentos.csv`. Bug previo corregido: una carpeta cruda vacía tapaba la última buena (IDEAM quedaba vacío).
+- 2026-10-09 C1-03 (inline): RED -> GREEN 5/5; suite 117 en verde; descarga real: 24 archivos, 19784 días observados hasta 2026-10-08.
+- 2026-10-09 C1-02 (inline): RED -> GREEN 3/3; suite 112 en verde; descarga real: 230312 filas, última semana 2026-10-03. La historia se acumula por carpetas diarias en `data/raw/sipsa_semanal/`.
+- 2026-10-09 C1-01 (inline, 1 módulo + prueba): RED (módulo inexistente) -> GREEN 3/3; suite 109 en verde; descarga real por `actualizar.py`: 164274 filas, último mes 2026-07, 3 llamadas idénticas (40033487 bytes).
 - 2026-10-09: investigación de variedades y unidades (ver "Jerarquía" en `docs/contrato_datos.md`); el catálogo pasa de nombres a `art_id`.
 - 2026-10-09: fuentes nuevas verificadas contra la API real (ver `docs/contrato_datos.md`). 106 pruebas en verde en `main`.
 

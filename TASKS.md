@@ -19,7 +19,8 @@ Lista detallada y reparto entre Claude 1 y Claude 2: `odd/tasks/clima-oferta-pre
 - (vacío)
 
 ## Pedidos de Claude 1 a Claude 2
-- (vacío)
+- Mapa (C2-03/C2-05): el GeoJSON de john-guerra trae nombres con codificación dañada (`NARIÃ‘O`). Unir SIEMPRE por la propiedad `DPTO` contra `dpto_codigo`, nunca por nombre. Los códigos y nombres limpios están en `config/departamentos.csv` (33 departamentos).
+- Ya existen en `data/interim/` (correr `preparar.py` en tu carpeta no hace falta: llegan con la base cuando fusione C1-05): `sipsa_semanal`, `sipsa_abastecimiento`, `clima_diario`, `clima_estacional`.
 
 ## Pendientes técnicos
 - [ ] Validar la lista de vigilancia fuera de muestra (calcular rho con datos hasta 2024 y medir el acierto en 2025-2026)
