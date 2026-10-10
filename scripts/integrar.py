@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.common.registro import conectar
 from src.common.rutas import BASE_DUCKDB, RAIZ
 from src.integration.modelo import compactar, construir
-from src.indicators import quiebres, sensibilidad
+from src.indicators import pronostico, quiebres, sensibilidad
 from src.integration.verificacion import CHEQUEOS, correr_chequeos
 
 log = logging.getLogger("integrar")
@@ -40,7 +40,8 @@ def main(argv: list[str] | None = None) -> int:
 
         # Indicadores estadisticos: se calculan sobre el modelo ya construido.
         for nombre, calcular in (("indicador_sensibilidad_clima", sensibilidad.construir),
-                                 ("indicador_quiebres", quiebres.construir)):
+                                 ("indicador_quiebres", quiebres.construir),
+                                 ("pronostico_precio", pronostico.construir)):
             try:
                 tabla = calcular(con)
                 con.execute(f"CREATE OR REPLACE TABLE {nombre} AS SELECT * FROM tabla")

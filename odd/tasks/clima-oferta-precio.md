@@ -39,7 +39,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - [x] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
 - [x] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
 - [x] C1-07 `indicador_quiebres`: prueba de Chow de quiebre estructural (ej. El Niño 2023-24)
-- [ ] C1-08 `pronostico_precio`: modelo con rezagos de lluvia, abastecimiento y ONI, validado contra el ingenuo estacional
+- [x] C1-08 `pronostico_precio`: modelo con rezagos de lluvia, abastecimiento y ONI, validado contra el ingenuo estacional
 - [ ] C1-09 `actualizar.py` diario para las fuentes nuevas + documentación en `docs/verificacion_api.md`
 
 ## Tareas de Claude 2 (app, diseño y herramientas)
@@ -61,6 +61,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
 
 ## Progreso y evidencia
+- 2026-10-09 C1-08 (inline): `src/indicators/pronostico.py`. Regresión (temporada del mes destino, inercia, ONI, lluvia de la zona) vs. dos ingenuos (sin cambio, estacional); backtest de 24 orígenes sin fuga (prueba: cambiar el futuro no cambia el pasado); banda 80 % de errores reales; gana solo si es 5 % mejor. RED -> GREEN 6/6; suite 149. Bug propio atrapado antes del PR: `construir` copiaba el veredicto del horizonte 1 a los 3 horizontes; la prueba nueva falla con el bug y pasa con el arreglo. Real: el modelo gana en 11/33 productos a 1 mes, 8/33 a 2 y 4/33 a 3 (error mediano 10,1 % vs. 10,5 % del ingenuo a 1 mes).
 - 2026-10-09 C1-07 (inline): `src/indicators/quiebres.py`. Primera versión (Chow sobre niveles con tendencia) descartada: daba quiebre en 81/99 por la inflación de 2022 y en 50/99 aun con precio relativo, porque la autocorrelación de residuos en niveles es 0,67 (Chow la supone 0). Versión válida: cambios mensuales del precio relativo sin temporada (autocorrelación 0,11), Chow k=1 (ritmo) + Brown-Forsythe (volatilidad), 3 fechas candidatas (202302, 202306, 202405). RED -> GREEN 6/6; suite 143. Real: 0/99 quiebres de ritmo y 0/99 de volatilidad con q<0,1 (p<0,05: 2 y 1, lo esperable por azar).
 - 2026-10-09 C1-06 (inline): `src/indicators/sensibilidad.py`, 4 eslabones, sin scipy/statsmodels. Panel solo en oferta->precio (la lluvia de la zona es igual para todos los mercados: un panel por mercado inflaría n). RED -> GREEN 7/7 (recupera efectos sintéticos conocidos); suite 137. Real, 140 pruebas, hallazgos con q<0,1: ONI->lluvia 27/56 (todas negativas: El Niño seca); oferta->precio 4/24 (chócolo, zanahoria, elasticidad ~-0,05); lluvia->precio 1/36 (tomate, Norte de Santander, rezago 3, -7 % por mm/día); lluvia->oferta 0/24.
 - 2026-10-09 C1-05 (inline): 4 tablas opcionales en el modelo + `dpto_codigo` y `departamento` en `dim_mercado`; 10 chequeos nuevos (29 en total). RED -> GREEN; suite 130. `integrar.py` real: los 29 chequeos OK, base 12,1 MB.

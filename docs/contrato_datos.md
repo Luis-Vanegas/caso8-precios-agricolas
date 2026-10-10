@@ -117,14 +117,18 @@ Una fila por producto, fecha candidata (inicio de fase ENSO) y tipo de cambio. M
 | `hay_quiebre` | booleano | `q_valor < 0,1` |
 
 ### `pronostico_precio`
+Una fila por producto y mes. Método y reglas de honestidad en `src/indicators/pronostico.py`.
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `art_id`, `articulo`, `mercado` | | Siempre por artículo, nunca promedio de variedades |
+| `producto`, `mercado` | texto | `mercado` = `nacional` (mediana de los mercados) |
 | `periodo` | entero | Mes |
-| `tipo` | texto | `real` o `pronostico` |
-| `valor`, `lim_inf`, `lim_sup` | decimal | Precio y banda (80 %) |
-| `modelo` | texto | Nombre del modelo |
-| `mae_modelo`, `mae_ingenuo` | decimal | Error medio en la validación contra el pasado (el modelo solo se presenta si `mae_modelo < mae_ingenuo`) |
+| `tipo` | texto | `real` (precio observado), `prueba` (lo que el modelo habría pronosticado a 1 mes en el pasado, para mostrar cuánto acierta) o `pronostico` (próximos 3 meses) |
+| `horizonte` | entero | Meses hacia adelante (1 a 3); vacío en `real` |
+| `valor` | decimal | Precio en pesos por kg |
+| `lim_inf`, `lim_sup` | decimal | Banda del 80 % sacada de los errores reales del backtest (solo en `pronostico`) |
+| `modelo` | texto | `regresion`, `sin_cambio` o `estacional`: el que se presenta |
+| `mae_modelo`, `mae_ingenuo` | decimal | Error medio en % del backtest (24 meses) del modelo y del mejor ingenuo |
+| `gana_al_ingenuo` | booleano | `mae_modelo` al menos 5 % menor que `mae_ingenuo`. Si es falso, `modelo` es el ingenuo |
 
 ### Cambio en una tabla existente
 - `dim_mercado` gana la columna `dpto_codigo` (código DANE de 2 dígitos) para unir con el mapa.
