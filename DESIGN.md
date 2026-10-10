@@ -74,13 +74,17 @@ Semánticos (nunca se neutralizan ni se reutilizan para decorar):
 
 | Página | Codificación | Escala |
 |---|---|---|
-| Semáforo de la canasta | estado por celda (producto × periodo) | categórica `COLOR_ALERTA` + glifo; celda sin dato en `#FFFFFF` con borde `BORDE` y texto "s/d" |
+| Semáforo de la canasta | estado por celda (producto × periodo) | categórica `COLOR_ALERTA`; glifo solo en las celdas encendidas (`▲` roja, `●` amarilla) y estado en palabras en el tooltip de toda celda; celda sin dato en `#FFFFFF`, sin texto |
 | Mapa | cambio % de precio por departamento | divergente `AZUL` → `#FFFFFF` → `ROJO`, centrada en 0 y simétrica; sin dato: `#E6E0D2` con trama o nota |
 | Clima hoy | lluvia / temperatura | lluvia en `AZUL`, temperatura en `TIERRA`; pronóstico con línea punteada del mismo color |
 | La cadena | lluvia → toneladas → precio | tres paneles apilados con el mismo eje X; lluvia `AZUL`, toneladas `TIERRA`, precio `TINTA` |
 | Pronóstico | observado, pronóstico, banda, ingenuo | observado `TINTA`; pronóstico `AZUL`; banda `AZUL` al 15 % de opacidad del relleno; ingenuo `GRIS` punteado |
 
 Un hueco de datos (p. ej. SIPSA 2021-01 a 2022-01) se ve como hueco: la línea se corta, nunca se une.
+En la matriz del semáforo el hueco es una franja de celdas blancas y el pie de la gráfica dice de
+qué hueco se trata. Por qué sin "s/d" en cada celda: son 33 productos × 13 meses, y rotular las 429
+celdas tapa la matriz que la página existe para mostrar. El color nunca va solo igual: el estado en
+palabras está en el tooltip de toda celda, y las encendidas llevan glifo.
 
 ## Tipografía
 

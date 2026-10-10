@@ -191,6 +191,40 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
     return fig
 
 
+def matriz_semaforo(matriz: pd.DataFrame, glifos: pd.DataFrame, detalle: pd.DataFrame,
+                    etiquetas: list[str]) -> go.Figure:
+    """Matriz producto x periodo: una celda por mes, pintada con su estado.
+
+    Recibe las tres tablas ya armadas por `datos.matriz_canasta` (severidad,
+    glifo y texto del tooltip) para no mezclar calculo con dibujo.
+
+    La escala es categorica, no continua: 0 verde, 1 amarilla, 2 roja. Plotly
+    necesita los cortes en fracciones del rango, de ahi los tercios.
+    """
+    fig = go.Figure(go.Heatmap(
+        z=matriz.values, x=etiquetas, y=matriz.index.tolist(),
+        text=glifos.values, texttemplate="%{text}",
+        textfont=dict(size=13, color="white"),
+        customdata=detalle.values,
+        hovertemplate="<b>%{y}</b><br>%{x}<br>%{customdata}<extra></extra>",
+        zmin=0, zmax=2,
+        colorscale=[(0, VERDE), (1 / 3, VERDE), (1 / 3, AMARILLO), (2 / 3, AMARILLO),
+                    (2 / 3, ROJO), (1, ROJO)],
+        showscale=False,
+        xgap=2, ygap=2,
+    ))
+    # Un mes sin dato queda como hueco (z vacio): se ve el fondo blanco de la
+    # grafica, nunca un color que insinue "sin alerta".
+    fig.update_layout(
+        height=max(380, 24 * len(matriz) + 140),
+        xaxis=dict(side="top", tickangle=-60, gridcolor="rgba(0,0,0,0)", ticks=""),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=8, r=8, t=90, b=8),
+    )
+    return fig
+
+
 def barras_horizontales(df: pd.DataFrame, x: str, y: str, titulo: str, color: str = VERDE,
                         formato: str = ".0%") -> go.Figure:
     """Ranking simple: una barra por fila, ordenado de mayor a menor."""

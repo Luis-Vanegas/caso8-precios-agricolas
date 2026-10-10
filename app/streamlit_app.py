@@ -23,6 +23,7 @@ menu = {
         st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
         st.Page("paginas/anio_actual.py", title="Lo que va de 2026", icon=":material/calendar_month:"),
         st.Page("paginas/semaforo.py", title="Semáforo de alertas", icon=":material/traffic:"),
+        st.Page("paginas/canasta.py", title="Semáforo de la canasta", icon=":material/grid_on:"),
         st.Page("paginas/producto.py", title="Detalle por producto", icon=":material/show_chart:"),
     ],
     "Cómo lo hicimos": [

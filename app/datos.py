@@ -125,6 +125,75 @@ def ultimo_mes_cerrado() -> int:
     return int(consultar(f"SELECT max(periodo) AS p FROM fact_precio_mayorista {filtro}")["p"][0])
 
 
+SEVERIDAD = {"verde": 0, "amarilla": 1, "roja": 2}
+GLIFO = {0: "", 1: "●", 2: "▲"}
+
+
+@st.cache_data(ttl=TTL)
+def matriz_canasta(desde: int, hasta: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[str]]:
+    """Matriz producto x periodo con el estado del semaforo de cada mes.
+
+    Un producto se vende en varios mercados y cada mercado tiene su propia
+    alerta. La celda muestra la *peor* alerta del mes: un semaforo avisa por el
+    caso mas grave, no por el promedio. No se promedian precios de mercados
+    distintos (lo prohibe docs/contrato_datos.md).
+
+    Devuelve (severidad, glifos, detalle, etiquetas):
+    - severidad: 0 verde, 1 amarilla, 2 roja, vacio si el mes no tiene dato
+    - glifos:    el signo que acompana al color (el color nunca va solo)
+    - detalle:   texto del tooltip
+    - etiquetas: los meses ya legibles ('ago 2026')
+
+    Los meses del hueco de SIPSA (2021-01 a 2022-01) se incluyen vacios para que
+    el hueco se vea como hueco y no se lea como "sin alertas".
+    """
+    df = con_indicadores()
+    df = df[(df["periodo"] >= desde) & (df["periodo"] <= hasta)]
+    # `alerta` es Categorical: hay que pasar por str antes de mapear (regla de CLAUDE.md).
+    df = df.assign(severidad=df["alerta"].astype(str).map(SEVERIDAD))
+    df = df.dropna(subset=["severidad"])
+
+    peor = df.groupby(["producto", "periodo"])["severidad"].max().unstack("periodo")
+    encendidas = df[df["severidad"] > 0]
+    cuantas = encendidas.groupby(["producto", "periodo"]).size().unstack("periodo")
+    total = df.groupby(["producto", "periodo"]).size().unstack("periodo")
+
+    # Todos los meses del rango, incluso los que ninguna serie reporta.
+    meses = [p for a in range(desde // 100, hasta // 100 + 1)
+             for m in range(1, 13) if desde <= (p := a * 100 + m) <= hasta]
+    peor = peor.reindex(columns=meses)
+
+    # Los productos con mas meses en alerta van arriba: el hallazgo primero.
+    orden = (peor > 0).sum(axis=1).sort_values(ascending=False).index
+    peor = peor.loc[orden]
+    # `cuantas` solo trae los productos que se encendieron alguna vez, asi que se
+    # reindexa contra la matriz completa (si no, falta un producto y revienta).
+    cuantas = cuantas.reindex(index=orden, columns=meses)
+    total = total.reindex(index=orden, columns=meses)
+
+    peor.index = peor.index.str.replace("*", "", regex=False)
+    glifos = peor.map(lambda v: GLIFO.get(v, "") if pd.notna(v) else "")
+    nombre = {0: "sin alerta", 1: "alerta amarilla", 2: "alerta roja"}
+    detalle = pd.DataFrame(
+        [[_detalle(peor.iat[i, j], cuantas.iat[i, j], total.iat[i, j], nombre)
+          for j in range(peor.shape[1])] for i in range(peor.shape[0])],
+        index=peor.index, columns=peor.columns,
+    )
+    return peor, glifos, detalle, [fecha(p) for p in meses]
+
+
+def _detalle(severidad, encendidas, mercados, nombre: dict) -> str:
+    """Texto del tooltip de una celda."""
+    if pd.isna(severidad):
+        return "sin dato este mes"
+    texto = nombre[int(severidad)]
+    if severidad > 0 and pd.notna(encendidas):
+        texto += f" en {int(encendidas)} de {int(mercados)} mercados"
+    elif pd.notna(mercados):
+        texto += f" en {int(mercados)} mercados"
+    return texto
+
+
 @st.cache_data(ttl=TTL)
 def mercados_geo() -> pd.DataFrame:
     """Coordenadas aproximadas (centro urbano) de cada mercado, para el mapa."""
