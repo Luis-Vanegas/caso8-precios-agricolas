@@ -89,5 +89,10 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
   - C2-10 (328fd3f): prueba que **mueve los controles**, no solo abre la pagina. Los dos errores reales de la fase solo aparecian al mover un control. Verificada reintroduciendo el bug a proposito: falla; restaurado: pasa.
 - 2026-10-09 (Claude 2): **pendientes humanos** (no los puede cerrar un agente): verificacion visual de las 5 paginas nuevas en el navegador (puerto 8502) y la revision del catalogo en OpenRefine (Parte 2 de `docs/guia_openrefine.md`). Pendiente de Claude 1: ver "Pedidos de Claude 2 a Claude 1" en `TASKS.md` (columnas del catalogo vacias en las dos tablas nuevas).
 
+- 2026-10-10 (Claude 2): **PR #9 fusionado en `main`** (squash, commit `5aaec13`): las 10 tareas de Claude 2, 19 archivos, +2261/-12. 169 pruebas en verde desde `main` recien fusionado. Rama recreada desde `main`.
+  - Antes del PR, el rebase sobre `main` con C1-06 a C1-09 rompio `app/paginas/pronostico.py`: la tabla `pronostico_precio` quedo con `producto` + `horizonte` + `gana_al_ingenuo` en vez del `art_id`/`articulo` del contrato original. **La prueba de humo lo atrapo.** Adaptada (commit en el PR): tarjeta por horizonte, MAE en % y no en pesos, y cuando el modelo no gana se grafica el ingenuo diciendo que lo es. Verificado contra la tabla real: los 33 productos abren; el aviso sale en 19 y no en los 14 que ganan.
+  - Con `indicador_sensibilidad_clima` ya en la base, la pagina de la cadena muestra lo medido por eslabon (efecto, rezago, q-valor) en vez de solo prometerlo. Solo los eslabones que cruzan por `art_id`/departamento; `lluvia->precio` se declara aparte porque uso los nombres de los precios diarios.
+  - No pude correr `preparar.py` en mi carpeta: `data/raw/` no se versiona y solo existe en la de Claude 1. El pedido de rellenar `producto`/`grupo_dane`/`en_canasta` queda confirmado como trabajo de Claude 1 (ahora el catalogo ya esta en `main`).
+
 ## Siguiente paso
 Claude 1 arranca en C1-01. Claude 2 arranca en C2-01.

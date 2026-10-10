@@ -178,8 +178,23 @@ es donde está.
    `test_no_se_agrupa_por_la_primera_palabra_del_nombre` en `tests/test_app.py`.
 2. **El tomate de árbol no es tomate.** Es una fruta, no una verdura, y es el artículo con más
    mercados de todo el catálogo (46).
+3. **La papa criolla no es una variedad de papa: es otra especie.** La criolla es
+   *Solanum phureja* y la papa común *Solanum tuberosum*. El DANE las publica aparte, y se ve en
+   el propio catálogo: el abastecimiento trae dos cajones separados, `Papa criolla` (541) y
+   `Papas negras otras` (498). Juntarlas haría que la mediana de «la papa» mezcle dos especies
+   cuyos precios no se parecen: la criolla limpia está cerca de $4.267/kg y la parda pastusa de
+   $1.700/kg. En el catálogo, `art_id` 159, 161 y 541 son producto **«Papa criolla»**.
 
-Por eso la regla del borrador es **gana el nombre más específico**, nunca el más corto.
+Por eso la regla del borrador es **gana el nombre más específico**, nunca el más corto. Y, como
+muestra el caso de la criolla, un nombre que *empieza* igual no garantiza el mismo producto:
+hace falta saber qué publica la fuente.
+
+### Qué separa un artículo de sus hermanos
+
+Una vez que la criolla es su propio producto, lo que distingue «limpia» de «sucia» ya no es la
+variedad sino la **presentación** — el mismo ejemplo que usa `docs/contrato_datos.md`. El
+artículo 541 queda como `unico` porque el abastecimiento no separa limpia de sucia: es la
+regla 7 del contrato, la correspondencia entre granularidades se declara a mano.
 
 ### Pasos en OpenRefine
 

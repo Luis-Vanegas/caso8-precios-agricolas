@@ -319,9 +319,9 @@ art_id,articulo,producto,grupo_dane,unidad,distingue_por,en_canasta,nota
 169,Papa R-12 negra,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
 170,Papa R-12 roja,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
 157,Papa capira,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
-541,Papa criolla,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
-159,Papa criolla limpia,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
-161,Papa criolla sucia,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
+541,Papa criolla,Papa criolla,"Tubérculos, raíces y plátanos",kg,unico,si,granularidad del abastecimiento: no separa limpia de sucia (regla 7 del contrato)
+159,Papa criolla limpia,Papa criolla,"Tubérculos, raíces y plátanos",kg,presentacion,si,
+161,Papa criolla sucia,Papa criolla,"Tubérculos, raíces y plátanos",kg,presentacion,si,
 165,Papa nevada,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
 167,Papa parda pastusa,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
 172,Papa rubí,Papa,"Tubérculos, raíces y plátanos",kg,variedad,si,
