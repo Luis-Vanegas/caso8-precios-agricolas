@@ -3,8 +3,9 @@
 Correr desde la raiz del proyecto:
     .venv\\Scripts\\python.exe -m streamlit run app/streamlit_app.py
 
-Cada pagina vive en app/paginas/. Este archivo solo organiza el menu en tres
-secciones: lo que se ve (Panorama), como se hizo y el contexto.
+Son 7 paginas, en el orden en que se presentan: que paso, donde, por que (el
+clima), que viene y como se hizo. Cada pagina vive en app/paginas/; las partes
+que antes eran paginas aparte viven en app/secciones/.
 """
 
 import sys
@@ -19,23 +20,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 st.set_page_config(page_title="Caso 8 · Precios agrícolas", page_icon="🌽", layout="wide")
 
 menu = {
-    "Panorama": [
+    "Lo que pasa": [
         st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
-        st.Page("paginas/canasta.py", title="Semáforo de la canasta", icon=":material/grid_on:"),
-        st.Page("paginas/mapa.py", title="Mapa por departamento", icon=":material/map:"),
+        st.Page("paginas/canasta.py", title="Canasta", icon=":material/grid_on:"),
+        st.Page("paginas/mapa.py", title="Mapa", icon=":material/map:"),
+    ],
+    "Por qué pasa": [
+        st.Page("paginas/clima.py", title="Clima", icon=":material/rainy:"),
         st.Page("paginas/cadena.py", title="La cadena", icon=":material/link:"),
+    ],
+    "Qué viene y cómo se hizo": [
         st.Page("paginas/pronostico.py", title="Pronóstico", icon=":material/trending_up:"),
-        st.Page("paginas/producto.py", title="Detalle por producto", icon=":material/show_chart:"),
-    ],
-    "Cómo lo hicimos": [
-        st.Page("paginas/recorrido.py", title="Recorrido paso a paso", icon=":material/route:"),
-        st.Page("paginas/sensor.py", title="Sensor IDEAM", icon=":material/water_drop:"),
-        st.Page("paginas/calidad.py", title="Calidad de datos", icon=":material/fact_check:"),
-    ],
-    "Contexto": [
-        st.Page("paginas/clima_hoy.py", title="Clima hoy", icon=":material/rainy:"),
-        st.Page("paginas/clima.py", title="Clima y El Niño", icon=":material/thermostat:"),
-        st.Page("paginas/comercio.py", title="Producción y comercio", icon=":material/public:"),
+        st.Page("paginas/como_lo_hicimos.py", title="Cómo lo hicimos", icon=":material/route:"),
     ],
 }
 

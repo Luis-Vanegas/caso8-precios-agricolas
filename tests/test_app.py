@@ -43,7 +43,7 @@ def test_cada_pagina_esta_en_el_menu():
 # Abrir la pagina no alcanza: dos errores reales de esta fase solo aparecian al
 # mover un control (un rango de anios sin alertas para algun producto, y un
 # departamento sin abastecimiento del articulo elegido).
-PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima_hoy", "cadena", "pronostico"]
+PAGINAS_CON_CONTROLES = ["canasta", "mapa", "clima", "cadena", "pronostico", "como_lo_hicimos"]
 
 # Cuantos valores se prueban por control. El mapa tiene 284 articulos: recorrerlos
 # todos haria la prueba lenta sin encontrar nada nuevo.
@@ -351,3 +351,26 @@ def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
     con.close()
     assert f"{articulos} artículos" in pantalla
     assert "33 productos" not in pantalla
+
+
+def test_la_app_tiene_7_paginas():
+    """C2-23: de 14 paginas que se pisaban a 7. Lo que se fusiono vive en
+    app/secciones/ (una funcion mostrar() por antigua pagina)."""
+    assert len(PAGINAS) == 7, [p.stem for p in PAGINAS]
+    for seccion in ("detalle_producto", "clima_hoy", "el_nino", "sensor",
+                    "recorrido", "calidad", "comercio"):
+        assert (APP / "secciones" / f"{seccion}.py").exists(), seccion
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("nombre, pestanas", [
+    ("canasta", ["Canasta familiar", "Frutas y verduras", "Detalle de un producto"]),
+    ("clima", ["Hoy y lo que viene", "El Niño y La Niña", "Sensor de lluvia del IDEAM"]),
+    ("como_lo_hicimos", ["Recorrido paso a paso", "Calidad de datos", "Producción y comercio"]),
+])
+def test_las_paginas_fusionadas_traen_sus_secciones(nombre, pestanas):
+    """C2-23: cada antigua pagina es una pestana de la pagina que la absorbio."""
+    app = _abrir(nombre)
+    etiquetas = [t.label for t in app.tabs]
+    for esperada in pestanas:
+        assert any(e.startswith(esperada) for e in etiquetas), (esperada, etiquetas)

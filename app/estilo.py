@@ -333,6 +333,20 @@ def decimal(valor: float, decimales: int = 1, signo: bool = False) -> str:
     return texto.replace(",", "_").replace(".", ",").replace("_", ".")
 
 
+def oni_en_palabras(oni: float) -> str:
+    """El indice ONI dicho en palabras, para ponerlo al lado del numero.
+
+    +0,5 °C o mas es El Nino; -0,5 °C o menos es La Nina (umbrales de NOAA).
+    """
+    if oni >= 0.5:
+        return (f"el Pacífico está {decimal(oni)} °C más caliente de lo normal: "
+                "hay El Niño, que en Colombia suele traer menos lluvia")
+    if oni <= -0.5:
+        return (f"el Pacífico está {decimal(-oni)} °C más frío de lo normal: "
+                "hay La Niña, que en Colombia suele traer más lluvia")
+    return "el Pacífico está cerca de lo normal: ni El Niño ni La Niña"
+
+
 def fase_legible(fase: str) -> str:
     """Los datos de NOAA dicen 'El Nino'; en pantalla va con tilde."""
     return {"El Nino": "El Niño", "La Nina": "La Niña"}.get(fase, fase)

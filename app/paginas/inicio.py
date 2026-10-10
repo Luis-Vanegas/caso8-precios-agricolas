@@ -73,14 +73,6 @@ if tabla_existe("fact_precio_semanal"):
 # d) El Nino / La Nina: el ultimo valor del indice ONI.
 fase = enso().iloc[-1]
 oni = float(fase["anomalia"])
-if oni >= 0.5:
-    sentido_oni = (f"el Pacífico está {estilo.decimal(oni)} °C más caliente de lo normal: "
-                   "hay El Niño, que en Colombia suele traer menos lluvia")
-elif oni <= -0.5:
-    sentido_oni = (f"el Pacífico está {estilo.decimal(-oni)} °C más frío de lo normal: "
-                   "hay La Niña, que en Colombia suele traer más lluvia")
-else:
-    sentido_oni = "el Pacífico está cerca de lo normal: ni El Niño ni La Niña"
 
 tarjetas = [
     estilo.cifra(
@@ -105,7 +97,7 @@ if canasta:
         "arroz, huevo, carnes, aceite, frutas, verduras... (precio semanal)", retraso=2))
 tarjetas.append(estilo.cifra(
     f"{estilo.decimal(oni, signo=True)} °C",
-    sentido_oni,
+    estilo.oni_en_palabras(oni),
     f"índice ONI de NOAA, trimestre {fase['trimestre']} {int(fase['anio'])}"
     + (", dato provisional" if bool(fase.get("provisional", False)) else ""),
     color=estilo.ROJO if oni >= 0.5 else estilo.AZUL if oni <= -0.5 else None, retraso=3))

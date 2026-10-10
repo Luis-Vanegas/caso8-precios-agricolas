@@ -1,13 +1,14 @@
-"""Semaforo de la canasta: como se movieron los precios, mes por mes.
+"""Canasta: como se movieron los precios, mes por mes, y el detalle de un producto.
 
-Dos pestanas, porque hay dos fuentes con productos distintos:
+Tres pestanas:
 - Canasta familiar (precio semanal): arroz, huevo, pollo, carnes, aceite,
-  panela, queso... ~286 articulos, pero solo unos 13 meses de historia.
-- Frutas y verduras (precio diario): los 33 productos del semaforo de
-  alertas, con historia desde 2020.
+  panela, queso... ~286 articulos por grupo DANE, pero solo unos 13 meses.
+- Frutas y verduras (precio diario): los 33 productos con alertas, desde 2020.
+- Detalle de un producto: absorbe la antigua pagina "Detalle por producto"
+  (app/secciones/detalle_producto.py).
 
-La pagina "Semaforo de alertas" responde "que paso este mes". Esta responde
-"que paso en todos los meses": una celda por producto y mes.
+El Inicio responde "que paso este mes". Esta responde "que paso en todos los
+meses": una celda por producto y mes.
 """
 
 import streamlit as st
@@ -16,19 +17,27 @@ import estilo
 import graficas
 from datos import (cobertura_canasta, con_indicadores, fecha, fecha_dia, matriz_canasta,
                    periodos_semanal, tabla_existe, ultimo_mes_cerrado, variacion_canasta)
+from secciones import detalle_producto
 from src.indicators.volatilidad import resumen_por_producto
 
 estilo.aplicar()
 estilo.encabezado(
-    "Semáforo de la canasta",
+    "Canasta",
     "Cada celda es un producto en un mes. El color dice cuánto se movió su precio.",
+)
+estilo.para_presentar(
+    "Aquí se ve la historia: cada fila es un alimento y cada columna un mes; rojo es que subió "
+    "o que encendió alerta. En la última pestaña se elige un producto y se ve su precio.<br>"
+    "<b>Si te preguntan «¿por qué la franja blanca en 2021?»:</b> SIPSA no publicó en esos "
+    "meses; un hueco se muestra como hueco, no se rellena."
 )
 
 TODOS = "Todos los grupos"
 
-pestana_familiar, pestana_diaria = st.tabs([
+pestana_familiar, pestana_diaria, pestana_detalle = st.tabs([
     "Canasta familiar · precio semanal",
     "Frutas y verduras · precio diario (desde 2020)",
+    "Detalle de un producto",
 ])
 
 # --- Pestana 1: canasta familiar con el precio semanal -------------------------------
@@ -176,5 +185,9 @@ with pestana_diaria:
         "(un 40 % quiere decir que en un año el precio suele moverse unos 40 % arriba o abajo). "
         "Un producto muy movido no dispara alertas seguido: para él, los saltos grandes son lo normal."
     )
+
+# --- Pestana 3: el detalle de un producto (antes "Detalle por producto") -------------
+with pestana_detalle:
+    detalle_producto.mostrar()
 
 estilo.pie()
