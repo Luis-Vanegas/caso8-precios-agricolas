@@ -15,14 +15,17 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.integration.verificacion import CHEQUEOS, correr_chequeos
+from src.integration.verificacion import CHEQUEOS, CHEQUEOS_OPCIONALES, correr_chequeos
 
 
 @pytest.fixture
 def base() -> duckdb.DuckDBPyConnection:
     """Modelo minimo y consistente: todos los chequeos deben pasar."""
     con = duckdb.connect(":memory:")
-    con.execute("CREATE TABLE dim_mercado AS SELECT 'BOGOTA' AS mercado, 1 AS series")
+    con.execute(
+        "CREATE TABLE dim_mercado AS SELECT 'BOGOTA' AS mercado, 1 AS series, "
+        "'Bogota' AS departamento, '11' AS dpto_codigo"
+    )
     con.execute(
         "CREATE TABLE dim_producto_sipsa AS "
         "SELECT 'Papa negra*' AS producto, 1 AS producto_codigo, 116 AS item_codigo_fao, "
@@ -142,3 +145,57 @@ def test_un_chequeo_con_sql_roto_se_reporta_como_falla(base):
     resultado = correr_chequeos(base)["enso_fuera_de_rango"]
     assert not resultado.ok
     assert "fallo" in resultado.detalle
+
+
+# --- Tablas nuevas (fase clima -> oferta -> precio) --------------------------------
+
+@pytest.fixture
+def completa(base) -> duckdb.DuckDBPyConnection:
+    """El modelo minimo mas las cuatro tablas nuevas, todas consistentes."""
+    base.execute(
+        "CREATE TABLE fact_precio_semanal AS SELECT * FROM (VALUES "
+        "(247, 'Huevo rojo AA', 29, DATE '2025-11-01', 420.0, 420.0, 420.0, 'unidad', '63'), "
+        "(159, 'Papa criolla limpia', 1989, DATE '2026-10-03', 5104.0, 4792.0, 5417.0, 'kg', '81')) "
+        "AS t(art_id, articulo, fuen_id, semana_inicio, precio, precio_min, precio_max, unidad, dpto_codigo)"
+    )
+    base.execute(
+        "CREATE TABLE fact_abastecimiento AS SELECT 541 AS art_id, 'Papa criolla' AS articulo, "
+        "1 AS fuen_id, 2026 AS anio, 7 AS mes, 202607 AS periodo, 6385.0 AS toneladas, '11' AS dpto_codigo"
+    )
+    base.execute(
+        "CREATE TABLE fact_clima_diario AS SELECT 'Boyaca' AS departamento, '15' AS dpto_codigo, "
+        "DATE '2026-10-08' AS fecha, 8.0 AS precipitacion_mm, 'observado' AS tipo"
+    )
+    base.execute(
+        "CREATE TABLE fact_pronostico_estacional AS SELECT 'Boyaca' AS departamento, '15' AS dpto_codigo, "
+        "202611 AS periodo, 136.3 AS precip_p10, 190.0 AS precip_p50, 246.8 AS precip_p90"
+    )
+    return base
+
+
+def test_las_tablas_nuevas_consistentes_pasan_sus_chequeos(completa):
+    resultados = correr_chequeos(completa)
+    assert set(resultados) == set(CHEQUEOS) | set(CHEQUEOS_OPCIONALES)
+    fallidos = {n: r.detalle for n, r in resultados.items() if not r.ok}
+    assert not fallidos, fallidos
+
+
+def test_detecta_un_huevo_con_precio_por_kilo(completa):
+    # El DANE publica el huevo por unidad: si se marca kg, el precio se lee mil veces mal
+    completa.execute("UPDATE fact_precio_semanal SET unidad = 'kg' WHERE art_id = 247")
+    assert not correr_chequeos(completa)["semanal_huevo_que_no_va_por_unidad"].ok
+
+
+def test_detecta_un_mercado_semanal_sin_departamento(completa):
+    completa.execute("UPDATE fact_precio_semanal SET dpto_codigo = NULL WHERE art_id = 159")
+    assert not correr_chequeos(completa)["semanal_sin_departamento"].ok
+
+
+def test_detecta_percentiles_estacionales_desordenados(completa):
+    completa.execute("UPDATE fact_pronostico_estacional SET precip_p10 = 300")
+    assert not correr_chequeos(completa)["estacional_percentiles_desordenados"].ok
+
+
+def test_detecta_un_mercado_diario_sin_codigo_de_departamento(base):
+    base.execute("UPDATE dim_mercado SET dpto_codigo = NULL")
+    assert not correr_chequeos(base)["mercado_sin_codigo_de_departamento"].ok

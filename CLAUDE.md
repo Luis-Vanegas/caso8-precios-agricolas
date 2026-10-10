@@ -14,7 +14,7 @@ tiene que poder explicarse en una sustentacion de 5 minutos.
 ```
 .venv\Scripts\python.exe scripts\actualizar.py          # descarga lo nuevo (--solo <fuente>, --dry-run)
 .venv\Scripts\python.exe scripts\preparar.py            # limpia, perfila, escribe data/interim
-.venv\Scripts\python.exe scripts\integrar.py            # modelo estrella + 19 chequeos
+.venv\Scripts\python.exe scripts\integrar.py            # modelo estrella + 29 chequeos
 .venv\Scripts\python.exe scripts\exploracion.py         # figuras de exploracion -> docs/figuras
 .venv\Scripts\python.exe scripts\generar_ejemplos.py    # muestras reales para la app
 .venv\Scripts\python.exe -m pytest tests -q             # ninguna prueba toca la red

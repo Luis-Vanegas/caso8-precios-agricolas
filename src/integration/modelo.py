@@ -22,7 +22,7 @@ import logging
 
 import duckdb
 
-from src.common.rutas import INTERMEDIO
+from src.common.rutas import CONFIG, INTERMEDIO
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +33,11 @@ _MES_FAO = "(mes_codigo - 7000)"
 def _p(ruta: str) -> str:
     """Ruta a un parquet de interim, lista para meter en el SQL."""
     return f"read_parquet('{(INTERMEDIO / ruta).as_posix()}')"
+
+
+def _c(archivo: str) -> str:
+    """Un CSV de config/ leido como texto, para no perder el cero de '05'."""
+    return f"read_csv('{(CONFIG / archivo).as_posix()}', all_varchar = true)"
 
 
 # El orden importa: las dimensiones antes que los hechos.
@@ -56,11 +61,17 @@ SENTENCIAS: dict[str, str] = {
         ORDER BY anio, mes
     """,
 
+    # El departamento y su codigo DANE son la llave del mapa (une con el GeoJSON).
     "dim_mercado": f"""
-        SELECT DISTINCT mercado,
-               count(*) OVER (PARTITION BY mercado) AS series
-        FROM (SELECT DISTINCT mercado, producto FROM {_p('sipsa/sipsa_mensual.parquet')})
-        ORDER BY mercado
+        SELECT s.mercado, s.series, m.departamento, d.dpto_codigo
+        FROM (
+            SELECT mercado, count(*) AS series
+            FROM (SELECT DISTINCT mercado, producto FROM {_p('sipsa/sipsa_mensual.parquet')})
+            GROUP BY mercado
+        ) s
+        LEFT JOIN {_c('mercados.csv')} m ON m.mercado = s.mercado
+        LEFT JOIN {_c('departamentos.csv')} d ON d.departamento = m.departamento
+        ORDER BY s.mercado
     """,
 
     "dim_producto_sipsa": f"""
@@ -214,6 +225,30 @@ OPCIONALES: dict[str, tuple[str, str]] = {
         SELECT variable, departamento, anio, mes, anio * 100 + mes AS periodo,
                valor, anomalia, n_estaciones
         FROM {_p('ideam/ideam_depto.parquet')}
+    """),
+
+    # --- Fase clima -> oferta -> precio (ver docs/contrato_datos.md) ----------
+    # Llave del articulo: art_id. Nunca se promedian articulos distintos.
+    "fact_precio_semanal": ("sipsa/sipsa_semanal.parquet", f"""
+        SELECT mercado, ciudad, departamento, dpto_codigo, fuen_id,
+               art_id, articulo, producto, grupo_dane, en_canasta,
+               semana_inicio, anio, mes, periodo,
+               precio, precio_min, precio_max, unidad
+        FROM {_p('sipsa/sipsa_semanal.parquet')}
+    """),
+    "fact_abastecimiento": ("sipsa/sipsa_abastecimiento.parquet", f"""
+        SELECT mercado, ciudad, departamento, dpto_codigo, fuen_id,
+               art_id, articulo, producto, grupo_dane,
+               anio, mes, periodo, toneladas
+        FROM {_p('sipsa/sipsa_abastecimiento.parquet')}
+    """),
+    "fact_clima_diario": ("clima/clima_diario.parquet", f"""
+        SELECT departamento, dpto_codigo, fecha, precipitacion_mm,
+               temp_max, temp_min, tipo, fuente
+        FROM {_p('clima/clima_diario.parquet')}
+    """),
+    "fact_pronostico_estacional": ("clima/clima_estacional.parquet", f"""
+        SELECT * FROM {_p('clima/clima_estacional.parquet')}
     """),
 }
 
