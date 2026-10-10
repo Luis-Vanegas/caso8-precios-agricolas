@@ -20,7 +20,7 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | zonas_puente | 9 | 3 | 0 |
 | sipsa_semanal | 230,310 | 18 | 0 |
 | sipsa_abastecimiento | 164,274 | 14 | 0 |
-| clima_diario | 19,912 | 8 | 0 |
+| clima_diario | 19,920 | 8 | 0 |
 | clima_estacional | 40 | 9 | 0 |
 | ideam_estaciones | 25,989 | 24 | 0 |
 | ideam_depto | 1,191 | 7 | 0 |
@@ -208,14 +208,14 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | sipsa_abastecimiento | producto             | str                 |  164274 |       0 |        0    |      134 |              |                  |
 | sipsa_abastecimiento | grupo_dane           | str                 |  164274 |       0 |        0    |        8 |              |                  |
 | sipsa_abastecimiento | en_canasta           | bool                |  164274 |       0 |        0    |        2 |      0       |      1           |
-| clima_diario         | departamento         | str                 |   19912 |       0 |        0    |        8 |    nan       |    nan           |
-| clima_diario         | fecha                | datetime64[us]      |   19912 |       0 |        0    |     2489 |    nan       |    nan           |
-| clima_diario         | precipitacion_mm     | float64             |   19912 |       0 |        0    |      612 |      0       |    188.3         |
-| clima_diario         | temp_max             | float64             |   19912 |       0 |        0    |      279 |     12.3     |     40.7         |
-| clima_diario         | temp_min             | float64             |   19912 |       0 |        0    |      252 |      1.3     |     28.9         |
-| clima_diario         | tipo                 | str                 |   19912 |       0 |        0    |        2 |    nan       |    nan           |
-| clima_diario         | dpto_codigo          | str                 |   19912 |       0 |        0    |        8 |    nan       |    nan           |
-| clima_diario         | fuente               | str                 |   19912 |       0 |        0    |        1 |    nan       |    nan           |
+| clima_diario         | departamento         | str                 |   19920 |       0 |        0    |        8 |    nan       |    nan           |
+| clima_diario         | fecha                | datetime64[us]      |   19920 |       0 |        0    |     2490 |    nan       |    nan           |
+| clima_diario         | precipitacion_mm     | float64             |   19920 |       0 |        0    |      609 |      0       |    188.3         |
+| clima_diario         | temp_max             | float64             |   19920 |       0 |        0    |      279 |     12.3     |     40.7         |
+| clima_diario         | temp_min             | float64             |   19920 |       0 |        0    |      252 |      1.3     |     28.9         |
+| clima_diario         | tipo                 | str                 |   19920 |       0 |        0    |        2 |    nan       |    nan           |
+| clima_diario         | dpto_codigo          | str                 |   19920 |       0 |        0    |        8 |    nan       |    nan           |
+| clima_diario         | fuente               | str                 |   19920 |       0 |        0    |        1 |    nan       |    nan           |
 | clima_estacional     | departamento         | str                 |      40 |       0 |        0    |        8 |    nan       |    nan           |
 | clima_estacional     | dpto_codigo          | str                 |      40 |       0 |        0    |        8 |    nan       |    nan           |
 | clima_estacional     | anio                 | int64               |      40 |       0 |        0    |        2 |   2026       |   2027           |
@@ -238,24 +238,24 @@ Generado por `scripts/preparar.py`. Una fila por columna de cada tabla.
 | ideam_estaciones     | descripcionsensor    | str                 |   25989 |   25987 |       99.99 |        2 |              |                  |
 | ideam_estaciones     | unidadmedida         | str                 |   25989 |   25987 |       99.99 |        1 |              |                  |
 | ideam_estaciones     | variable             | str                 |   25989 |       0 |        0    |        3 |              |                  |
-| ideam_estaciones     | suma                 | float64             |   25989 |       2 |        0.01 |    14671 |      0       |      1.12201e+06 |
-| ideam_estaciones     | promedio             | float64             |   25989 |       2 |        0.01 |    23762 |      0       |     43.1629      |
+| ideam_estaciones     | suma                 | float64             |   25989 |       2 |        0.01 |    14670 |      0       |      1.12201e+06 |
+| ideam_estaciones     | promedio             | float64             |   25989 |       2 |        0.01 |    23761 |      0       |     43.1629      |
 | ideam_estaciones     | minimo               | float64             |   25989 |       2 |        0.01 |     2380 |      0       |     34.7         |
 | ideam_estaciones     | maximo               | float64             |   25989 |       2 |        0.01 |     3052 |      0       |     50           |
-| ideam_estaciones     | n_lecturas           | Int64               |   25989 |       2 |        0.01 |     5310 |      1       |  77518           |
+| ideam_estaciones     | n_lecturas           | Int64               |   25989 |       2 |        0.01 |     5309 |      1       |  77518           |
 | ideam_estaciones     | anio                 | float64             |   25989 |       2 |        0.01 |        7 |   2020       |   2026           |
 | ideam_estaciones     | mes                  | float64             |   25989 |       2 |        0.01 |       12 |      1       |     12           |
 | ideam_estaciones     | completitud          | Float64             |   25989 |       2 |        0.01 |     1001 |      0       |      1           |
 | ideam_estaciones     | fuera_de_rango       | bool                |   25989 |       0 |        0    |        2 |      0       |      1           |
 | ideam_estaciones     | valido               | boolean             |   25989 |       2 |        0.01 |        2 |      0       |      1           |
-| ideam_estaciones     | valor                | float64             |   25989 |       2 |        0.01 |    14885 |      0       |  30726.5         |
+| ideam_estaciones     | valor                | float64             |   25989 |       2 |        0.01 |    14886 |      0       |  30726.5         |
 | ideam_depto          | variable             | str                 |    1191 |       0 |        0    |        2 |    nan       |    nan           |
 | ideam_depto          | departamento         | str                 |    1191 |       0 |        0    |        8 |    nan       |    nan           |
 | ideam_depto          | anio                 | float64             |    1191 |       0 |        0    |        7 |   2020       |   2026           |
 | ideam_depto          | mes                  | float64             |    1191 |       0 |        0    |       12 |      1       |     12           |
-| ideam_depto          | valor                | float64             |    1191 |       0 |        0    |     1153 |      0       |    641.5         |
+| ideam_depto          | valor                | float64             |    1191 |       0 |        0    |     1154 |      0       |    641.5         |
 | ideam_depto          | n_estaciones         | int64               |    1191 |       0 |        0    |       60 |      1       |     64           |
-| ideam_depto          | anomalia             | float64             |    1191 |       0 |        0    |     1168 |   -313.925   |    348.042       |
+| ideam_depto          | anomalia             | float64             |    1191 |       0 |        0    |     1163 |   -313.925   |    348.042       |
 
 ## Homologacion SIPSA - FAOSTAT
 

@@ -1,13 +1,13 @@
 """Como lo hicimos: el recorrido paso a paso, la calidad de los datos y la FAO.
 
 Absorbe las antiguas paginas "Recorrido paso a paso", "Calidad de datos" y
-"Produccion y comercio". Cada una es ahora una seccion en su propia pestana.
+"Produccion y comercio", mas la descarga de las tablas. Cada una es ahora una seccion en su propia pestana.
 """
 
 import streamlit as st
 
 import estilo
-from secciones import calidad, comercio, recorrido
+from secciones import calidad, comercio, descargas, recorrido
 
 estilo.aplicar()
 estilo.encabezado(
@@ -23,10 +23,11 @@ estilo.para_presentar(
     "de SIPSA (ene. 2021 a ene. 2022) se declara y se deja vacío."
 )
 
-paso_a_paso, calidad_datos, fao = st.tabs([
+paso_a_paso, calidad_datos, fao, bajar = st.tabs([
     "Recorrido paso a paso",
     "Calidad de datos",
     "Producción y comercio (FAO)",
+    "Descargar datos",
 ])
 with paso_a_paso:
     recorrido.mostrar()
@@ -34,5 +35,7 @@ with calidad_datos:
     calidad.mostrar()
 with fao:
     comercio.mostrar()
+with bajar:
+    descargas.mostrar()
 
 estilo.pie()

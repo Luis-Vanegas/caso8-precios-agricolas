@@ -1,5 +1,7 @@
 # Guía de Power Query — integración
 
+> **Atajo sin Python:** abrí la app (local o el link de producción) → **Cómo lo hicimos** → pestaña **Descargar datos**. Ahí bajás cualquier tabla ya limpia en CSV o Excel, o todas las principales en un ZIP con un LEEME. En Excel: `Datos` → `Obtener datos` → `Desde texto/CSV` (origen 65001: UTF-8). La guía de abajo es para armar la integración paso a paso desde `data/interim`.
+
 Power Query es el tercer entregable obligatorio, junto con Python y OpenRefine. Este paso lo
 ejecutás vos en Excel.
 
