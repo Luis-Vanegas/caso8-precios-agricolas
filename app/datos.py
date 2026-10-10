@@ -510,7 +510,8 @@ def sensibilidad_hallazgos() -> pd.DataFrame:
         SELECT eslabon, producto, departamento, rezago_meses, coeficiente, q_valor, n, metodo
         FROM indicador_sensibilidad_clima
         WHERE q_valor < {UMBRAL_Q}
-        ORDER BY eslabon, q_valor
+        ORDER BY CASE eslabon WHEN 'oni->lluvia' THEN 1 WHEN 'lluvia->oferta' THEN 2
+                              WHEN 'oferta->precio' THEN 3 ELSE 4 END, q_valor
     """)
 
 

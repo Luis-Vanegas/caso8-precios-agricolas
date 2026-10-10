@@ -418,3 +418,34 @@ def test_la_pagina_del_efecto_del_clima_dice_lo_que_midio():
     # Trae la grafica de la cadena (antes pagina aparte).
     assert any(t.label.startswith("La cadena") for t in app.tabs)
     assert any(s.label == "Artículo" for s in app.selectbox)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.stem)
+def test_cada_pagina_tiene_su_guion_para_presentar(pagina):
+    """C2-21: arriba de cada pagina, un recuadro con que decir al presentar."""
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+    guiones = [e.proto.body for e in app.get("html") if 'class="presentar' in e.proto.body]
+    assert len(guiones) == 1, f"{pagina.stem}: {len(guiones)} recuadros para presentar"
+    assert "Si te preguntan" in guiones[0]
+
+
+# Palabras de estadistica que el jurado no tiene por que conocer. Pueden aparecer,
+# pero solo en la misma frase que su traduccion ("en la jerga", "en estadistica").
+JERGA = ("z-score", "z =", "q-valor", "p-valor", "MAE")
+TRADUCCION = ("en la jerga", "en estadística")
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+@pytest.mark.parametrize("pagina", PAGINAS, ids=lambda p: p.stem)
+def test_ninguna_palabra_de_jerga_va_sin_traducir(pagina):
+    """C2-25: nada de z, q, p o MAE sueltos en pantalla."""
+    import re
+
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    pantalla = _textos(app) + "\n" + re.sub(r"<style>.*?</style>", "", _html(app), flags=re.S)
+    for frase in re.split(r"(?<=[.:;])\s|\n", pantalla):
+        for palabra in JERGA:
+            if palabra in frase:
+                assert any(t in frase for t in TRADUCCION), (pagina.stem, palabra, frase)

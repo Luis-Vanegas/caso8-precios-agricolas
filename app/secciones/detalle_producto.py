@@ -1,4 +1,7 @@
-"""Detalle: la historia de precio de un producto en un mercado."""
+"""Detalle: la historia de precio de un producto en un mercado.
+
+Seccion de la pagina Canasta (antes era la pagina "Detalle por producto").
+"""
 
 import numpy as np
 import pandas as pd
@@ -39,12 +42,17 @@ def mostrar() -> None:
     estilo.fila_de_tarjetas([
         estilo.tarjeta(f"Precio en {fecha(int(ultimo['periodo']))}", estilo.pesos(ultimo["precio_cop_kg"]) + "/kg",
                        f"promedio de {int(ultimo['dias_con_dato'])} días con dato", retraso=0),
-        estilo.tarjeta("Frente a hace un año", "sin dato" if cambio_anual is None else f"{cambio_anual:+.0%}",
-                       f"vs {fecha(int(ultimo['periodo']) - 100)}", retraso=1),
-        estilo.tarjeta("Volatilidad anualizada", "sin dato" if pd.isna(vol) else f"{vol:.0%}",
-                       "desviación de 12 meses × √12", retraso=2),
+        estilo.tarjeta("Frente a hace un año",
+                       "sin dato" if cambio_anual is None
+                       else f"{estilo.decimal(cambio_anual * 100, 0, signo=True)} %",
+                       "sin precio de hace un año para comparar" if cambio_anual is None
+                       else f"{'más caro' if cambio_anual > 0 else 'más barato'} que en "
+                            f"{fecha(int(ultimo['periodo']) - 100)}", retraso=1),
+        estilo.tarjeta("Cuánto se mueve en un año", "sin dato" if pd.isna(vol)
+                       else f"{estilo.decimal(vol * 100, 0)} %",
+                       "volatilidad: el precio suele moverse eso arriba o abajo en un año", retraso=2),
         estilo.tarjeta("Meses con alerta", str(int(serie["alerta"].isin(["roja", "amarilla"]).sum())),
-                       f"de {len(serie)} meses con dato", retraso=3),
+                       f"de {len(serie)} meses con dato tuvieron un cambio raro", retraso=3),
     ])
 
     # --- Graficas ------------------------------------------------------------------------
@@ -56,7 +64,9 @@ def mostrar() -> None:
     )
     estilo.grafica(graficas.z_score(serie))
     estilo.explicacion(
-        "Cada barra es un mes. Si queda en la franja blanca, el cambio de precio fue normal para "
+        "Cada barra es un mes y su altura dice <b>a cuántas desviaciones de lo normal</b> quedó el "
+        "cambio de precio (en estadística, el <i>z-score</i>). "
+        "Si queda en la franja blanca, el cambio de precio fue normal para "
         "este producto en este mercado. Si entra en la franja amarilla o roja, fue un cambio raro "
         "y se enciende la alerta. Los huecos son meses sin dato (por ejemplo, todo 2021)."
     )
@@ -80,5 +90,19 @@ def mostrar() -> None:
         st.dataframe(
             serie[["periodo", "precio_cop_kg", "precio_min", "precio_max", "dias_con_dato",
                    "retorno_log", "volatilidad_anualizada", "z_score", "alerta"]],
+            column_config={
+                "periodo": st.column_config.NumberColumn("Año y mes", format="%d"),
+                "precio_cop_kg": st.column_config.NumberColumn("Precio (pesos por kg)", format="$%.0f"),
+                "precio_min": st.column_config.NumberColumn("Más bajo del mes", format="$%.0f"),
+                "precio_max": st.column_config.NumberColumn("Más alto del mes", format="$%.0f"),
+                "dias_con_dato": st.column_config.NumberColumn("Días con dato", format="%d"),
+                "retorno_log": st.column_config.NumberColumn(
+                    "Cambio vs mes anterior (logaritmo)", format="%+.3f"),
+                "volatilidad_anualizada": st.column_config.NumberColumn(
+                    "Cuánto se mueve en un año", format="percent"),
+                "z_score": st.column_config.NumberColumn(
+                    "Desviaciones de lo normal", format="%+.1f"),
+                "alerta": "Alerta",
+            },
             width="stretch", hide_index=True,
         )

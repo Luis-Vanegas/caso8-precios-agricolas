@@ -145,9 +145,15 @@ def mostrar() -> None:
             "lluvia->oferta": "lluvia → toneladas que llegan",
             "oferta->precio": "toneladas que llegan → precio",
         }
+        METODO = {
+            "correlacion_pearson": "correlación",
+            "regresion_estacional": "regresión con temporada",
+            "panel_efectos_fijos": "panel de mercados",
+        }
         tabla = medido.assign(
             eslabon=medido["eslabon"].map(ESLABON).fillna(medido["eslabon"]),
             hallazgo=medido["q_valor"] < UMBRAL_Q,
+            metodo=medido["metodo"].map(METODO).fillna(medido["metodo"]),
         )
         hallazgos = int(tabla["hallazgo"].sum())
 
@@ -155,9 +161,9 @@ def mostrar() -> None:
             tabla[["eslabon", "rezago_meses", "coeficiente", "q_valor", "n", "hallazgo", "metodo"]],
             column_config={
                 "eslabon": "Eslabón",
-                "rezago_meses": st.column_config.NumberColumn("Rezago (meses)", format="%d"),
-                "coeficiente": st.column_config.NumberColumn("Efecto estimado", format="%+.4f"),
-                "q_valor": st.column_config.NumberColumn("q-valor", format="%.4f"),
+                "rezago_meses": st.column_config.NumberColumn("Meses después", format="%d"),
+                "coeficiente": st.column_config.NumberColumn("Efecto (negativo = baja)", format="%+.4f"),
+                "q_valor": st.column_config.NumberColumn("Probabilidad de casualidad (q)", format="%.4f"),
                 "n": st.column_config.NumberColumn("Meses usados", format="%d"),
                 "hallazgo": st.column_config.CheckboxColumn("¿Se sostiene?"),
                 "metodo": "Método",
@@ -168,22 +174,24 @@ def mostrar() -> None:
 
         if hallazgos:
             st.caption(
-                f"**{hallazgos} de {len(tabla)}** relaciones se sostienen estadísticamente "
-                f"(q < {UMBRAL_Q:g}). El **signo** del efecto dice la dirección: negativo en "
+                f"**{hallazgos} de {len(tabla)}** relaciones se sostienen: su probabilidad de ser "
+                "casualidad es menor a 1 en 10. El **signo** del efecto dice la dirección: negativo en "
                 "«toneladas → precio» significa que cuando llega más producto, el precio baja, que es "
-                "lo que uno esperaría. El **rezago** es cuántos meses después aparece el efecto."
+                "lo que uno esperaría. «Meses después» es el rezago: cuánto tarda en aparecer el efecto."
             )
         else:
             st.caption(
-                f"**Ninguna de las {len(tabla)} relaciones se sostiene** con q < {UMBRAL_Q:g}. "
+                f"**Ninguna de las {len(tabla)} relaciones se sostiene**: todas tienen 1 en 10 o "
+                "más de probabilidad de ser casualidad. "
                 "Dicho claro: para este artículo y departamento, los datos **no alcanzan** para "
                 "afirmar que el clima mueva el precio. Es un resultado válido y hay que reportarlo "
                 "así, no buscar otro corte hasta que algo dé significativo."
             )
 
         st.caption(
-            "El **q-valor** no es el p-valor: corrige por haber probado muchas parejas a la vez. "
-            "Con 140 pruebas, unos cuantos p pequeños aparecen por puro azar, y el q descuenta eso. "
+            "La **probabilidad de casualidad** (en estadística, el q-valor) ya corrige por haber "
+            "probado muchas parejas a la vez: con 140 pruebas, unas cuantas parecen relaciones "
+            "por puro azar, y esta corrección las descuenta. "
             "El eslabón «lluvia → precio» se calculó sobre los nombres de los precios diarios, que "
             "usan otros códigos, así que no aparece acá."
         )

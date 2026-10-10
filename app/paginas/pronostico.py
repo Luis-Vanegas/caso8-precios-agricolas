@@ -17,6 +17,12 @@ estilo.encabezado(
     "Pronóstico de precio",
     "Qué precio se espera para los próximos meses, y qué tanto se le puede creer.",
 )
+estilo.para_presentar(
+    "Aquí está el precio esperado de los próximos 3 meses y, al lado, cuánto se equivoca el "
+    "modelo comparado con repetir el último precio.<br>"
+    "<b>Si te preguntan «¿y por qué a veces muestran el ingenuo?»:</b> porque si el modelo no "
+    "le gana a lo más simple, publicarlo sería inventar certeza."
+)
 
 if not tabla_existe("pronostico_precio"):
     st.info(
@@ -29,8 +35,8 @@ if not tabla_existe("pronostico_precio"):
 estilo.explicacion(
     "Un pronóstico sin comparación no se puede juzgar. Acá se compara contra los modelos "
     "<b>ingenuos</b>: «el mes que viene cuesta lo mismo que este» y «cuesta lo mismo que el "
-    "año pasado en este mes». El error se mide con el <b>MAE en porcentaje</b> sobre 24 meses "
-    "de prueba. Si el modelo no le gana al mejor ingenuo por al menos 5 %, "
+    "año pasado en este mes». El error se mide como <b>cuánto se equivoca en promedio, en "
+    "porcentaje del precio</b> (en la jerga, MAE), sobre 24 meses de prueba. Si el modelo no le gana al mejor ingenuo por al menos 5 %, "
     "<b>lo que se publica es el ingenuo</b>, no el modelo."
 )
 
@@ -67,12 +73,17 @@ gana_alguno = bool(veredicto["gana"].any()) if not veredicto.empty else False
 
 st.subheader(nombre)
 
+# Nombres de los modelos en palabras (la tabla los trae como codigos).
+MODELO = {"regresion": "regresión con clima", "sin_cambio": "ingenuo: igual que este mes",
+          "estacional": "ingenuo: igual que hace un año"}
+
 if not veredicto.empty:
     estilo.fila_de_tarjetas([
         estilo.tarjeta(
             f"A {int(f.horizonte)} mes" + ("es" if f.horizonte > 1 else ""),
-            f"{f.mae_modelo:.1f}%",
-            f"el ingenuo se equivoca {f.mae_ingenuo:.1f}%  ·  modelo: {f.modelo}",
+            f"{estilo.decimal(f.mae_modelo)} %",
+            f"se equivoca en promedio; el ingenuo, {estilo.decimal(f.mae_ingenuo)} %  ·  "
+            f"se publica: {MODELO.get(f.modelo, f.modelo)}",
             color=estilo.VERDE if f.gana else estilo.ROJO,
         )
         for f in veredicto.itertuples()

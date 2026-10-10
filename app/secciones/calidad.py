@@ -41,7 +41,7 @@ def mostrar() -> None:
          "El último mes tiene menos días; se marca y no se usa en la portada.", estilo.AMARILLO),
         ("Comercio imposible", "2.730 → 9 casos",
          "Casi todo eran agregados como \"Fruit\" que no se producen. Quedaron 9 inconsistencias reales.", estilo.VERDE),
-        ("Unidad de SIPSA", "COP por kg",
+        ("Unidad de SIPSA", "Pesos por kg",
          "La guía del DANE dice cantidad; confirmamos que es precio cruzando con FAOSTAT (papa 2,4 %, tomate 0,2 %).", estilo.VERDE),
         ("Precio mayorista vs productor", "No es margen",
          "Coinciden en menos de 3 %: salen del mismo sistema del DANE. Sirven para validar, no para medir intermediación.", estilo.AZUL),

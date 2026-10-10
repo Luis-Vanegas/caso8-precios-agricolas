@@ -62,7 +62,7 @@ def serie_precio(serie: pd.DataFrame) -> go.Figure:
                                  name=f"alerta {nivel}",
                                  marker=dict(color=COLOR_ALERTA[nivel], size=12,
                                              line=dict(color="white", width=2))))
-    fig.update_layout(title="Precio mayorista (COP por kg)", yaxis_tickprefix="$",
+    fig.update_layout(title="Precio mayorista (pesos por kg)", yaxis_tickprefix="$",
                       yaxis_tickformat=",.0f", height=400)
     return fig
 
@@ -81,9 +81,11 @@ def z_score(serie: pd.DataFrame) -> go.Figure:
                           line_width=0)
     colores = s["alerta"].astype(str).map(COLOR_ALERTA).fillna(GRIS)
     fig.add_trace(go.Bar(x=s["fecha"], y=s["z_score"], marker_color=colores,
-                         hovertemplate="%{x|%b %Y}<br>z = %{y:.2f}<extra></extra>"))
+                         hovertemplate="%{x|%b %Y}<br>a %{y:.1f} desviaciones de lo normal"
+                                       "<extra></extra>"))
     tope = max(4, float(np.nanmax(np.abs(s["z_score"]))) + 0.5) if s["z_score"].notna().any() else 4
-    fig.update_layout(title="¿Qué tan raro fue el cambio de cada mes? (z-score)",
+    fig.update_layout(title="¿Qué tan raro fue el cambio de cada mes?",
+                      yaxis_title="desviaciones de lo normal",
                       yaxis_range=[-tope, tope], height=320, showlegend=False)
     return fig
 
@@ -156,7 +158,7 @@ def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
         if not real.empty:
             fig.add_vline(x=real["fecha"].max(), line_dash="dot", line_color=GRIS, line_width=1.2)
 
-    fig.update_layout(height=450, yaxis_title="precio (COP por kg)",
+    fig.update_layout(height=450, yaxis_title="precio (pesos por kg)",
                       legend=dict(orientation="h", y=-0.22))
     return fig
 
@@ -174,7 +176,7 @@ def cadena_lluvia_oferta_precio(cadena: pd.DataFrame, unidad: str = "kg") -> go.
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=.06,
                         subplot_titles=("Lluvia en la zona productora (mm al mes)",
                                         "Toneladas que entraron a la central",
-                                        f"Precio (COP por {unidad})"))
+                                        f"Precio (pesos por {unidad})"))
 
     fig.add_trace(go.Bar(x=c["fecha"], y=c["lluvia_mm"], marker_color=AZUL, opacity=.85,
                          name="lluvia",

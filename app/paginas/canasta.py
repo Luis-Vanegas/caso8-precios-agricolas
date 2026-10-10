@@ -76,12 +76,12 @@ with pestana_familiar:
                      .agg(variacion=("variacion", "median"), articulos=("art_id", "nunique"))
                      .reset_index().rename(columns={"grupo_dane": "fila"}))
             filas["detalle"] = filas.apply(
-                lambda f: f"{f['variacion']:+.1f}% · mediana de {f['articulos']} artículos", axis=1)
+                lambda f: f"{estilo.decimal(f['variacion'], signo=True)} % · mediana de {f['articulos']} artículos", axis=1)
         else:
             filas = variacion[variacion["grupo_dane"] == grupo].assign(
                 fila=lambda d: d["articulo"] + " (" + d["unidad"] + ")")
             filas["detalle"] = filas.apply(
-                lambda f: f"{f['variacion']:+.1f}% · mediana de {f['mercados']} mercado(s)", axis=1)
+                lambda f: f"{estilo.decimal(f['variacion'], signo=True)} % · mediana de {f['mercados']} mercado(s)", axis=1)
 
         # Columnas: todos los meses con cambio, en orden del calendario.
         periodos = sorted(variacion["periodo"].unique())
@@ -101,9 +101,9 @@ with pestana_familiar:
                            f"en {int(cobertura['mercados'])} mercados"),
             estilo.tarjeta("Meses con cambio", f"{len(periodos)}",
                            f"{fecha(periodos[0])} a {fecha(periodos[-1])}"),
-            estilo.tarjeta(f"Subieron en {fecha(ultimo)}", f"{subieron}", "artículos",
+            estilo.tarjeta(f"Subieron en {fecha(ultimo)}", f"{subieron}", "artículos más caros que el mes anterior",
                            color=estilo.ROJO if subieron else None),
-            estilo.tarjeta(f"Bajaron en {fecha(ultimo)}", f"{bajaron}", "artículos",
+            estilo.tarjeta(f"Bajaron en {fecha(ultimo)}", f"{bajaron}", "artículos más baratos que el mes anterior",
                            color=estilo.AZUL if bajaron else None),
         ])
 

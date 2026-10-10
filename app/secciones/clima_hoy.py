@@ -1,5 +1,7 @@
 """Clima hoy: que esta pasando y que se espera en las zonas productoras.
 
+Seccion de la pagina Clima (antes era la pagina "Clima hoy").
+
 Dos horizontes distintos y conviene no confundirlos: el dia a dia (16 dias,
 bastante confiable) y el estacional (meses, apenas una tendencia).
 """
@@ -51,8 +53,9 @@ def mostrar() -> None:
     tarjetas = [
         estilo.tarjeta("Último día medido", ultimo.strftime("%d/%m/%Y"),
                        f"{len(observado)} días en la gráfica"),
-        estilo.tarjeta("Llovió en 7 días", f"{lluvia_7:.0f} mm", "suma de la última semana medida"),
-        estilo.tarjeta("Temperatura máxima", f"{ultimos_7['temp_max'].max():.1f} °C",
+        estilo.tarjeta("Llovió en 7 días", f"{lluvia_7:.0f} mm",
+                       "suma de la última semana medida (1 mm = 1 litro de agua por metro cuadrado)"),
+        estilo.tarjeta("Temperatura máxima", f"{estilo.decimal(ultimos_7['temp_max'].max())} °C",
                        "la más alta de la última semana"),
     ]
     if lluvia_pronostico is not None:

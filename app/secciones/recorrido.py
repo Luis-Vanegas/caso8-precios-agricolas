@@ -53,7 +53,7 @@ def mostrar() -> None:
     )
     st.dataframe(
         pd.DataFrame([
-            ("SIPSA · DANE", "API SOAP", "XML", "Diario", "Precio mayorista (COP/kg)"),
+            ("SIPSA · DANE", "API SOAP", "XML", "Diario", "Precio mayorista (pesos por kg)"),
             ("IDEAM", "API Socrata", "JSON", "Cada 10 min", "Lluvia medida por un sensor (mm)"),
             ("FAOSTAT", "Descarga masiva", "ZIP con CSV", "Anual", "Producción, comercio, precios"),
             ("NASA POWER", "API REST", "JSON", "Mensual y diaria", "Lluvia y temperatura por zona"),
@@ -240,9 +240,9 @@ ORDER BY p.anio, p.mes"""
         unida.tail(12),
         column_config={
             "anio": st.column_config.NumberColumn("año", format="%d"),
-            "precio_papa_bogota": st.column_config.NumberColumn("precio papa Bogotá (COP/kg)", format="$%.0f"),
+            "precio_papa_bogota": st.column_config.NumberColumn("precio papa Bogotá (pesos por kg)", format="$%.0f"),
             "lluvia_vs_normal_mm_dia": st.column_config.NumberColumn("lluvia vs normal (mm/día)", format="%.2f"),
-            "oni_el_nino": st.column_config.NumberColumn("ONI (°C)", format="%+.2f"),
+            "oni_el_nino": st.column_config.NumberColumn("ONI: Pacífico vs normal (°C)", format="%+.2f"),
         },
         width="stretch", hide_index=True,
     )
@@ -286,7 +286,8 @@ ORDER BY p.anio, p.mes"""
             estilo.tarjeta("Precio este mes", estilo.pesos(fila["precio_cop_kg"]), fecha(mes), retraso=1),
             estilo.tarjeta("Cambio (r)", f"{fila['retorno_log']:+.3f}", f"= ln({fila['precio_cop_kg']:.0f} / {previo['precio_cop_kg']:.0f})", retraso=2),
             estilo.tarjeta("Lo normal (r̄ ± s)", f"{media:+.3f} ± {desv:.3f}", f"{len(hasta)} meses de historia", retraso=3),
-            estilo.tarjeta("z", f"{fila['z_score']:+.2f}", f"alerta {fila['alerta']}",
+            estilo.tarjeta("z: qué tan raro", f"{fila['z_score']:+.2f}",
+                           f"a {abs(fila['z_score']):.1f} desviaciones de lo normal: alerta {fila['alerta']}",
                            color=estilo.COLOR_ALERTA[str(fila['alerta'])], late=True, retraso=4),
         ], ancho_minimo=165)
 

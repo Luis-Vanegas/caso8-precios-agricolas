@@ -1,5 +1,7 @@
 """Sensor IDEAM: de una gota de lluvia a una fila en la base.
 
+Seccion de la pagina Clima (antes era la pagina "Sensor IDEAM").
+
 Es la fuente de tipo SENSOR del proyecto. La pagina explica la cadena de
 adquisicion (DAQ), muestra donde estan las estaciones, como llega un dato crudo
 y como lo agregamos. Todo lo numerico sale de la base; los ejemplos de dato

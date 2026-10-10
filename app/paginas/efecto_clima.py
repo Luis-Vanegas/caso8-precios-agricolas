@@ -121,7 +121,7 @@ with encontrado:
         tarjetas.append(estilo.cifra(
             f"{len(bajan)} de {int(eslabon('oferta->precio')['productos'])}",
             f"productos bajan de precio cuando llegan más toneladas a las centrales: "
-            f"{lista([nombre(p) for p in bajan['producto']])}",
+            f"{lista([nombre(p).lower() for p in bajan['producto']])}",
             f"10 % más toneladas → precio entre {estilo.decimal(abs(efectos.max()))} % y "
             f"{estilo.decimal(abs(efectos.min()))} % más bajo", retraso=2))
 
@@ -204,8 +204,8 @@ with encontrado:
             "baja lo segundo. En «El Niño → lluvia» es una correlación (de −1 a 1); en "
             "«toneladas → precio», cuánto cambia el precio en % por cada 1 % más de toneladas; en "
             "«lluvia → precio», el cambio del precio (en logaritmo) por cada mm de lluvia al día. "
-            "La **probabilidad de casualidad** es el q-valor: el p-valor corregido por haber "
-            "hecho muchas pruebas."
+            "La **probabilidad de casualidad** es lo que en estadística se llama q-valor: ya "
+            "está corregida por haber hecho muchas pruebas."
         )
 
 # --- Pestana 2: quiebres -------------------------------------------------------------
@@ -230,8 +230,8 @@ with quiebre:
     pruebas_quiebre = int(2 * quiebres["productos"].sum())
     st.caption(
         f"Se cuentan los quiebres que se sostienen (probabilidad de casualidad menor a 1 en 10). "
-        f"Sin esa corrección aparecen {sin_corregir} de {pruebas_quiebre} pruebas con un p-valor "
-        "pequeño, que es justo lo que se espera por azar al hacer tantas pruebas."
+        f"Sin esa corrección, {sin_corregir} de {pruebas_quiebre} pruebas parecerían un quiebre, "
+        "que es justo lo que se espera por azar al hacer tantas pruebas."
     )
     if not quiebres.empty and int(quiebres["con_quiebre"].sum()) == 0:
         st.success(
