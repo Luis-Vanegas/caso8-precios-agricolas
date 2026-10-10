@@ -95,6 +95,29 @@ def test_no_se_agrupa_por_la_primera_palabra_del_nombre():
     assert tomate_de_arbol["grupo_dane"] == "Frutas"
 
 
+def test_el_geojson_cruza_con_los_departamentos_de_la_base():
+    """El mapa une por codigo DANE, nunca por nombre.
+
+    Tres de los 33 nombres del GeoJSON no coinciden con los de la base (Bogota,
+    Narino, San Andres): unir por nombre perderia esos departamentos en silencio.
+    Tambien verifica que el codigo siga siendo texto con el cero a la izquierda:
+    leido como numero, Antioquia pasa de '05' a '5' y el cruce falla.
+    """
+    import csv
+    import json
+
+    geojson = RAIZ / "config" / "geo" / "colombia_departamentos.geojson"
+    geo = json.loads(geojson.read_text(encoding="utf-8"))
+    codigos_geo = {f["properties"]["DPTO"] for f in geo["features"]}
+
+    with open(RAIZ / "config" / "departamentos.csv", encoding="utf-8-sig") as f:
+        codigos_dane = {fila["dpto_codigo"] for fila in csv.DictReader(f)}
+
+    assert len(geo["features"]) == 33
+    assert codigos_geo == codigos_dane, f"no cruzan: {codigos_geo ^ codigos_dane}"
+    assert all(isinstance(c, str) and len(c) == 2 for c in codigos_geo)
+
+
 def test_el_huevo_se_mide_por_unidad_y_el_aceite_por_litro():
     # Metodologia SIPSA-P: el campo de la API se llama promedioKg pero el huevo
     # va por unidad y el aceite por litro. Mezclar unidades invalida la grafica.
