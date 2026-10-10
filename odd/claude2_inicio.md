@@ -6,7 +6,7 @@ pero en **otra carpeta y otra rama**, para no pisarse.
 ## Antes de tocar nada, leé en este orden
 1. `CLAUDE.md` (reglas del proyecto; son obligatorias)
 2. `odd/tasks/clima-oferta-precio.md` (tu lista de tareas: las que empiezan con `C2-`)
-3. `docs/contrato_datos.md` (las tablas que Claude 1 va a entregar y que tu app lee)
+3. `docs/contrato_datos.md` (las tablas que Claude 1 va a entregar y que tu app lee). **La sección "Jerarquía de productos y unidades" es obligatoria**: nunca mezcles variedades ni unidades
 4. `app/estilo.py` y `app/streamlit_app.py` (cómo está hecha la app hoy)
 
 ## Tu espacio

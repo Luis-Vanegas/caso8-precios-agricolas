@@ -23,7 +23,7 @@ Referencia: Malau et al. (2021), panel de efectos fijos clima → precio (Indone
 |---|---|---|
 | Carpeta | `C:\Users\LENOVO\Pictures\AdquiDatos` | `C:\Users\LENOVO\Pictures\AdquiDatos-claude2` |
 | Rama | `feat/datos-clima-oferta` | `feat/app-canasta-clima` |
-| Es dueño de | `src/`, `scripts/`, `tests/` (menos `test_app.py`), `config/mercados.csv`, `config/zonas_productoras.json`, `docs/contrato_datos.md`, `docs/verificacion_api.md`, `docs/fuentes_y_referencias.md`, `requirements.txt` | `app/`, `tests/test_app.py`, `DESIGN.md`, `config/productos_canonicos.csv`, `config/geo/`, `docs/fuentes_app.md`, `docs/guia_openrefine.md`, `docs/guia_powerquery.md`, `powerquery/`, `data/openrefine/` |
+| Es dueño de | `src/`, `scripts/`, `tests/` (menos `test_app.py`), `config/mercados.csv`, `config/zonas_productoras.json`, `docs/contrato_datos.md`, `docs/verificacion_api.md`, `docs/fuentes_y_referencias.md`, `requirements.txt` | `app/`, `tests/test_app.py`, `DESIGN.md`, `config/catalogo_articulos.csv`, `config/geo/`, `docs/fuentes_app.md`, `docs/guia_openrefine.md`, `docs/guia_powerquery.md`, `powerquery/`, `data/openrefine/` |
 | Puerto de la app | 8501 | 8502 |
 
 Compartidos (cada uno edita solo su sección): `TASKS.md`, este archivo.
@@ -34,7 +34,8 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 - [ ] C1-01 Adquisición `sipsa_abastecimiento.py` (método `promedioAbasSipsaMesMadr`) + fixture recortada + prueba
 - [ ] C1-02 Adquisición `sipsa_semanal.py` (método `promediosSipsaSemanaMadr`) que acumula snapshots (la API solo da 12 meses)
 - [ ] C1-03 Adquisición `open_meteo.py`: observado diario, pronóstico 16 días y estacional 6 meses por zona productora
-- [ ] C1-04 Limpieza de las tres fuentes + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
+- [x] C1-00 Catálogo crudo de 448 artículos por `art_id` con `unidad_sugerida` en `data/openrefine/catalogo_sipsa_crudo.csv` (excepción al reparto: lo genera Claude 1 una sola vez)
+- [ ] C1-04 Limpieza de las tres fuentes por `art_id` con columna `unidad` + `dpto_codigo` en `config/mercados.csv` y `dim_mercado`
 - [ ] C1-05 Tablas del contrato en `src/integration/modelo.py` + chequeos de integración
 - [ ] C1-06 `indicador_sensibilidad_clima`: filtro ONI-lluvia por departamento + panel de efectos fijos mensual (réplica de Malau 2021)
 - [ ] C1-07 `indicador_quiebres`: prueba de Chow de quiebre estructural (ej. El Niño 2023-24)
@@ -43,10 +44,10 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 
 ## Tareas de Claude 2 (app, diseño y herramientas)
 - [ ] C2-01 `DESIGN.md` con la identidad actual de la app (paleta, tipografías, semáforo) y la dirección nueva
-- [ ] C2-02 `config/productos_canonicos.csv` con OpenRefine (clustering de los 351 nombres semanales) + JSON en `data/openrefine/` + guía actualizada
+- [ ] C2-02 `config/catalogo_articulos.csv` desde `data/openrefine/catalogo_sipsa_crudo.csv`: OpenRefine propone `producto` (clustering), una persona revisa cada grupo con las reglas de la sección "Jerarquía" de `docs/contrato_datos.md`; se completan `grupo_dane`, `unidad`, `distingue_por`, `en_canasta`. JSON en `data/openrefine/` + guía actualizada
 - [ ] C2-03 GeoJSON de departamentos en `config/geo/` con origen y licencia en `docs/fuentes_app.md`
 - [ ] C2-04 Página "Semáforo de la canasta": matriz producto × periodo con los datos que ya existen
-- [ ] C2-05 Página "Mapa": departamentos coloreados por cambio de precio (con `dim_mercado` + GeoJSON)
+- [ ] C2-05 Página "Mapa": departamentos coloreados por **variación %** del precio (nunca por nivel: la misma "papa" es otra variedad en cada ciudad), con `dim_mercado` + GeoJSON
 - [ ] C2-06 Página "Clima hoy": lee `fact_clima_diario` y `fact_pronostico_estacional` (aviso si aún no existen)
 - [ ] C2-07 Página "La cadena": lluvia, abastecimiento y precio alineados para un producto
 - [ ] C2-08 Página "Pronóstico": `pronostico_precio` con banda y comparación contra el ingenuo
@@ -60,6 +61,7 @@ Si Claude 2 necesita una librería nueva, la pide en `TASKS.md` y Claude 1 la ag
 4. El que fusiona segundo hace `git rebase origin/main` y vuelve a correr las pruebas.
 
 ## Progreso y evidencia
+- 2026-10-09: investigación de variedades y unidades (ver "Jerarquía" en `docs/contrato_datos.md`); el catálogo pasa de nombres a `art_id`.
 - 2026-10-09: fuentes nuevas verificadas contra la API real (ver `docs/contrato_datos.md`). 106 pruebas en verde en `main`.
 
 ## Siguiente paso
