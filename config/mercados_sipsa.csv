@@ -1,0 +1,82 @@
+fuen_id,mercado,ciudad,departamento,dpto_codigo
+1,"Bogotá, D.C., Corabastos",Bogotá,Bogota,11
+2,"Bogotá, D.C., Paloquemao",Bogotá,Bogota,11
+3,"Bogotá, D.C., Plaza España",Bogotá,Bogota,11
+4,"Bogotá, D.C., Plaza Las Flores",Bogotá,Bogota,11
+5,"Bogotá, D.C., Frigorífico Guadalupe",Bogotá,Bogota,11
+6,"Bogotá, D.C., Frigorífico Ble Ltda.",Bogotá,Bogota,11
+7,"Cartagena, Bazurto",Cartagena,Bolivar,13
+9,"Tunja, Complejo de Servicios del Sur",Tunja,Boyaca,15
+10,Chiquinquirá (Boyacá),Chiquinquirá,Boyaca,15
+11,"Duitama (Boyacá), Mercaplaza",Duitama,Boyaca,15
+12,"Tibasosa (Boyacá), Coomproriente",Tibasosa,Boyaca,15
+13,"Manizales, Centro Galerías",Manizales,Caldas,17
+15,"Popayán, Plaza de mercado del barrio Bolívar",Popayán,Cauca,19
+16,"Valledupar, Mercabastos",Valledupar,Cesar,20
+17,"Valledupar, Mercado Nuevo",Valledupar,Cesar,20
+19,"Montería, Mercado del Sur",Montería,Cordoba,23
+22,"Neiva, Surabastos",Neiva,Huila,41
+23,"Villavicencio, CAV",Villavicencio,Meta,50
+24,"Pasto, El Potrerillo",Pasto,Narino,52
+25,"Ipiales (Nariño), Ipiales somos todos",Ipiales,Narino,52
+26,"Cúcuta, Cenabastos",Cúcuta,Norte de Santander,54
+27,Pamplona (Norte de Santander),Pamplona,Norte de Santander,54
+29,"Armenia, Mercar",Armenia,Quindio,63
+30,"Armenia, Retiro",Armenia,Quindio,63
+32,"Pereira, Mercasa",Pereira,Risaralda,66
+33,"Pereira, La 41-Impala",Pereira,Risaralda,66
+36,"Bucaramanga, Centroabastos",Bucaramanga,Santander,68
+37,"Bucaramanga, Mercados del centro",Bucaramanga,Santander,68
+38,"Bucaramanga, Frigoríficos",Bucaramanga,Santander,68
+39,San Gil (Santander),San Gil,Santander,68
+40,Socorro (Santander),Socorro,Santander,68
+41,"Sincelejo, Nuevo Mercado",Sincelejo,Sucre,70
+43,"Ibagué, Plaza La 21",Ibagué,Tolima,73
+47,"Cali, Cavasa",Cali,Valle del Cauca,76
+48,"Cali, Santa Elena",Cali,Valle del Cauca,76
+49,"Cali, La Floresta",Cali,Valle del Cauca,76
+50,"Cali, Siloé",Cali,Valle del Cauca,76
+51,"Cali, Galería Alameda",Cali,Valle del Cauca,76
+52,Buenaventura (Valle del Cauca),Buenaventura,Valle del Cauca,76
+53,Cartago (Valle del Cauca),Cartago,Valle del Cauca,76
+54,Palmira (Valle del Cauca),Palmira,Valle del Cauca,76
+55,Tuluá (Valle del Cauca),Tuluá,Valle del Cauca,76
+56,"Medellín, Central Mayorista de Antioquia",Medellín,Antioquia,05
+57,"Medellín, Plaza Minorista ""José María Villa""",Medellín,Antioquia,05
+59,El Carmen de Viboral (Antioquia),El Carmen de Viboral,Antioquia,05
+60,La Ceja (Antioquia),La Ceja,Antioquia,05
+61,La Unión (Antioquia),La Unión,Antioquia,05
+62,Marinilla (Antioquia),Marinilla,Antioquia,05
+63,Peñol (Antioquia),Peñol,Antioquia,05
+64,Rionegro (Antioquia),Rionegro,Antioquia,05
+65,San Vicente Ferrer (Antioquia),San Vicente Ferrer,Antioquia,05
+66,Santa Bárbara (Antioquia),Santa Bárbara,Antioquia,05
+67,El Santuario (Antioquia),El Santuario,Antioquia,05
+68,Sonsón (Antioquia),Sonsón,Antioquia,05
+70,"Barranquilla, Granabastos",Barranquilla,Atlantico,08
+71,"Barranquilla, Barranquillita",Barranquilla,Atlantico,08
+105,Moniquirá (Boyacá),Moniquirá,Boyaca,15
+106,Santana (Boyacá),Santana,Boyaca,15
+107,Caparrapí (Cundinamarca),Caparrapí,Cundinamarca,25
+108,Nocaima (Cundinamarca),Nocaima,Cundinamarca,25
+109,Villeta (Cundinamarca),Villeta,Cundinamarca,25
+110,Charalá (Santander),Charalá,Santander,68
+112,"San Gil (Santander), panela",San Gil,Santander,68
+114,Vélez (Santander),Vélez,Santander,68
+115,Güepsa (Santander),Güepsa,Santander,68
+248,La Unión (Nariño),La Unión,Narino,52
+784,Túquerres (Nariño),Túquerres,Narino,52
+1274,"Cúcuta, La Nueva Sexta",Cúcuta,Norte de Santander,54
+1455,Ancuya (Nariño),Ancuya,Narino,52
+1486,Consacá (Nariño),Consacá,Narino,52
+1693,"Ipiales (Nariño), Centro de acopio",Ipiales,Narino,52
+1694,Yolombó (Antioquia),Yolombó,Antioquia,05
+1695,Yopal (Casanare),Yopal,Casanare,85
+1748,Sandoná (Nariño),Sandoná,Narino,52
+1753,"Malambo (Atlántico), Carnes y carnes",Malambo,Atlantico,08
+1836,Santa Marta (Magdalena),Santa Marta,Magdalena,47
+1989,Arauca (Arauca),Arauca,Arauca,81
+1990,Florencia (Caquetá),Florencia,Caqueta,18
+4389,"Bogotá, D.C., Plaza Samper Mendoza",Bogotá,Bogota,11
+6307,San Sebastián de Mariquita (Tolima),San Sebastián de Mariquita,Tolima,73
+7209,"Bogotá, D.C., Carnes barrio María Paz",Bogotá,Bogota,11

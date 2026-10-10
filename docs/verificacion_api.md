@@ -410,6 +410,7 @@ Llamadas reales al mismo endpoint HTTPS de SIPSA (SOAP 1.2, sin argumentos).
 - **Llave:** `artiId` es el mismo código en los dos métodos (97 artículos en común, 0 nombres distintos). Los códigos del precio diario (`codProducto` de `promediosSipsaCiudad`) son otro sistema.
 - **Unidades:** aunque el campo se llame `promedioKg`, el huevo y el bocadillo van por unidad, y el aceite, el jugo y el vinagre por litro (Metodología SIPSA-P, p. 16). Ejemplo: huevo rojo AA, mediana de 456 pesos (precio de un huevo).
 - **Ventana del semanal:** el servicio solo devuelve las últimas ~51 semanas; para tener historia hay que guardar cada descarga.
+- **Duplicados de la fuente:** en el semanal del 2026-10-09 hay 2 filas con el mismo artículo, mercado y semana y precios distintos (Aguacate Hass: 8067 y 8688; Aguacate papelillo: 6900 y 9000, en Tibasosa, semana del 2026-08-08). La limpieza conserva uno y lo avisa en el log.
 - **Abastecimiento sin origen:** dice a qué central llegó el alimento, no de qué departamento salió.
 
 ## Open-Meteo — verificado el 2026-10-09
