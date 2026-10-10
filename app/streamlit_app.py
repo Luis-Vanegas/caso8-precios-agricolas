@@ -21,8 +21,6 @@ st.set_page_config(page_title="Caso 8 · Precios agrícolas", page_icon="🌽", 
 menu = {
     "Panorama": [
         st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
-        st.Page("paginas/anio_actual.py", title="Lo que va de 2026", icon=":material/calendar_month:"),
-        st.Page("paginas/semaforo.py", title="Semáforo de alertas", icon=":material/traffic:"),
         st.Page("paginas/canasta.py", title="Semáforo de la canasta", icon=":material/grid_on:"),
         st.Page("paginas/mapa.py", title="Mapa por departamento", icon=":material/map:"),
         st.Page("paginas/cadena.py", title="La cadena", icon=":material/link:"),

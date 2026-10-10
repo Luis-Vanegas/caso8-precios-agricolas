@@ -123,12 +123,15 @@ Escala:
 | Pieza | Para qué | Regla |
 |---|---|---|
 | `encabezado` | Franja + antetítulo + título + subtítulo | Primera llamada visible de cada página |
+| `para_presentar` | Recuadro "Para presentar": guion de memoria de quien expone | Uno por página, justo debajo del `encabezado`. 2-3 líneas: qué muestra y "Si te preguntan…". Fondo `#F1ECDF` (el de la barra lateral) con borde izquierdo `TINTA`, para no confundirse con el recuadro verde |
 | `explicacion` | Recuadro "En palabras simples" | Uno por sección como máximo; lenguaje sin jerga |
+| `cifra` + `fila_de_tarjetas` | Número grande con su significado en palabras, en la misma tarjeta | Toda cifra de cabecera dice qué es: "+2,2 °C" → "el Pacífico está 2,2 °C más caliente de lo normal: hay El Niño". `color` solo si es un estado |
 | `tarjeta` + `fila_de_tarjetas` | Cifra con título y nota | Con `color` solo si representa un estado del semáforo |
-| `contadores` | Cifras grandes animadas | Solo en la portada |
+| `contadores` | Cifras grandes animadas | Solo donde la cifra se explica sola (hoy, la sección del sensor IDEAM); la portada usa `cifra` |
 | `chips` | Etiquetas de fuente o herramienta | `parcial` solo para "dato incompleto" |
 | `grafica` | Pintar Plotly con la plantilla `caso8` | Siempre; nunca `st.plotly_chart` directo |
 | `pesos` | `$1.996` | Todo precio en pantalla pasa por aquí |
+| `decimal` | `2,2` / `+2,2` | Todo decimal escrito en texto pasa por aquí (coma decimal) |
 | aviso de tabla faltante (por crear con C2-06) | Página nueva cuya tabla aún no existe | `st.info` amable con qué falta y quién la entrega; nunca un traceback |
 
 ## Movimiento

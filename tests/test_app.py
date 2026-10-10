@@ -310,3 +310,44 @@ def test_el_pronostico_corta_la_linea_real_en_el_hueco_de_2021():
     en_2021 = [v for f, v in zip(fechas, valores) if f.year == 2021]
     assert len(en_2021) == 12 and all(v is None or math.isnan(v) for v in en_2021)
     assert real.connectgaps is False
+
+
+# --- Rediseno para presentar (C2-21 a C2-26) ---
+
+
+def _html(app) -> str:
+    """El HTML que la pagina pinta con st.html (tarjetas, recuadros)."""
+    return "\n".join(e.proto.body for e in app.get("html"))
+
+
+def _abrir(nombre: str):
+    pagina = APP / "paginas" / f"{nombre}.py"
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+    return app
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
+    """C2-22: maximo 5 filas, un producto no se repite (antes salia el platano
+    3 veces, una por mercado), y ni rastro de `z`."""
+    app = _abrir("inicio")
+
+    tabla = app.dataframe[0].value
+    assert 1 <= len(tabla) <= 5
+    assert tabla["Producto"].is_unique
+    assert tabla["Qué pasó con el precio"].str.match(r"^[▲▼] (subió|bajó) \d+ %$").all()
+
+    pantalla = _textos(app) + _html(app)
+    assert "z =" not in pantalla and "z-score" not in pantalla.lower()
+    # El ONI dice en palabras que es, en la misma tarjeta.
+    assert "°C más caliente de lo normal" in pantalla or "°C más frío de lo normal" in pantalla \
+        or "cerca de lo normal" in pantalla
+    # "N artículos de la canasta" y no "vigilamos 33 productos": N sale de la base.
+    import duckdb
+    con = duckdb.connect(str(BASE), read_only=True)
+    articulos = con.execute(
+        "SELECT count(DISTINCT art_id) FROM fact_precio_semanal WHERE en_canasta").fetchone()[0]
+    con.close()
+    assert f"{articulos} artículos" in pantalla
+    assert "33 productos" not in pantalla

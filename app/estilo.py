@@ -108,6 +108,22 @@ h2, h3 {{ margin-top: 1.4rem !important; }}
 .simple b.etiqueta {{ color: {VERDE}; text-transform: uppercase; font-size: .72rem;
   letter-spacing: .1em; display: block; margin-bottom: .2rem; }}
 
+/* Recuadro "Para presentar": guion de memoria de quien expone. Va arriba de
+   cada pagina, sobre el color de la barra lateral para no confundirse con el
+   recuadro verde de las explicaciones. */
+.presentar {{ font-family: 'Inter', sans-serif; background: #F1ECDF; border: 1px solid {BORDE};
+  border-left: 6px solid {TINTA}; border-radius: 12px; padding: .75rem 1rem; margin: 0 0 1.2rem 0;
+  font-size: 1rem; line-height: 1.5; color: {TINTA}; }}
+.presentar b.etiqueta {{ color: {TINTA}; text-transform: uppercase; font-size: .72rem;
+  letter-spacing: .1em; display: block; margin-bottom: .2rem; }}
+
+/* Cifra con su significado: el numero grande y, debajo, que quiere decir */
+.cifra {{ font-family: 'Inter', sans-serif; background: #fff; border: 1px solid {BORDE};
+  border-radius: 14px; padding: 1rem 1.1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); height: 100%; }}
+.cifra .dato {{ font-family: 'JetBrains Mono', monospace; font-size: 2rem; line-height: 1.1; color: {TINTA}; }}
+.cifra .que {{ color: {TINTA}; font-size: 1rem; line-height: 1.4; margin-top: .35rem; }}
+.cifra .nota {{ color: {GRIS}; font-size: .85rem; margin-top: .3rem; }}
+
 /* Etiquetas pequenas (fuente, herramienta, estado) */
 .chip {{ display: inline-block; padding: .12rem .6rem; border-radius: 999px; font-size: .78rem;
   background: #fff; border: 1px solid {BORDE}; margin: 0 .3rem .3rem 0; color: {TINTA}; }}
@@ -184,6 +200,33 @@ def explicacion(texto_html: str, etiqueta: str = "En palabras simples") -> None:
     Acepta HTML sencillo (<b>, <i>, <br>) para resaltar palabras.
     """
     st.html(f'<div class="simple anim"><b class="etiqueta">{etiqueta}</b>{texto_html}</div>')
+
+
+def para_presentar(texto_html: str) -> None:
+    """Recuadro de arriba de cada pagina: el guion de quien expone.
+
+    Dos o tres lineas en lenguaje simple: que muestra la pagina y que decir si
+    el jurado pregunta ("Si te preguntan..."). Acepta HTML sencillo (<b>, <br>).
+    """
+    st.html(f'<div class="presentar anim"><b class="etiqueta">Para presentar</b>{texto_html}</div>')
+
+
+def cifra(dato: str, significado: str, nota: str = "", color: str | None = None, retraso: int = 0) -> str:
+    """Devuelve el HTML de una tarjeta con un numero y, en la misma tarjeta, lo
+    que ese numero quiere decir en palabras (ej. "+2,2 °C" -> "el Pacifico esta
+    2,2 °C mas caliente de lo normal"). Se pinta con `fila_de_tarjetas`.
+
+    `color` pinta el borde izquierdo; usarlo solo si el numero es un estado
+    (alerta, El Nino), igual que en `tarjeta`.
+    """
+    borde = f' alerta" style="--c:{color}' if color else ""
+    return (
+        f'<div class="cifra anim anim-{retraso}{borde}">'
+        f'<div class="dato">{html.escape(dato)}</div>'
+        f'<div class="que">{html.escape(significado)}</div>'
+        + (f'<div class="nota">{html.escape(nota)}</div>' if nota else "")
+        + "</div>"
+    )
 
 
 def chips(textos: list[str], clase: str = "") -> None:
@@ -280,6 +323,14 @@ def contadores(items: list[tuple[str, float, str, str]]) -> None:
 def pesos(valor: float) -> str:
     """1996.4 -> '$1.996'. Formato colombiano: punto para los miles."""
     return "$" + f"{valor:,.0f}".replace(",", ".")
+
+
+def decimal(valor: float, decimales: int = 1, signo: bool = False) -> str:
+    """2.16 -> '2,2'. Formato colombiano: coma decimal. Con signo=True: '+2,2'."""
+    formato = f"{{:{'+' if signo else ''},.{decimales}f}}"
+    texto = formato.format(valor)
+    # Python usa coma para miles y punto decimal: se intercambian.
+    return texto.replace(",", "_").replace(".", ",").replace("_", ".")
 
 
 def fase_legible(fase: str) -> str:

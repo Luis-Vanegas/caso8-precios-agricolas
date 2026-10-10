@@ -14,8 +14,9 @@ import streamlit as st
 
 import estilo
 import graficas
-from datos import (cobertura_canasta, fecha, fecha_dia, matriz_canasta, periodos_semanal,
-                   tabla_existe, ultimo_mes_cerrado, variacion_canasta)
+from datos import (cobertura_canasta, con_indicadores, fecha, fecha_dia, matriz_canasta,
+                   periodos_semanal, tabla_existe, ultimo_mes_cerrado, variacion_canasta)
+from src.indicators.volatilidad import resumen_por_producto
 
 estilo.aplicar()
 estilo.encabezado(
@@ -161,6 +162,19 @@ with pestana_diaria:
         "columna hacia abajo muestra qué pasó en el mercado ese mes. Varias celdas encendidas en "
         "la misma columna sugieren una causa común (clima, combustible, paro), pero esta página "
         "no lo demuestra: **correlación no es causalidad**."
+    )
+
+    # Ranking que antes vivia en la pagina "Semaforo de alertas".
+    st.subheader("¿Qué productos suben y bajan más en general?")
+    resumen = resumen_por_producto(con_indicadores())
+    resumen["producto"] = resumen["producto"].str.replace("*", "", regex=False)
+    estilo.grafica(graficas.barras_horizontales(
+        resumen, "volatilidad_mediana", "producto",
+        "Cuánto se mueve el precio en un año (volatilidad, mediana de los mercados)"))
+    st.caption(
+        "Cada barra es un producto: cuanto más larga, más suben y bajan sus precios en un año "
+        "(un 40 % quiere decir que en un año el precio suele moverse unos 40 % arriba o abajo). "
+        "Un producto muy movido no dispara alertas seguido: para él, los saltos grandes son lo normal."
     )
 
 estilo.pie()
