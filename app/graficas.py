@@ -17,6 +17,10 @@ from estilo import AMARILLO, AZUL, BORDE, COLOR_ALERTA, GRIS, ROJO, TIERRA, TINT
 from src.indicators.volatilidad import UMBRAL_AMARILLA, UMBRAL_ROJA
 
 
+# Gris claro para "sin dato" en los mapas: distinto del blanco, que es "sin cambio".
+GRIS_SIN_DATO = "#DADAD4"
+
+
 def _con_fecha(df: pd.DataFrame) -> pd.DataFrame:
     """Agrega una columna `fecha` (primer dia del mes) a partir de anio y mes."""
     df = df.copy()
@@ -210,6 +214,11 @@ def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
                                        mes=lambda d: d["periodo"] % 100))
 
     real, prueba, pron = _fechas("real"), _fechas("prueba"), _fechas("pronostico")
+    # El precio real tiene el hueco de SIPSA (2021). Igual que en `serie_precio`,
+    # se agregan los meses que faltan vacios para que la linea se corte ahi y no
+    # una 2020 con 2022 con una recta. No se rellena nada.
+    if not real.empty:
+        real = _completar_meses(real.drop(columns="fecha"))
 
     fig = go.Figure()
     if not pron.empty and pron["lim_sup"].notna().any():
@@ -349,13 +358,32 @@ def mapa_departamentos(variacion: pd.DataFrame, geojson: dict) -> go.Figure:
     mismo color significaria "subio" en un mes y "bajo" en otro. Azul = bajo,
     rojo = subio, blanco = sin cambio.
 
-    Un departamento sin dato no se dibuja: queda el fondo del mapa. Nunca se
-    pinta de un color de la escala, que insinuaria "sin cambio".
+    Se dibujan siempre los 33 departamentos, para que Colombia se vea completa.
+    Los que no tienen dato van en gris claro, con su propia entrada "sin dato"
+    en la leyenda. Nunca se pintan de un color de la escala: el blanco ya
+    significa "sin cambio" y el gris significa "no sabemos".
     """
+    fig = go.Figure()
+
+    # Capa de abajo: los departamentos sin dato, en gris. Va primero para que
+    # quede debajo de la capa con colores.
+    sin_dato = [f for f in geojson["features"]
+                if f["properties"]["DPTO"] not in set(variacion["dpto_codigo"])]
+    fig.add_trace(go.Choropleth(
+        geojson=geojson, featureidkey="properties.DPTO",
+        locations=[f["properties"]["DPTO"] for f in sin_dato],
+        z=[0] * len(sin_dato),   # un solo valor: el color sale de la escala de un tono
+        text=[f["properties"]["NOMBRE_DPT"].title() for f in sin_dato],
+        hovertemplate="<b>%{text}</b><br>sin dato de este artículo<extra></extra>",
+        colorscale=[(0, GRIS_SIN_DATO), (1, GRIS_SIN_DATO)], showscale=False,
+        marker_line_color=BORDE, marker_line_width=0.6,
+        name="sin dato", showlegend=True,
+    ))
+
     # El limite lo fija el departamento que mas se movio, con un piso de 5 % para
     # que un mes tranquilo no se vea como una crisis de colores.
     tope = max(5.0, float(variacion["variacion"].abs().max() or 0))
-    fig = go.Figure(go.Choropleth(
+    fig.add_trace(go.Choropleth(
         geojson=geojson, locations=variacion["dpto_codigo"], featureidkey="properties.DPTO",
         z=variacion["variacion"],
         customdata=np.stack([variacion["departamento"], variacion["mercados"]], axis=-1),
@@ -366,9 +394,12 @@ def mapa_departamentos(variacion: pd.DataFrame, geojson: dict) -> go.Figure:
         marker_line_color=BORDE, marker_line_width=0.6,
         colorbar=dict(title=dict(text="% frente al<br>mes anterior", side="right"),
                       ticksuffix="%", thickness=14, len=0.8, outlinewidth=0),
+        name="con dato", showlegend=False,
     ))
     fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
-    fig.update_layout(height=620, margin=dict(l=0, r=0, t=10, b=0), dragmode=False)
+    fig.update_layout(height=620, margin=dict(l=0, r=0, t=10, b=0), dragmode=False,
+                      legend=dict(y=0.02, x=0.02, bgcolor="rgba(255,255,255,.85)",
+                                  bordercolor=BORDE, borderwidth=1))
     return fig
 
 
@@ -402,6 +433,38 @@ def matriz_semaforo(matriz: pd.DataFrame, glifos: pd.DataFrame, detalle: pd.Data
         yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
         plot_bgcolor="#FFFFFF",
         margin=dict(l=8, r=8, t=90, b=8),
+    )
+    return fig
+
+
+def matriz_variacion(tabla: pd.DataFrame, etiquetas: list[str], detalle: pd.DataFrame) -> go.Figure:
+    """Matriz fila x mes pintada por la variacion % contra el mes anterior.
+
+    Igual que el mapa: escala divergente y simetrica alrededor de cero (azul =
+    bajo, rojo = subio, blanco = casi igual). Una celda sin dato queda vacia y
+    se ve el fondo, nunca un color que insinue "no cambio".
+    """
+    valores = tabla.to_numpy(dtype=float)
+    tope = max(5.0, float(np.nanmax(np.abs(valores)))) if np.isfinite(valores).any() else 5.0
+    # El numero va dentro de la celda: el color nunca va solo.
+    texto = tabla.map(lambda v: f"{v:+.0f}%" if pd.notna(v) else "")
+    fig = go.Figure(go.Heatmap(
+        z=valores, x=etiquetas, y=tabla.index.tolist(),
+        text=texto.values, texttemplate="%{text}", textfont=dict(size=11),
+        customdata=detalle.values,
+        hovertemplate="<b>%{y}</b><br>%{x}<br>%{customdata}<extra></extra>",
+        zmin=-tope, zmax=tope,
+        colorscale=[(0, AZUL), (0.5, "#FFFFFF"), (1, ROJO)],
+        colorbar=dict(title=dict(text="% frente al<br>mes anterior", side="right"),
+                      ticksuffix="%", thickness=14, outlinewidth=0),
+        xgap=2, ygap=2,
+    ))
+    fig.update_layout(
+        height=max(320, 26 * len(tabla) + 140),
+        xaxis=dict(side="top", tickangle=-45, gridcolor="rgba(0,0,0,0)", ticks=""),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=8, r=8, t=80, b=8),
     )
     return fig
 

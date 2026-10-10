@@ -195,3 +195,118 @@ def test_el_huevo_se_mide_por_unidad_y_el_aceite_por_litro():
             assert fila["unidad"] == "unidad", fila
         if fila["articulo"].startswith("Aceite"):
             assert fila["unidad"] == "litro", fila
+
+
+# --- Mejoras de la revision en vivo (C2-17 a C2-20) ---
+
+BASE = RAIZ / "data" / "processed" / "caso8.duckdb"
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _textos(app) -> str:
+    """Todo el texto visible de una pagina simulada, en un solo string."""
+    partes = [e.value for e in list(app.markdown) + list(app.caption) + list(app.info)
+              + list(app.warning)]
+    return "\n".join(str(p) for p in partes)
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_canasta_familiar_usa_el_precio_semanal_y_declara_su_periodo():
+    """C2-17: la canasta familiar (arroz, huevo, carnes...) sale del precio semanal.
+
+    El periodo cubierto se lee de la base, no se escribe a mano: la ventana del
+    DANE se mueve cada semana.
+    """
+    import duckdb
+
+    con = duckdb.connect(str(BASE), read_only=True)
+    desde, hasta = con.execute(
+        "SELECT min(semana_inicio), max(semana_inicio) FROM fact_precio_semanal WHERE en_canasta"
+    ).fetchone()
+    con.close()
+
+    pagina = APP / "paginas" / "canasta.py"
+    app = streamlit_testing.AppTest.from_file(str(pagina), default_timeout=180).run()
+    assert not app.exception, [e.message for e in app.exception]
+
+    assert any("canasta familiar" in t.label.lower() for t in app.tabs)
+    texto = _textos(app)
+    for dia in (desde, hasta):
+        assert f"{dia.day} {MESES[dia.month - 1]} {dia.year}" in texto
+
+
+def test_el_mapa_dibuja_los_33_departamentos_y_los_sin_dato_en_gris():
+    """C2-18: un departamento sin dato se dibuja gris, con leyenda "sin dato".
+
+    Si no se dibuja, Colombia se ve recortada. No usa la base: arma la figura con
+    dos departamentos inventados y el GeoJSON real.
+    """
+    import json
+
+    import pandas as pd
+
+    import graficas
+
+    geo = json.loads((RAIZ / "config" / "geo" / "colombia_departamentos.geojson")
+                     .read_text(encoding="utf-8"))
+    variacion = pd.DataFrame({"dpto_codigo": ["05", "11"], "departamento": ["Antioquia", "Bogota"],
+                              "mercados": [11, 4], "variacion": [3.2, -1.5]})
+    fig = graficas.mapa_departamentos(variacion, geo)
+
+    dibujados = set()
+    for traza in fig.data:
+        dibujados |= set(traza.locations)
+    assert len(dibujados) == 33
+
+    grises = [t for t in fig.data if t.name == "sin dato"]
+    assert len(grises) == 1 and grises[0].showlegend
+    assert set(grises[0].locations).isdisjoint({"05", "11"})
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_cadena_usa_el_precio_diario_cuando_el_articulo_tiene_par_exacto():
+    """C2-19: con el precio diario (desde 2020) la cadena cruza muchos mas meses.
+
+    El semanal solo coincide unos 7 meses con lluvia y toneladas. La zanahoria
+    tiene par exacto en el precio diario y Medellin tiene mercado diario.
+    """
+    import datos
+
+    assert datos.par_diario(54) == "Zanahoria"
+    assert datos.par_diario(162) is None          # "Papa superior" no tiene par exacto
+
+    df = datos.cadena(54, "05", "Zanahoria")
+    completos = df.dropna(subset=["lluvia_mm", "toneladas", "precio"])
+    assert len(completos) >= 24
+    assert int(completos["periodo"].min()) < 202101   # arranca antes del hueco de SIPSA
+
+    # Papa criolla no esta en el semanal, pero si en el diario: ahora tiene cadena.
+    assert 541 in set(datos.articulos_cadena()["art_id"])
+
+
+def test_el_pronostico_corta_la_linea_real_en_el_hueco_de_2021():
+    """C2-20: la linea del precio real no une 2020 con 2022 a traves del hueco.
+
+    Los meses que faltan entran vacios (NaN) para que Plotly corte la linea; no
+    se rellenan (regla 4 del proyecto). No usa la base.
+    """
+    import math
+
+    import pandas as pd
+
+    import graficas
+
+    df = pd.DataFrame({
+        "periodo": [202011, 202012, 202202, 202203],
+        "horizonte": [None] * 4, "tipo": ["real"] * 4, "valor": [100.0, 110.0, 120.0, 125.0],
+        "lim_inf": [None] * 4, "lim_sup": [None] * 4,
+    })
+    fig = graficas.pronostico_con_banda(df)
+    real = next(t for t in fig.data if t.name == "precio real")
+
+    fechas = pd.to_datetime(list(real.x))
+    valores = list(real.y)
+    assert len(fechas) == 17                        # nov 2020 a mar 2022, mes por mes
+    en_2021 = [v for f, v in zip(fechas, valores) if f.year == 2021]
+    assert len(en_2021) == 12 and all(v is None or math.isnan(v) for v in en_2021)
+    assert real.connectgaps is False

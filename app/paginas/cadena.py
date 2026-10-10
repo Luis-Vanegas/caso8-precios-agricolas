@@ -9,7 +9,8 @@ import streamlit as st
 import estilo
 import graficas
 from datos import (UMBRAL_Q, articulos_cadena, cadena, departamentos_cadena, fecha,
-                   sensibilidad_cadena, tabla_existe)
+                   fuente_precio, mercados_diarios, par_diario, sensibilidad_cadena,
+                   tabla_existe)
 
 estilo.aplicar()
 estilo.encabezado(
@@ -65,7 +66,10 @@ with der:
     codigo = st.selectbox("Departamento", zonas["dpto_codigo"].tolist(),
                           format_func=lambda c: nombres[c])
 
-df = cadena(art_id, codigo)
+# De donde sale el precio: el diario (desde 2020) si el articulo tiene par
+# exacto y el departamento tiene mercado diario; si no, el semanal (13 meses).
+producto_diario = fuente_precio(art_id, codigo)
+df = cadena(art_id, codigo, producto_diario)
 if df.empty:
     st.info(f"No hay datos de **{etiquetas[art_id]}** en {nombres[codigo]}.")
     st.stop()
@@ -75,10 +79,30 @@ if df.empty:
 completos = df.dropna(subset=["lluvia_mm", "toneladas", "precio"])
 unidad = df["unidad"].dropna().iloc[0] if df["unidad"].notna().any() else "kg"
 
+if producto_diario:
+    mercados = ", ".join(m.split(",")[0].title() for m in mercados_diarios(codigo))
+    st.info(
+        f"**Fuente del precio: precio diario de SIPSA, promedio mensual, desde 2020** "
+        f"(producto «{producto_diario.replace('*', '')}», mercado de {mercados}). "
+        "Este artículo tiene el mismo nombre en el abastecimiento y en el precio diario, así que "
+        "se puede usar la serie larga. Con ella la cadena se cruza en muchos más meses que con "
+        "el precio semanal."
+    )
+else:
+    motivo = ("no tiene un artículo con el mismo nombre en el precio diario"
+              if par_diario(art_id) is None
+              else f"{nombres[codigo]} no tiene mercado en el precio diario")
+    st.info(
+        f"**Fuente del precio: precio semanal de SIPSA** (solo los últimos doce meses, aprox.). "
+        f"No se usa el precio diario, que llega a 2020, porque {motivo}. Emparejar nombres "
+        "distintos mezclaría variedades (por ejemplo, «Papa negra» agrupa varias papas)."
+    )
+
 estilo.fila_de_tarjetas([
     estilo.tarjeta("Meses con lluvia", f"{int(df['lluvia_mm'].notna().sum())}", "clima observado"),
     estilo.tarjeta("Meses con toneladas", f"{int(df['toneladas'].notna().sum())}", "abastecimiento"),
-    estilo.tarjeta("Meses con precio", f"{int(df['precio'].notna().sum())}", "precios semanales"),
+    estilo.tarjeta("Meses con precio", f"{int(df['precio'].notna().sum())}",
+                   "precio diario (mensual)" if producto_diario else "precios semanales"),
     estilo.tarjeta("Las tres a la vez", f"{len(completos)}",
                    f"{fecha(int(completos['periodo'].min()))} a {fecha(int(completos['periodo'].max()))}"
                    if not completos.empty else "ningún mes en común",
@@ -93,9 +117,10 @@ if completos.empty:
 elif len(completos) < 12:
     st.warning(
         f"**Las tres series coinciden en solo {len(completos)} meses.** "
-        "Los precios semanales del DANE son una ventana móvil de doce meses y el abastecimiento "
-        "va unos meses atrasado, así que el tramo comparable es corto. Alcanza para mirar, no "
-        "para concluir."
+        + ("Los precios semanales del DANE son una ventana móvil de doce meses y el "
+           "abastecimiento va unos meses atrasado, así que el tramo comparable es corto. "
+           if not producto_diario else "")
+        + "Alcanza para mirar, no para concluir."
     )
 
 st.subheader(f"{etiquetas[art_id]} · {nombres[codigo]}")
