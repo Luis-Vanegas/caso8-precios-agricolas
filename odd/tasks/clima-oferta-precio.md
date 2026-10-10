@@ -93,6 +93,11 @@ Problemas vistos en vivo por Claude 1: el Inicio es una columna larga de tarjeta
 - [x] C2-25 Revisar TODAS las unidades en pantalla: cada °C, %, mm o $ con su significado al lado. Nada de jerga (z, q, p, MAE) sin traducir
 - [x] C2-26 `tests/test_app.py` con las 7 páginas; verificar en el navegador con capturas antes del PR
 
+### Producción y descarga de datos (pedido del usuario 2026-10-10, lo hace Claude 1)
+- [x] C1-10 Pestaña "Descargar datos" en "Cómo lo hicimos" (`app/secciones/descargas.py`): cualquier tabla en CSV (UTF-8 con BOM) o Excel, o las principales en un ZIP con LEEME, para OpenRefine y Power Query sin Python. Atajo anotado en `docs/guia_openrefine.md` y `docs/guia_powerquery.md`
+- [x] C1-11 Corrida diaria completa (`scripts/diario.py`) + 29 chequeos + pruebas, y la base actualizada a `main` (producción despliega desde `main`) — 2026-10-10: 29/29 chequeos, 188 pruebas en verde
+- [ ] C1-12 Revisar las 7 páginas en vivo (local y producción)
+
 ## Cómo se integra
 1. Cada uno trabaja en su carpeta y su rama. Commits pequeños, Conventional Commits, sin atribución de IA.
 2. Antes de abrir un PR: `git fetch origin` + `git rebase origin/main` + `pytest` en verde.

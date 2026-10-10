@@ -1,5 +1,7 @@
 # Guía de OpenRefine — homologación de productos
 
+> **Atajo sin Python:** abrí la app (local o el link de producción) → **Cómo lo hicimos** → pestaña **Descargar datos**. Ahí bajás cualquier tabla ya limpia en CSV o Excel, o todas las principales en un ZIP con un LEEME. En OpenRefine: `Create Project` → `This Computer` → el CSV descargado (codificación UTF-8).
+
 OpenRefine es uno de los tres entregables obligatorios del reto, junto con Python y Power Query.
 Esta guía es el paso que ejecutás vos a mano. Al final exportás el JSON de operaciones a
 `data/openrefine/`, que sí se versiona, para que el trabajo sea reproducible.
