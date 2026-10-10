@@ -104,13 +104,17 @@ Método y razones en `src/indicators/sensibilidad.py`. **Lo que cuenta como hall
 | `q_valor` | decimal | p-valor corregido por pruebas múltiples (Benjamini-Hochberg, dentro de cada eslabón) |
 | `metodo` | texto | `correlacion_pearson`, `regresion_estacional` o `panel_efectos_fijos` |
 
-### `indicador_quiebres` (prueba de Chow)
+### `indicador_quiebres` (Chow y Brown-Forsythe)
+Una fila por producto, fecha candidata (inicio de fase ENSO) y tipo de cambio. Método y las tres trampas que evita en `src/indicators/quiebres.py`.
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `art_id`, `articulo`, `mercado` | | Siempre por artículo, nunca promedio de variedades |
-| `periodo_quiebre` | entero | Mes candidato a quiebre |
-| `f_chow`, `p_valor` | decimal | Estadístico F y su p |
-| `hay_quiebre` | booleano | `p_valor < 0,05` |
+| `producto`, `mercado` | texto | `mercado` = `nacional` (mediana de los mercados) |
+| `periodo_quiebre`, `fase_que_empieza` | entero, texto | Fecha probada y fase ENSO que empieza ahí |
+| `que_cambia` | texto | `ritmo` (Chow sobre el cambio mensual promedio) o `volatilidad` (Brown-Forsythe) |
+| `f_chow`, `p_valor`, `q_valor` | decimal | Estadístico F, p y p corregido (Benjamini-Hochberg dentro de cada `que_cambia`) |
+| `valor_antes_pct`, `valor_despues_pct` | decimal | % por mes: promedio del cambio (ritmo) o desviación estándar (volatilidad), del precio relativo a la canasta |
+| `n_antes`, `n_despues` | entero | Meses usados en cada tramo |
+| `hay_quiebre` | booleano | `q_valor < 0,1` |
 
 ### `pronostico_precio`
 | Columna | Tipo | Descripción |
