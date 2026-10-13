@@ -309,7 +309,11 @@ def mapa_departamentos(variacion: pd.DataFrame, geojson: dict) -> go.Figure:
                       ticksuffix="%", thickness=14, len=0.8, outlinewidth=0),
         name="con dato", showlegend=False,
     ))
-    fig.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+    # Encuadre fijo de Colombia (con San Andres arriba a la izquierda). Con
+    # fitbounds="locations" plotly dejaba el pais chico en medio del lienzo.
+    fig.update_geos(fitbounds=False, visible=False,
+                    lonaxis_range=[-82, -66.5], lataxis_range=[-4.4, 13.5],
+                    bgcolor="rgba(0,0,0,0)")
     fig.update_layout(height=620, margin=dict(l=0, r=0, t=10, b=0), dragmode=False,
                       legend=dict(y=0.02, x=0.02, bgcolor="rgba(255,255,255,.85)",
                                   bordercolor=BORDE, borderwidth=1))
