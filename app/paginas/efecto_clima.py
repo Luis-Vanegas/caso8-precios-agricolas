@@ -187,14 +187,15 @@ with encontrado:
             departamento=hallazgos["departamento"].fillna("todas las zonas (panel)"),
         )
         st.dataframe(
-            tabla[["eslabon", "producto", "departamento", "rezago_meses", "coeficiente", "q_valor", "n"]],
+            # .style.format: coma decimal sin perder el orden numerico al hacer clic.
+            tabla[["eslabon", "producto", "departamento", "rezago_meses", "coeficiente", "q_valor", "n"]]
+            .style.format({"coeficiente": lambda v: estilo.decimal(v, 3, signo=True),
+                           "q_valor": lambda v: estilo.decimal(v, 4)}, na_rep=""),
             column_config={
                 "eslabon": "Eslabón", "producto": "Producto", "departamento": "Zona",
                 "rezago_meses": st.column_config.NumberColumn("Meses después", format="%d"),
-                "coeficiente": st.column_config.NumberColumn(
-                    "Efecto (negativo = baja)", format="%+.3f"),
-                "q_valor": st.column_config.NumberColumn(
-                    "Probabilidad de casualidad (q)", format="%.4f"),
+                "coeficiente": "Efecto (negativo = baja)",
+                "q_valor": "Probabilidad de casualidad (q)",
                 "n": st.column_config.NumberColumn("Meses usados", format="%d"),
             },
             width="stretch", hide_index=True,

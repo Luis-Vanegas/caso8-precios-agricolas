@@ -105,10 +105,12 @@ st.caption(
 
 st.subheader("El detalle, en números")
 st.dataframe(
-    df[["departamento", "variacion", "mercados"]],
+    # .style.format: coma decimal sin perder el orden numerico al hacer clic.
+    df[["departamento", "variacion", "mercados"]].style.format(
+        {"variacion": lambda v: f"{estilo.decimal(v, signo=True)} %"}, na_rep=""),
     column_config={
         "departamento": "Departamento",
-        "variacion": st.column_config.NumberColumn("Cambio del mes", format="%+.1f%%"),
+        "variacion": "Cambio del mes",
         "mercados": st.column_config.NumberColumn("Mercados", format="%d"),
     },
     width="stretch", hide_index=True, height=min(520, 36 * (len(df) + 1) + 3),

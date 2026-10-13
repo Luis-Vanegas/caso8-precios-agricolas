@@ -158,12 +158,15 @@ def mostrar() -> None:
         hallazgos = int(tabla["hallazgo"].sum())
 
         st.dataframe(
-            tabla[["eslabon", "rezago_meses", "coeficiente", "q_valor", "n", "hallazgo", "metodo"]],
+            # .style.format: coma decimal sin perder el orden numerico al hacer clic.
+            tabla[["eslabon", "rezago_meses", "coeficiente", "q_valor", "n", "hallazgo", "metodo"]]
+            .style.format({"coeficiente": lambda v: estilo.decimal(v, 4, signo=True),
+                           "q_valor": lambda v: estilo.decimal(v, 4)}, na_rep=""),
             column_config={
                 "eslabon": "Eslabón",
                 "rezago_meses": st.column_config.NumberColumn("Meses después", format="%d"),
-                "coeficiente": st.column_config.NumberColumn("Efecto (negativo = baja)", format="%+.4f"),
-                "q_valor": st.column_config.NumberColumn("Probabilidad de casualidad (q)", format="%.4f"),
+                "coeficiente": "Efecto (negativo = baja)",
+                "q_valor": "Probabilidad de casualidad (q)",
                 "n": st.column_config.NumberColumn("Meses usados", format="%d"),
                 "hallazgo": st.column_config.CheckboxColumn("¿Se sostiene?"),
                 "metodo": "Método",

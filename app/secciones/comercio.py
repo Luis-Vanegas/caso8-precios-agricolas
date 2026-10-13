@@ -44,5 +44,13 @@ def mostrar() -> None:
 
     with st.expander("Ver la tabla"):
         st.dataframe(dep[dep["anio"] == anio].sort_values("dependencia_pct", ascending=False)
-                     [["item", "produccion", "importacion", "exportacion", "consumo_aparente", "dependencia_pct"]],
+                     [["item", "produccion", "importacion", "exportacion", "consumo_aparente", "dependencia_pct"]]
+                     # Toneladas con punto de miles y porcentaje con coma, como en Colombia.
+                     .style.format({**{c: lambda v: estilo.decimal(v, 0) for c in
+                                       ["produccion", "importacion", "exportacion", "consumo_aparente"]},
+                                    "dependencia_pct": lambda v: f"{estilo.decimal(v)} %"}, na_rep=""),
+                     column_config={"item": "Producto (FAO)", "produccion": "Producción (t)",
+                                    "importacion": "Importación (t)", "exportacion": "Exportación (t)",
+                                    "consumo_aparente": "Consumo aparente (t)",
+                                    "dependencia_pct": "Viene de afuera"},
                      width="stretch", hide_index=True)

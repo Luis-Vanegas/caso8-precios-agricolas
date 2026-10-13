@@ -120,10 +120,13 @@ with pestana_familiar:
             del_ultimo = del_ultimo[del_ultimo["grupo_dane"] == grupo]
         top = del_ultimo.reindex(del_ultimo["variacion"].abs().sort_values(ascending=False).index).head(10)
         st.dataframe(
-            top[["articulo", "grupo_dane", "unidad", "variacion", "mercados"]],
+            # .style.format solo cambia como se ve el numero (coma decimal); al
+            # hacer clic en la columna se sigue ordenando por el valor real.
+            top[["articulo", "grupo_dane", "unidad", "variacion", "mercados"]].style.format(
+                {"variacion": lambda v: f"{estilo.decimal(v, signo=True)} %"}, na_rep=""),
             column_config={
                 "articulo": "Artículo", "grupo_dane": "Grupo", "unidad": "Unidad",
-                "variacion": st.column_config.NumberColumn("Cambio del mes", format="%+.1f%%"),
+                "variacion": "Cambio del mes",
                 "mercados": st.column_config.NumberColumn("Mercados", format="%d"),
             },
             width="stretch", hide_index=True, height=min(420, 36 * (len(top) + 1) + 3),

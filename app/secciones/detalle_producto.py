@@ -89,19 +89,25 @@ def mostrar() -> None:
     with st.expander("Ver la tabla completa"):
         st.dataframe(
             serie[["periodo", "precio_cop_kg", "precio_min", "precio_max", "dias_con_dato",
-                   "retorno_log", "volatilidad_anualizada", "z_score", "alerta"]],
+                   "retorno_log", "volatilidad_anualizada", "z_score", "alerta"]].style.format({
+                # Coma decimal y punto de miles, como en Colombia; el valor real no
+                # cambia, asi que ordenar por columna sigue funcionando.
+                "precio_cop_kg": lambda v: f"$ {estilo.decimal(v, 0)}",
+                "precio_min": lambda v: f"$ {estilo.decimal(v, 0)}",
+                "precio_max": lambda v: f"$ {estilo.decimal(v, 0)}",
+                "retorno_log": lambda v: estilo.decimal(v, 3, signo=True),
+                "volatilidad_anualizada": lambda v: f"{estilo.decimal(v * 100, 1)} %",
+                "z_score": lambda v: estilo.decimal(v, 1, signo=True),
+            }, na_rep=""),
             column_config={
                 "periodo": st.column_config.NumberColumn("Año y mes", format="%d"),
-                "precio_cop_kg": st.column_config.NumberColumn("Precio (pesos por kg)", format="$%.0f"),
-                "precio_min": st.column_config.NumberColumn("Más bajo del mes", format="$%.0f"),
-                "precio_max": st.column_config.NumberColumn("Más alto del mes", format="$%.0f"),
+                "precio_cop_kg": "Precio (pesos por kg)",
+                "precio_min": "Más bajo del mes",
+                "precio_max": "Más alto del mes",
                 "dias_con_dato": st.column_config.NumberColumn("Días con dato", format="%d"),
-                "retorno_log": st.column_config.NumberColumn(
-                    "Cambio vs mes anterior (logaritmo)", format="%+.3f"),
-                "volatilidad_anualizada": st.column_config.NumberColumn(
-                    "Cuánto se mueve en un año", format="percent"),
-                "z_score": st.column_config.NumberColumn(
-                    "Desviaciones de lo normal", format="%+.1f"),
+                "retorno_log": "Cambio vs mes anterior (logaritmo)",
+                "volatilidad_anualizada": "Cuánto se mueve en un año",
+                "z_score": "Desviaciones de lo normal",
                 "alerta": "Alerta",
             },
             width="stretch", hide_index=True,
