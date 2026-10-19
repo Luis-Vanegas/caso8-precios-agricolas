@@ -151,7 +151,7 @@ if oni >= 0.5:
     estilo.explicacion(
         f"Hay <b>El Niño</b> (el Pacífico, {estilo.decimal(oni)} °C más caliente de lo normal en "
         f"{fase['trimestre']} {int(fase['anio'])}). En Colombia, un El Niño fuerte sube la "
-        "inflación de alimentos a los <b>4 y 5 meses</b> (Abril-Salcedo et al., 2016). Cuánto "
+        "inflación de alimentos a los <b>4 y 5 meses</b> (Abril-Salcedo et al., 2015). Cuánto "
         "lo medimos nosotros está en la página <b>¿Cuánto afecta el clima?</b>",
         etiqueta="Ojo con el clima",
     )
