@@ -82,7 +82,7 @@ La guía pide mínimo 3 fuentes: una tipo **sensor**, un **archivo** (CSV/Excel)
 
 ## 4. Referencias en IEEE
 
-### Académicas (10) — todas verificadas en Crossref
+### Académicas (12) — todas verificadas en Crossref
 
 [1] H. D. Mafukidze, A. Nechibvute, A. Yahya, I. A. Badruddin, S. Kamangar, and M. Hussien, "Development of a modularized undergraduate data science and big data curricular using no-code software development tools," *IEEE Access*, vol. 12, pp. 100939–100956, 2024, doi: 10.1109/ACCESS.2024.3429241.
 
@@ -106,25 +106,31 @@ La guía pide mínimo 3 fuentes: una tipo **sensor**, un **archivo** (CSV/Excel)
 
 *Nota:* el lugar y la ciudad de [9] no vienen en Crossref; si lo quieren en el formato completo, verifíquenlo en la página de ACM.
 
+[11] L. R. E. Malau, N. A. Ulya, and R. Anjani, "Study of ENSO impact on agricultural food crops price as basic knowledge to improve community food security," *IOP Conf. Ser.: Earth Environ. Sci.*, vol. 874, Art. no. 012008, 2021, doi: 10.1088/1755-1315/874/1/012008.
+
+[12] J. D. Abril-Salcedo, L. F. Melo-Velandia, and D. Parra-Amado, "Impactos de los fenómenos climáticos sobre el precio de los alimentos en Colombia," *Borradores de Economía*, no. 902, Banco de la República, 2015, doi: 10.32468/be.902.
+
+*Nota:* [11] es la base del panel de `src/indicators/sensibilidad.py` y [12] se cita en el Inicio de la app (verificadas en Crossref y OpenAlex el 2026-10-18).
+
 ### Técnicas y oficiales
 
-[11] Food and Agriculture Organization of the United Nations, "FAOSTAT," FAO. [Online]. Available: https://www.fao.org/faostat/en/#data. [Accessed: Sep. 29, 2026]. **[200]**
+[13] Food and Agriculture Organization of the United Nations, "FAOSTAT," FAO. [Online]. Available: https://www.fao.org/faostat/en/#data. [Accessed: Sep. 29, 2026]. **[200]**
 
-[12] Departamento Administrativo Nacional de Estadística (DANE), "Sistema de información de precios y abastecimiento del sector agropecuario (SIPSA)." [Online]. Available: https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa. [Accessed: Sep. 29, 2026]. **[200]**
+[14] Departamento Administrativo Nacional de Estadística (DANE), "Sistema de información de precios y abastecimiento del sector agropecuario (SIPSA)." [Online]. Available: https://www.dane.gov.co/index.php/estadisticas-por-tema/agropecuario/sistema-de-informacion-de-precios-sipsa. [Accessed: Sep. 29, 2026]. **[200]**
 
-[13] Instituto de Hidrología, Meteorología y Estudios Ambientales (IDEAM), "Precipitación," Datos Abiertos Colombia, dataset s54a-sgyg. [Online]. Available: https://www.datos.gov.co/d/s54a-sgyg. [Accessed: Sep. 29, 2026]. **[API]**
+[15] Instituto de Hidrología, Meteorología y Estudios Ambientales (IDEAM), "Precipitación," Datos Abiertos Colombia, dataset s54a-sgyg. [Online]. Available: https://www.datos.gov.co/d/s54a-sgyg. [Accessed: Sep. 29, 2026]. **[API]**
 
-[14] IDEAM, "Temperatura ambiente del aire," Datos Abiertos Colombia, dataset sbwg-7ju4. [Online]. Available: https://www.datos.gov.co/d/sbwg-7ju4. [Accessed: Sep. 29, 2026]. **[API]**
+[16] IDEAM, "Temperatura ambiente del aire," Datos Abiertos Colombia, dataset sbwg-7ju4. [Online]. Available: https://www.datos.gov.co/d/sbwg-7ju4. [Accessed: Sep. 29, 2026]. **[API]**
 
-[15] NASA, "Prediction Of Worldwide Energy Resources (POWER) — API documentation." [Online]. Available: https://power.larc.nasa.gov/docs/services/api/. [Accessed: Sep. 29, 2026]. **[200]**
+[17] NASA, "Prediction Of Worldwide Energy Resources (POWER) — API documentation." [Online]. Available: https://power.larc.nasa.gov/docs/services/api/. [Accessed: Sep. 29, 2026]. **[200]**
 
-[16] NOAA Climate Prediction Center, "Oceanic Niño Index (ONI)," data file oni.ascii.txt. [Online]. Available: https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt. [Accessed: Sep. 29, 2026]. **[200]**
+[18] NOAA Climate Prediction Center, "Oceanic Niño Index (ONI)," data file oni.ascii.txt. [Online]. Available: https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt. [Accessed: Sep. 29, 2026]. **[200]**
 
-[17] World Bank, "Commodity markets (Pink Sheet)." [Online]. Available: https://www.worldbank.org/en/research/commodity-markets. [Accessed: Sep. 29, 2026]. **[200]**
+[19] World Bank, "Commodity markets (Pink Sheet)." [Online]. Available: https://www.worldbank.org/en/research/commodity-markets. [Accessed: Sep. 29, 2026]. **[200]**
 
-[18] OpenRefine, "OpenRefine documentation." [Online]. Available: https://docs.openrefine.org/. [Accessed: Sep. 29, 2026]. **[200]**
+[20] OpenRefine, "OpenRefine documentation." [Online]. Available: https://docs.openrefine.org/. [Accessed: Sep. 29, 2026]. **[200]**
 
-Total: **18** (10 académicas, 8 técnicas). La guía pide 10 en total y 5 académicas; solo cuentan las que **citen en el texto**.
+Total: **20** (12 académicas, 8 técnicas). La guía pide 10 en total y 5 académicas; solo cuentan las que **citen en el texto**.
 
 ## 5. Para qué sirve cada académica (datos de los resúmenes; redáctenlo ustedes)
 
