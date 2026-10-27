@@ -366,7 +366,7 @@ def test_la_app_tiene_7_paginas():
 @pytest.mark.parametrize("nombre, pestanas", [
     ("canasta", ["Canasta familiar", "Frutas y verduras", "Detalle de un producto"]),
     ("clima", ["Hoy y lo que viene", "El Niño y La Niña", "Sensor de lluvia del IDEAM"]),
-    ("como_lo_hicimos", ["Recorrido paso a paso", "Calidad de datos", "Producción y comercio"]),
+    ("como_lo_hicimos", ["Recorrido paso a paso", "Limpieza y nulos", "Calidad de datos", "Producción y comercio"]),
 ])
 def test_las_paginas_fusionadas_traen_sus_secciones(nombre, pestanas):
     """C2-23: cada antigua pagina es una pestana de la pagina que la absorbio."""

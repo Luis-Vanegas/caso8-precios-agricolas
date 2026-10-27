@@ -7,7 +7,7 @@ Absorbe las antiguas paginas "Recorrido paso a paso", "Calidad de datos" y
 import streamlit as st
 
 import estilo
-from secciones import calidad, comercio, descargas, recorrido
+from secciones import calidad, comercio, descargas, limpieza, recorrido
 
 estilo.aplicar()
 estilo.encabezado(
@@ -23,14 +23,17 @@ estilo.para_presentar(
     "de SIPSA (ene. 2021 a ene. 2022) se declara y se deja vacío."
 )
 
-paso_a_paso, calidad_datos, fao, bajar = st.tabs([
+paso_a_paso, limpieza_nulos, calidad_datos, fao, bajar = st.tabs([
     "Recorrido paso a paso",
+    "Limpieza y nulos",
     "Calidad de datos",
     "Producción y comercio (FAO)",
     "Descargar datos",
 ])
 with paso_a_paso:
     recorrido.mostrar()
+with limpieza_nulos:
+    limpieza.mostrar()
 with calidad_datos:
     calidad.mostrar()
 with fao:
