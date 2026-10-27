@@ -516,6 +516,32 @@ def sensibilidad_hallazgos() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=TTL)
+def oni_lluvia_por_zona() -> pd.DataFrame:
+    """Correlacion entre El Nino (ONI) y la lluvia de cada zona, por rezago de 0 a 6 meses."""
+    return consultar("""
+        SELECT departamento, rezago_meses, coeficiente, q_valor, n
+        FROM indicador_sensibilidad_clima
+        WHERE eslabon = 'oni->lluvia'
+        ORDER BY departamento, rezago_meses
+    """)
+
+
+@st.cache_data(ttl=TTL)
+def lluvia_de_zona(departamento: str) -> pd.DataFrame:
+    """Anomalia mensual de lluvia de una zona (mm/dia frente a lo normal de ese mes).
+
+    Un departamento puede tener varios cultivos con la misma cuadricula: se promedia
+    para que cada mes cuente una sola vez.
+    """
+    dpto = departamento.replace("'", "''")
+    return consultar(f"""
+        SELECT anio, mes, avg(precipitacion_anomalia) AS anomalia
+        FROM fact_clima WHERE departamento = '{dpto}'
+        GROUP BY anio, mes ORDER BY anio, mes
+    """)
+
+
+@st.cache_data(ttl=TTL)
 def quiebres_resumen() -> pd.DataFrame:
     """Una fila por fecha probada: cuantos productos cambiaron su ritmo o su volatilidad.
 

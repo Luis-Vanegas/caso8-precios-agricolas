@@ -328,17 +328,37 @@ def _abrir(nombre: str):
 
 
 @pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_pagina_del_clima_muestra_la_correlacion_con_su_guia():
+    """La pagina dice que El Nino cambia la lluvia: tiene que mostrarlo. Tres graficas
+    (El Nino vs lluvia, zona x rezago, eslabones) y una guia de lectura por cada una."""
+    import json
+
+    app = _abrir("efecto_clima")
+    figuras = [json.loads(g.proto.spec) for g in app.get("plotly_chart")]
+    assert len(figuras) >= 3
+    # La matriz zona x rezago muestra los 7 rezagos (0 a 6 meses).
+    matrices = [f for f in figuras if f["data"] and f["data"][0]["type"] == "heatmap"]
+    assert matrices and len(matrices[0]["data"][0]["x"]) == 7
+    assert (_textos(app) + _html(app)).count("Cómo leer esta gráfica") >= 3
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
 def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
-    """C2-22: maximo 5 filas, un producto no se repite (antes salia el platano
-    3 veces, una por mercado), y ni rastro de `z`."""
+    """C2-22: un producto no se repite en el termometro (antes salia el platano
+    3 veces, una por mercado), la grafica trae su guia de lectura y ni rastro de `z`."""
+    import json
+
     app = _abrir("inicio")
 
-    tabla = app.dataframe[0].value
-    assert 1 <= len(tabla) <= 5
-    assert tabla["Producto"].is_unique
-    assert tabla["Qué pasó con el precio"].str.match(r"^[▲▼] (subió|bajó) \d+ %$").all()
+    # El termometro es la primera grafica: una fila por producto, maximo 12.
+    figura = json.loads(app.get("plotly_chart")[0].proto.spec)
+    filas = figura["layout"]["yaxis"]["ticktext"]
+    productos = [f.split(" · ")[0] for f in filas]
+    assert 1 <= len(productos) <= 12
+    assert len(set(productos)) == len(productos)
 
     pantalla = _textos(app) + _html(app)
+    assert "Cómo leer esta gráfica" in pantalla
     assert "z =" not in pantalla and "z-score" not in pantalla.lower()
     # El ONI dice en palabras que es, en la misma tarjeta.
     assert "°C más caliente de lo normal" in pantalla or "°C más frío de lo normal" in pantalla \

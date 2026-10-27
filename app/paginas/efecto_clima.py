@@ -17,8 +17,9 @@ import pandas as pd
 import streamlit as st
 
 import estilo
-from datos import (UMBRAL_Q, fecha, quiebres_resumen, sensibilidad_hallazgos,
-                   sensibilidad_resumen, tabla_existe)
+import graficas
+from datos import (UMBRAL_Q, enso, fecha, lluvia_de_zona, oni_lluvia_por_zona, quiebres_resumen,
+                   sensibilidad_hallazgos, sensibilidad_resumen, tabla_existe)
 from secciones import cadena
 
 estilo.aplicar()
@@ -153,6 +154,46 @@ with encontrado:
     for nota in notas:
         st.caption(nota)
 
+    # --- La prueba visual: El Nino y la lluvia -------------------------------------
+    st.subheader("El Niño y la lluvia: se ve a simple vista")
+    por_zona = oni_lluvia_por_zona()
+    sostienen = por_zona[por_zona["q_valor"] < UMBRAL_Q]
+    # La zona con mas hallazgos va primero: es donde mejor se ve la relacion.
+    zonas = (sostienen.groupby("departamento").size().sort_values(ascending=False).index.tolist()
+             + [z for z in por_zona["departamento"].unique() if z not in set(sostienen["departamento"])])
+    zona = st.selectbox("Zona productora", zonas)
+
+    estilo.grafica(graficas.oni_y_lluvia(enso(), lluvia_de_zona(zona), zona))
+    propios = sostienen[sostienen["departamento"] == zona]
+    if propios.empty:
+        veredicto = (f"En {zona} la relación <b>no se sostiene</b>: lo que se ve puede ser casualidad.")
+    else:
+        mejor = propios.loc[propios["coeficiente"].abs().idxmax()]
+        veredicto = (
+            f"En {zona} la relación <b>sí se sostiene</b> en {len(propios)} de "
+            f"{int((por_zona['departamento'] == zona).sum())} rezagos; la más fuerte es a "
+            f"{int(mejor['rezago_meses'])} meses (correlación {estilo.decimal(mejor['coeficiente'], 2, signo=True)}).")
+    estilo.explicacion(
+        "<b>Arriba</b>, el Pacífico: rojo es más caliente de lo normal, azul más frío. Las "
+        "<b>franjas rojas</b> son los episodios de El Niño y cruzan las dos gráficas.<br>"
+        "<b>Abajo</b>, la lluvia de la zona: café es que llovió menos de lo normal, azul que llovió "
+        "más.<br>"
+        "<b>Qué buscar:</b> si las barras cafés caen dentro o justo después de las franjas rojas, "
+        "El Niño y la sequía van juntos. " + veredicto,
+        etiqueta="Cómo leer esta gráfica",
+    )
+
+    st.subheader("¿En qué zonas y con cuánto retraso se sostiene?")
+    estilo.grafica(graficas.matriz_correlacion(por_zona, UMBRAL_Q))
+    estilo.explicacion(
+        "Cada fila es una zona y cada columna es cuántos meses <b>después</b> de que cambia El "
+        "Niño miramos la lluvia. <b>Café</b> con número: llueve menos cuando sube El Niño (cuanto "
+        "más oscuro y más lejos de 0, más fuerte). <b>Gris sin número</b>: ahí la relación no se "
+        "sostiene, puede ser casualidad; no quiere decir que no llueva, sino que no podemos "
+        "afirmar nada.<br>La correlación va de −1 a +1: 0 es ninguna relación.",
+        etiqueta="Cómo leer esta gráfica",
+    )
+
     # Los productos donde la senal se sostiene, leidos de la base (no escritos a mano).
     con_senal = list(dict.fromkeys(nombre(p).lower() for p in
                                    pd.concat([lluvia["producto"], bajan["producto"]])))
@@ -176,9 +217,17 @@ with encontrado:
     filas = []
     for clave, (titulo, pregunta) in EN_PALABRAS.items():
         e = eslabon(clave)
-        filas.append({"Eslabón": titulo, "La pregunta": pregunta,
-                      "Pruebas": int(e["pruebas"]), "Se sostienen": int(e["hallazgos"])})
-    st.dataframe(pd.DataFrame(filas), width="stretch", hide_index=True)
+        filas.append({"etiqueta": titulo, "pruebas": int(e["pruebas"]), "hallazgos": int(e["hallazgos"])})
+    estilo.grafica(graficas.barras_se_sostienen(pd.DataFrame(filas)))
+    estilo.explicacion(
+        "Cada barra es un eslabón de la cadena. La pista gris son <b>todas las pruebas</b> que "
+        "hicimos; la barra verde, las que <b>se sostienen</b>. <b>Qué buscar:</b> una cadena "
+        "completa tendría las cuatro barras largas. Aquí solo el primer eslabón (El Niño → lluvia) "
+        "es fuerte; del medio al precio, casi nada se sostiene.",
+        etiqueta="Cómo leer esta gráfica",
+    )
+    st.caption("Las preguntas de cada eslabón: " + " · ".join(
+        f"{t.split(' · ')[0]}: {p}" for t, p in EN_PALABRAS.values()))
 
     with st.expander("Ver cada hallazgo con sus números"):
         tabla = hallazgos.assign(

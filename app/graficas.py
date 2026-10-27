@@ -19,6 +19,9 @@ from src.indicators.volatilidad import UMBRAL_AMARILLA, UMBRAL_ROJA
 
 # Gris claro para "sin dato" en los mapas: distinto del blanco, que es "sin cambio".
 GRIS_SIN_DATO = "#DADAD4"
+# Franja de "lo normal" del termometro: mas oscura que BORDE (la franja de "lo raro")
+# para que las dos se distingan sin necesitar color.
+GRIS_BANDA = "#C2BEB0"
 
 
 def _con_fecha(df: pd.DataFrame) -> pd.DataFrame:
@@ -382,6 +385,178 @@ def matriz_variacion(tabla: pd.DataFrame, etiquetas: list[str], detalle: pd.Data
         yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks=""),
         plot_bgcolor="#FFFFFF",
         margin=dict(l=8, r=8, t=80, b=8),
+    )
+    return fig
+
+
+def termometro(tabla: pd.DataFrame) -> go.Figure:
+    """Una fila por producto: la franja de lo normal y un punto con el cambio del mes.
+
+    Columnas que espera `tabla` (una fila por producto, ya ordenada):
+      etiqueta  texto del eje (producto y mercado)
+      cambio    variacion del mes frente al anterior, en fraccion (0.35 = +35 %)
+      normal_lo, normal_hi   limites de lo normal (media +- UMBRAL_AMARILLA desviaciones)
+      raro_lo, raro_hi       limites de lo raro (media +- UMBRAL_ROJA desviaciones)
+      alerta    'verde' | 'amarilla' | 'roja'
+      detalle   texto del tooltip
+
+    Cada fila tiene su propia franja: un producto muy volatil tiene una franja
+    ancha y uno estable la tiene angosta. Un punto fuera de la franja oscura es
+    una alerta; fuera de la clara, alerta roja. Es exactamente la regla del
+    z-score, pero dibujada.
+    """
+    n = len(tabla)
+    ys = list(range(n))
+    fig = go.Figure()
+
+    # Las franjas son rectangulos (shapes): cada fila tiene su ancho propio.
+    for i, f in enumerate(tabla.itertuples()):
+        for lo, hi, color in ((f.raro_lo, f.raro_hi, BORDE), (f.normal_lo, f.normal_hi, GRIS_BANDA)):
+            fig.add_shape(type="rect", xref="x", yref="y", x0=lo, x1=hi, y0=i - 0.3, y1=i + 0.3,
+                          fillcolor=color, line_width=0, layer="below")
+    fig.add_vline(x=0, line_width=1, line_color=GRIS)
+
+    # Entradas de leyenda para las franjas (los shapes no aparecen en la leyenda).
+    for nombre, color in (("Franja normal", GRIS_BANDA), ("Franja rara", BORDE)):
+        fig.add_trace(go.Scatter(x=[None], y=[None], mode="markers", name=nombre,
+                                 marker=dict(symbol="square", size=14, color=color,
+                                             line=dict(width=1, color=GRIS))))
+
+    # Un trazo por estado: asi la leyenda dice la palabra, no solo el color.
+    nombres = {"verde": "Normal", "amarilla": "Alerta amarilla", "roja": "Alerta roja"}
+    for estado in ("verde", "amarilla", "roja"):
+        sub = tabla[tabla["alerta"] == estado]
+        fig.add_trace(go.Scatter(
+            x=sub["cambio"], y=[ys[tabla.index.get_loc(i)] for i in sub.index],
+            mode="markers+text", name=nombres[estado],
+            text=[f"{'▲' if c > 0 else '▼'} {c * 100:+.0f} %".replace(".", ",") for c in sub["cambio"]],
+            textposition="middle right", textfont=dict(size=14, color=TINTA),
+            marker=dict(size=15, color=COLOR_ALERTA[estado], line=dict(width=2, color="#FFFFFF")),
+            customdata=sub["detalle"], hovertemplate="%{customdata}<extra></extra>"))
+
+    extremos = pd.concat([tabla["cambio"], tabla["normal_lo"], tabla["normal_hi"]])
+    margen = 0.12
+    fig.update_layout(
+        height=max(320, 40 * n + 150),
+        xaxis=dict(tickformat="+.0%", range=[extremos.min() - margen, extremos.max() + 2 * margen],
+                   title="Cambio del precio frente al mes anterior", zeroline=False),
+        yaxis=dict(tickmode="array", tickvals=ys, ticktext=tabla["etiqueta"].tolist(),
+                   autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks="", automargin=True),
+        legend=dict(orientation="h", y=1.04, x=0, yanchor="bottom", font=dict(size=13), entrywidth=120),
+        margin=dict(l=8, r=8, t=70, b=8), plot_bgcolor="#FFFFFF",
+    )
+    return fig
+
+
+def oni_y_lluvia(enso: pd.DataFrame, lluvia: pd.DataFrame, zona: str, desde: int = 2015) -> go.Figure:
+    """Dos paneles con el mismo eje de tiempo: El Nino arriba, la lluvia de la zona abajo.
+
+    Son dos paneles y no dos ejes verticales: asi cada medida conserva su escala y
+    el ojo compara las fechas. Las franjas rojas marcan los episodios de El Nino
+    (cinco meses seguidos con ONI >= 0,5, la regla de NOAA) y cruzan los dos paneles.
+    """
+    from plotly.subplots import make_subplots
+
+    e = _con_fecha(enso[enso["anio"] >= desde])
+    ll = _con_fecha(lluvia[lluvia["anio"] >= desde])
+
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                        subplot_titles=("El Pacífico frente a lo normal (°C)",
+                                        f"Lluvia en {zona} frente a lo normal (mm por día)"))
+    colores_oni = [ROJO if v >= 0.5 else AZUL if v <= -0.5 else GRIS_SIN_DATO for v in e["anomalia"]]
+    fig.add_trace(go.Bar(x=e["fecha"], y=e["anomalia"], marker_color=colores_oni, showlegend=False,
+                         hovertemplate="%{x|%b %Y}: %{y:+.1f} °C<extra></extra>"), row=1, col=1)
+    colores_lluvia = [AZUL if v > 0 else TIERRA for v in ll["anomalia"]]
+    fig.add_trace(go.Bar(x=ll["fecha"], y=ll["anomalia"], marker_color=colores_lluvia, showlegend=False,
+                         hovertemplate="%{x|%b %Y}: %{y:+.1f} mm/día vs normal<extra></extra>"), row=2, col=1)
+
+    # Episodios de El Nino: rachas de 5 o mas meses con ONI >= 0,5.
+    caliente = (e["anomalia"] >= 0.5).to_numpy()
+    inicio = None
+    for i, activo in enumerate(list(caliente) + [False]):
+        if activo and inicio is None:
+            inicio = i
+        elif not activo and inicio is not None:
+            if i - inicio >= 5:
+                fig.add_vrect(x0=e["fecha"].iloc[inicio] - pd.Timedelta(days=15),
+                              x1=e["fecha"].iloc[i - 1] + pd.Timedelta(days=15),
+                              fillcolor=ROJO, opacity=0.10, line_width=0, layer="below")
+            inicio = None
+
+    fig.update_layout(height=520, margin=dict(l=8, r=8, t=60, b=8), bargap=0.15)
+    fig.update_xaxes(gridcolor="rgba(0,0,0,0)")
+    return fig
+
+
+def matriz_correlacion(tabla: pd.DataFrame, umbral_q: float) -> go.Figure:
+    """Zona x rezago: la correlacion entre El Nino y la lluvia, solo donde se sostiene.
+
+    Recibe columnas departamento, rezago_meses, coeficiente y q_valor. La celda que
+    NO se sostiene (podria ser casualidad) queda en gris liso y sin numero; la que
+    si se sostiene lleva color y el numero dentro. Escala divergente: cafe = llueve
+    menos cuando sube El Nino, azul = llueve mas, centrada en cero.
+    """
+    sostiene = tabla["q_valor"] < umbral_q
+    cuantas = tabla[sostiene].groupby("departamento").size().reindex(
+        tabla["departamento"].unique(), fill_value=0)
+    zonas = cuantas.sort_values(ascending=False, kind="stable").index.tolist()
+    rezagos = sorted(tabla["rezago_meses"].unique())
+
+    def pivote(col: str, relleno) -> pd.DataFrame:
+        return tabla.pivot(index="departamento", columns="rezago_meses", values=col).reindex(
+            index=zonas, columns=rezagos).fillna(relleno)
+
+    valores = pivote("coeficiente", np.nan).where(pivote("q_valor", 1) < umbral_q)
+    detalle = tabla.assign(
+        txt=lambda d: np.where(
+            d["q_valor"] < umbral_q, "se sostiene", "no se sostiene (puede ser casualidad)")
+    ).pivot(index="departamento", columns="rezago_meses", values="txt").reindex(index=zonas, columns=rezagos)
+    coef = pivote("coeficiente", np.nan)
+    hover = coef.map(lambda v: f"correlación {v:+.2f}".replace(".", ",") if pd.notna(v) else "") \
+        + "<br>" + detalle.fillna("")
+    texto = valores.map(lambda v: f"{v:+.2f}".replace(".", ",") if pd.notna(v) else "")
+    tope = max(0.3, float(np.nanmax(np.abs(valores.to_numpy(dtype=float))))) \
+        if np.isfinite(valores.to_numpy(dtype=float)).any() else 0.3
+
+    fig = go.Figure(go.Heatmap(
+        z=valores.to_numpy(dtype=float), x=[f"{r}" for r in rezagos], y=zonas,
+        text=texto.values, texttemplate="%{text}", textfont=dict(size=13, color=TINTA),
+        customdata=hover.values, hovertemplate="<b>%{y}</b>, %{x} meses después<br>%{customdata}<extra></extra>",
+        zmin=-tope, zmax=tope, hoverongaps=True, xgap=3, ygap=3,
+        colorscale=[(0, TIERRA), (0.5, "#FFFFFF"), (1, AZUL)],
+        colorbar=dict(title=dict(text="Correlación", side="right"), thickness=14, outlinewidth=0),
+    ))
+    fig.update_layout(
+        height=max(300, 40 * len(zonas) + 130),
+        xaxis=dict(side="top", title="Meses después de que cambia El Niño", type="category",
+                   gridcolor="rgba(0,0,0,0)", ticks=""),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks="", automargin=True),
+        plot_bgcolor=GRIS_SIN_DATO, margin=dict(l=8, r=8, t=90, b=8),
+    )
+    return fig
+
+
+def barras_se_sostienen(tabla: pd.DataFrame) -> go.Figure:
+    """Una barra por eslabon: que parte de las pruebas se sostiene.
+
+    Columnas: etiqueta, pruebas, hallazgos. La pista gris es el 100 % de las
+    pruebas; la barra de color, las que se sostienen. El texto dice "N de M".
+    """
+    pct = tabla["hallazgos"] / tabla["pruebas"]
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=[1] * len(tabla), y=tabla["etiqueta"], orientation="h", marker_color=BORDE,
+                         hoverinfo="skip", showlegend=False))
+    fig.add_trace(go.Bar(
+        x=pct, y=tabla["etiqueta"], orientation="h", marker_color=VERDE, showlegend=False,
+        text=[f"{int(h)} de {int(p)}" for h, p in zip(tabla["hallazgos"], tabla["pruebas"])],
+        textposition="outside", textfont=dict(size=14, color=TINTA), cliponaxis=False,
+        hovertemplate="%{y}<br>%{text} pruebas se sostienen<extra></extra>"))
+    fig.update_layout(
+        barmode="overlay", height=60 * len(tabla) + 70,
+        xaxis=dict(range=[0, 1.18], tickformat=".0%", tickvals=[0, 0.25, 0.5, 0.75, 1],
+                   title="Parte de las pruebas que se sostienen", gridcolor="rgba(0,0,0,0)"),
+        yaxis=dict(autorange="reversed", gridcolor="rgba(0,0,0,0)", ticks="", automargin=True),
+        margin=dict(l=8, r=8, t=10, b=8), plot_bgcolor="#FFFFFF",
     )
     return fig
 

@@ -74,6 +74,7 @@ Semánticos (nunca se neutralizan ni se reutilizan para decorar):
 
 | Página | Codificación | Escala |
 |---|---|---|
+| Portada (termómetro) | cambio del mes de cada producto frente a su rango normal | una fila por producto; franja oscura = media ± 2 desviaciones (`GRIS_BANDA`), clara = ± 3 (`BORDE`); punto con `COLOR_ALERTA`, glifo ▲/▼ y cambio en % al lado, estado en palabras en leyenda y tooltip; guía «Cómo leer esta gráfica» debajo |
 | Semáforo de la canasta | estado por celda (producto × periodo) | categórica `COLOR_ALERTA`; glifo solo en las celdas encendidas (`▲` roja, `●` amarilla) y estado en palabras en el tooltip de toda celda; celda sin dato en `#FFFFFF`, sin texto |
 | Mapa | cambio % de precio por departamento | divergente `AZUL` → `#FFFFFF` → `ROJO`, centrada en 0 y simétrica; sin dato: `#E6E0D2` con trama o nota |
 | Clima hoy | lluvia / temperatura | lluvia en `AZUL`, temperatura en `TIERRA`; pronóstico con línea punteada del mismo color |
