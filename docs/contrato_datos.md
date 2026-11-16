@@ -1,5 +1,8 @@
 # Contrato de datos: tablas nuevas de la fase "clima → oferta → precio"
 
+> Las tablas se renombraron el 15-nov-2026. La descripción completa y la tabla
+> "antes → después" están en [diccionario_datos.md](diccionario_datos.md).
+
 Este documento es el acuerdo entre las dos sesiones de trabajo:
 
 - **Claude 1** (carpeta `AdquiDatos`, rama `feat/datos-clima-oferta`) construye estas tablas en `data/processed/caso8.duckdb`.

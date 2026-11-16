@@ -103,7 +103,7 @@ pendientes están en `TASKS.md`.
 1. Traer      scripts/actualizar.py   descarga cada fuente a data/raw/  (sin modificarla)
 2. Limpiar    scripts/preparar.py     limpia, lleva todo a meses, perfila -> data/interim/
 3. Homologar  config/homologacion_productos.csv  (revisado con OpenRefine)
-4. Unir       scripts/integrar.py     arma el modelo estrella en DuckDB y corre 19 chequeos
+4. Unir       scripts/integrar.py     arma la base en DuckDB (18 tablas, ver docs/diccionario_datos.md) y corre 29 chequeos
 5. Detectar   src/indicators/volatilidad.py  retorno, volatilidad, z-score y alerta
 ```
 

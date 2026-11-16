@@ -184,7 +184,10 @@ OPCIONALES: dict[str, tuple[str, str]] = {
     # Mismo grano que mundo_clima_zona_mensual (departamento, anio, mes): esa es
     # la variable de integracion entre el sensor y el resto del modelo.
     "col_sensor_ideam_mensual": ("ideam/ideam_depto.parquet", f"""
-        SELECT variable, departamento, anio, mes, anio * 100 + mes AS periodo,
+        SELECT variable, departamento,
+               -- El parquet trae anio y mes con decimales (2023.0): se dejan enteros.
+               CAST(anio AS INTEGER) AS anio, CAST(mes AS INTEGER) AS mes,
+               CAST(anio * 100 + mes AS INTEGER) AS periodo,
                valor, anomalia, n_estaciones
         FROM {_p('ideam/ideam_depto.parquet')}
     """),
