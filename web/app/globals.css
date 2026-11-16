@@ -156,9 +156,9 @@ p { margin: 0; }
 .tabla-chica th, .tabla-chica td { text-align: left; padding: 0.45rem 0.6rem 0.45rem 0; border-bottom: 1px solid var(--borde); font-weight: 400; }
 .tabla-chica thead th { color: var(--gris); font-size: 0.8rem; font-weight: 600; }
 
-.aviso { border-radius: 12px; padding: 0.8rem 1rem; font-size: 0.92rem; background: var(--fondo-suave); border-left: 6px solid var(--borde); }
-.aviso-bien { border-left-color: var(--verde); }
-.aviso-cuidado { border-left-color: var(--amarillo); }
+/* El aviso dice su estado con palabras ("Confianza alta/baja"), no con una franja de color. */
+.aviso { border-radius: 12px; padding: 0.8rem 1rem; font-size: 0.92rem; background: var(--fondo-suave); border: 1px solid var(--borde); }
+.aviso-bien strong { color: var(--verde); }
 
 .nota { color: var(--gris); font-size: 0.88rem; margin-top: 0.7rem; max-width: 75ch; }
 
