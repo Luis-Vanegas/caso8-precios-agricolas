@@ -5,6 +5,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 
+import { Contador } from "@/componentes/Contador";
 import { GraficaDetalle, Minigrafica } from "@/componentes/Graficas";
 import {
   cambioEsperado, direccion, estadoGeneral, FLECHA, mesLargo, motivoEstado,
@@ -143,20 +144,20 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
     <section aria-labelledby="titulo-tablero">
       <div className="resumen">
         <div className="cifra">
-          <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> {suben}</span>
+          <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> <Contador valor={suben} /></span>
           <span className="cifra-texto">subieron frente al mes pasado</span>
         </div>
         <div className="cifra">
-          <span className="cifra-numero cambio-baja"><span className="flecha" aria-hidden="true">▼</span> {bajan}</span>
+          <span className="cifra-numero cambio-baja"><span className="flecha" aria-hidden="true">▼</span> <Contador valor={bajan} /></span>
           <span className="cifra-texto">bajaron frente al mes pasado</span>
         </div>
         <div className="cifra">
-          <span className="cifra-numero">{fuera}</span>
+          <span className="cifra-numero"><Contador valor={fuera} /></span>
           <span className="cifra-texto">se movieron más de lo normal</span>
         </div>
         {esNacional && (
           <div className="cifra">
-            <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> {subiran}</span>
+            <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> <Contador valor={subiran} /></span>
             <span className="cifra-texto">se espera que suban el próximo mes</span>
           </div>
         )}
@@ -196,11 +197,12 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
           </tr>
         </thead>
         <tbody>
-          {filas.map((fila) => {
+          {filas.map((fila, posicion) => {
             const estaAbierto = abierto === fila.producto;
             return (
               <Fragment key={fila.producto}>
-                <tr className={estaAbierto ? "fila fila-abierta" : "fila"}>
+                <tr className={estaAbierto ? "fila fila-abierta" : "fila"}
+                  style={{ animationDelay: `${Math.min(posicion, 14) * 28}ms` }}>
                   <th scope="row" data-titulo="Producto">
                     <button type="button" className="boton-producto" aria-expanded={estaAbierto}
                       onClick={() => setAbierto(estaAbierto ? null : fila.producto)}>

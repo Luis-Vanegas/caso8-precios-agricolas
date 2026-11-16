@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "./modulos.css";
+
+import { Navegacion } from "@/componentes/Navegacion";
 
 // Las tres familias del DESIGN.md: Fraunces da la voz en los titulos, Inter es
 // el texto y JetBrains Mono los numeros (los digitos tienen todos el mismo ancho).
@@ -20,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {/* La franja tricolor es la marca del proyecto (DESIGN.md): no es un dato. */}
         <div className="franja" aria-hidden="true" />
+        <Navegacion />
         {children}
       </body>
     </html>

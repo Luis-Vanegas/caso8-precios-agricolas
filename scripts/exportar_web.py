@@ -134,18 +134,211 @@ def armar_tablero(precios: pd.DataFrame, pronosticos: pd.DataFrame) -> dict:
     }
 
 
+# --- Mapa y clima ---------------------------------------------------------------------
+
+MESES_DEL_MAPA = 12
+GEOJSON = RAIZ / "config" / "geo" / "colombia_departamentos.geojson"
+
+# Los nombres de config/departamentos.csv van sin tildes (son llaves de cruce).
+# En pantalla se muestran bien escritos.
+TILDES = {"Atlantico": "Atlántico", "Bogota": "Bogotá", "Bolivar": "Bolívar", "Boyaca": "Boyacá",
+          "Caqueta": "Caquetá", "Cordoba": "Córdoba", "Choco": "Chocó", "Narino": "Nariño",
+          "Quindio": "Quindío", "San Andres": "San Andrés", "Guainia": "Guainía", "Vaupes": "Vaupés"}
+
+
+def simplificar(geojson: dict, decimales: int = 2) -> dict:
+    """Redondea las coordenadas (2 decimales ~ 1 km) y quita los puntos repetidos.
+
+    El archivo original pesa 1,5 MB porque trae detalle de metros; para pintar el
+    pais en una pantalla sobra, y la web cargaria lento.
+    """
+    def anillo(puntos):
+        salida = []
+        for lon, lat in puntos:
+            punto = [round(lon, decimales), round(lat, decimales)]
+            if not salida or salida[-1] != punto:
+                salida.append(punto)
+        return salida if len(salida) >= 4 else None      # un anillo necesita al menos 4 puntos
+
+    def poligono(anillos):
+        limpios = [a for a in (anillo(r) for r in anillos) if a]
+        return limpios or None
+
+    rasgos = []
+    for rasgo in geojson["features"]:
+        geometria = rasgo["geometry"]
+        partes = [geometria["coordinates"]] if geometria["type"] == "Polygon" else geometria["coordinates"]
+        poligonos = [q for q in (poligono(parte) for parte in partes) if q]
+        rasgos.append({"type": "Feature",
+                       "properties": {"codigo": rasgo["properties"]["DPTO"]},
+                       "geometry": {"type": "MultiPolygon", "coordinates": poligonos}})
+    return {"type": "FeatureCollection", "features": rasgos}
+
+
+def _serie_por_mes(tabla: pd.DataFrame, columna: str, periodos: list[int], decimales: int = 1) -> list:
+    por_periodo = tabla.set_index("periodo")[columna]
+    return [_numero(por_periodo.get(p), decimales) for p in periodos]
+
+
+def armar_mapa(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
+    """Lo que pinta el mapa: por departamento y mes, como va el precio y como va la lluvia."""
+    departamentos = pd.read_csv(RAIZ / "config" / "departamentos.csv", dtype=str)
+    mercados = con.execute("SELECT mercado, dpto_codigo FROM catalogo_mercado").df()
+
+    # Precio: cambio frente al mismo mes del anio pasado, mediana de los productos del departamento.
+    por_mercado = volatilidad.comparacion_anual(
+        precios.loc[precios["mes_cerrado"], ["mercado", "producto", "periodo", "precio_cop_kg"]])
+    ultimo = int(por_mercado["periodo"].max())
+    periodos = [_sumar_meses(ultimo, -k) for k in range(MESES_DEL_MAPA - 1, -1, -1)]
+    precio = (por_mercado.merge(mercados, on="mercado")
+              .groupby(["dpto_codigo", "periodo"], as_index=False)
+              .agg(cambio=("cambio_anual_pct", "median"), productos=("cambio_anual_pct", "count")))
+
+    # Lluvia: lo que midieron los sensores del IDEAM frente a lo normal de ese mes, en %.
+    sensor = con.execute(
+        "SELECT departamento, periodo, valor, anomalia, n_estaciones FROM col_sensor_ideam_mensual "
+        "WHERE variable = 'precipitacion'").df().merge(departamentos, on="departamento")
+    normal = sensor["valor"] - sensor["anomalia"]
+    sensor["lluvia_pct"] = (100 * sensor["anomalia"] / normal).where(normal > 0)
+
+    estaciones = con.execute(
+        "SELECT departamento, lat, lon FROM col_estacion_ideam WHERE lat IS NOT NULL").df().merge(
+        departamentos, on="departamento")
+    por_venir = con.execute("SELECT * FROM mundo_pronostico_lluvia ORDER BY departamento, periodo").df()
+
+    filas = []
+    for d in departamentos.itertuples():
+        p = precio[precio["dpto_codigo"] == d.dpto_codigo]
+        s = sensor[sensor["dpto_codigo"] == d.dpto_codigo]
+        futuro = por_venir[por_venir["dpto_codigo"] == d.dpto_codigo]
+        filas.append({
+            "codigo": d.dpto_codigo,
+            "nombre": TILDES.get(d.departamento, d.departamento),
+            "precio": _serie_por_mes(p, "cambio", periodos) if not p.empty else None,
+            "lluvia": _serie_por_mes(s, "lluvia_pct", periodos, 0) if not s.empty else None,
+            "lluvia_mm": _serie_por_mes(s, "valor", periodos, 0) if not s.empty else None,
+            "estaciones": int((estaciones["dpto_codigo"] == d.dpto_codigo).sum()),
+            "lluvia_esperada": [{"periodo": int(f.periodo), "seco": _numero(f.precip_p10, 0),
+                                 "central": _numero(f.precip_p50, 0), "lluvioso": _numero(f.precip_p90, 0),
+                                 "frente_a_lo_normal": _numero(f.anomalia_p50, 0)}
+                                for f in futuro.itertuples()] or None,
+        })
+
+    nino = con.execute("SELECT anio * 100 + mes AS periodo, trimestre, anomalia, fase, provisional "
+                       "FROM mundo_fenomeno_nino ORDER BY periodo DESC LIMIT 36").df().iloc[::-1]
+    hoy = nino.iloc[-1]
+    return {
+        "periodos": periodos,
+        "departamentos": filas,
+        # Cada estacion es un punto [longitud, latitud]: son los sensores reales del IDEAM.
+        "estaciones": [[round(float(e.lon), 3), round(float(e.lat), 3)] for e in estaciones.itertuples()],
+        "nino": {"fase": hoy["fase"], "anomalia": _numero(hoy["anomalia"], 2), "periodo": int(hoy["periodo"]),
+                 "trimestre": hoy["trimestre"], "provisional": bool(hoy["provisional"]),
+                 "serie": [{"periodo": int(f.periodo), "anomalia": _numero(f.anomalia, 2)}
+                           for f in nino.itertuples()]},
+    }
+
+
+# --- Fuentes y huecos -----------------------------------------------------------------
+
+# De donde sale cada dato. `ultimo` es la consulta que dice hasta cuando llega.
+FUENTES = [
+    {"nombre": "SIPSA · precios mayoristas", "entidad": "DANE", "origen": "nacional",
+     "aporta": "El precio de cada alimento en cada central mayorista. Es el dato central del proyecto.",
+     "frecuencia": "Diaria", "tablas": ["col_precio_mayorista_mensual", "col_precio_mayorista_semanal"],
+     "ultimo": "SELECT strftime(max(semana_inicio), '%Y-%m-%d') FROM col_precio_mayorista_semanal"},
+    {"nombre": "SIPSA · abastecimiento", "entidad": "DANE", "origen": "nacional",
+     "aporta": "Las toneladas de cada alimento que entran a cada central: la oferta.",
+     "frecuencia": "Mensual", "tablas": ["col_abastecimiento_mensual"],
+     "ultimo": "SELECT max(periodo) FROM col_abastecimiento_mensual"},
+    {"nombre": "Sensores automáticos", "entidad": "IDEAM", "origen": "nacional",
+     "aporta": "Lluvia y temperatura medidas en tierra por estaciones del país. Es la fuente de sensor.",
+     "frecuencia": "Cada 10 minutos a 1 hora", "tablas": ["col_sensor_ideam_mensual", "col_estacion_ideam"],
+     "ultimo": "SELECT max(periodo) FROM col_sensor_ideam_mensual"},
+    {"nombre": "FAOSTAT", "entidad": "FAO (Naciones Unidas)", "origen": "internacional",
+     "aporta": "Precio al productor, producción, comercio, balance alimentario y valor de la producción de Colombia.",
+     "frecuencia": "Anual, con uno o dos años de rezago", "tablas": ["mundo_fao_colombia"],
+     "ultimo": "SELECT max(anio) FROM mundo_fao_colombia"},
+    {"nombre": "NASA POWER", "entidad": "NASA", "origen": "internacional",
+     "aporta": "Lluvia y temperatura estimadas por satélite en las zonas donde se cultiva cada producto, desde 1991.",
+     "frecuencia": "Mensual", "tablas": ["mundo_clima_zona_mensual"],
+     "ultimo": "SELECT max(periodo) FROM mundo_clima_zona_mensual"},
+    {"nombre": "Índice ONI", "entidad": "NOAA (Estados Unidos)", "origen": "internacional",
+     "aporta": "Si hay fenómeno de El Niño o de La Niña, y qué tan fuerte.",
+     "frecuencia": "Mensual", "tablas": ["mundo_fenomeno_nino"],
+     "ultimo": "SELECT max(anio * 100 + mes) FROM mundo_fenomeno_nino"},
+    {"nombre": "Open-Meteo", "entidad": "Open-Meteo", "origen": "internacional",
+     "aporta": "Clima de cada día y el pronóstico: 16 días y los próximos meses.",
+     "frecuencia": "Diaria", "tablas": ["mundo_clima_diario", "mundo_pronostico_lluvia"],
+     "ultimo": "SELECT strftime(max(fecha), '%Y-%m-%d') FROM mundo_clima_diario WHERE tipo = 'observado'"},
+    {"nombre": "Pink Sheet", "entidad": "Banco Mundial", "origen": "internacional",
+     "aporta": "El precio internacional de los fertilizantes, el principal insumo de los cultivos.",
+     "frecuencia": "Mensual", "tablas": ["mundo_precio_fertilizantes"],
+     "ultimo": "SELECT max(periodo) FROM mundo_precio_fertilizantes"},
+]
+
+
+def _fecha_legible(valor) -> str:
+    """202609 -> 'septiembre de 2026'; 2024 -> '2024'; '2026-10-03' -> '3 de octubre de 2026'."""
+    texto = str(valor)
+    if len(texto) == 6 and texto.isdigit():
+        return nombre_mes(int(texto))
+    if len(texto) == 10:
+        anio, mes, dia = (int(x) for x in texto.split("-"))
+        return f"{dia} de {MESES[mes - 1]} de {anio}"
+    return texto
+
+
+def armar_fuentes(con: duckdb.DuckDBPyConnection) -> dict:
+    """Las fuentes, separadas en nacionales e internacionales, y lo que todavia falta."""
+    uno = lambda sql: con.execute(sql).fetchone()[0]
+    fuentes = [{
+        **{k: f[k] for k in ("nombre", "entidad", "origen", "aporta", "frecuencia", "tablas")},
+        "filas": sum(uno(f'SELECT count(*) FROM "{t}"') for t in f["tablas"]),
+        "ultimo_dato": _fecha_legible(uno(f["ultimo"])),
+    } for f in FUENTES]
+
+    # Los huecos se miden, no se suponen: cada cifra sale de una consulta.
+    total_deptos = len(pd.read_csv(RAIZ / "config" / "departamentos.csv"))
+    meses = con.execute("SELECT DISTINCT periodo FROM col_precio_mayorista_mensual ORDER BY 1").df()["periodo"]
+    esperados = (meses.max() // 100 - meses.min() // 100) * 12 + (meses.max() % 100 - meses.min() % 100) + 1
+    productos = uno("SELECT count(*) FROM catalogo_producto")
+    huecos = {
+        "departamentos": total_deptos,
+        "departamentos_con_precio": uno("SELECT count(DISTINCT dpto_codigo) FROM catalogo_mercado"),
+        "departamentos_con_sensor": uno("SELECT count(DISTINCT departamento) FROM col_sensor_ideam_mensual"),
+        "meses_sin_precio": int(esperados - len(meses)),
+        "productos": productos,
+        "productos_con_zona": uno("SELECT count(DISTINCT producto_sipsa) FROM catalogo_zona_productora "
+                                  "WHERE producto_sipsa IS NOT NULL"),
+        "productos_comparables_fao": uno("SELECT count(*) FROM catalogo_producto WHERE permite_comparar_precio"),
+        "pronosticos_confiables": uno("SELECT count(*) FROM resultado_pronostico_precio "
+                                      "WHERE tipo = 'pronostico' AND horizonte = 1 AND gana_al_ingenuo"),
+        "relaciones_clima": uno("SELECT count(*) FROM resultado_efecto_clima"),
+        "relaciones_clima_firmes": uno("SELECT count(*) FROM resultado_efecto_clima WHERE q_valor < 0.1"),
+        "ultimo_precio": nombre_mes(int(uno("SELECT max(periodo) FROM col_precio_mayorista_mensual WHERE mes_cerrado"))),
+        "ultimo_abastecimiento": nombre_mes(int(uno("SELECT max(periodo) FROM col_abastecimiento_mensual"))),
+    }
+    return {"fuentes": fuentes, "huecos": huecos}
+
+
+def _escribir(nombre: str, contenido: dict) -> None:
+    SALIDA.mkdir(parents=True, exist_ok=True)
+    destino = SALIDA / nombre
+    destino.write_text(json.dumps(contenido, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"  {destino.relative_to(RAIZ)}: {destino.stat().st_size / 1024:.0f} KB")
+
+
 def main() -> int:
     con = duckdb.connect(str(BASE_DUCKDB), read_only=True)
     precios = con.execute("SELECT * FROM col_precio_mayorista_mensual").df()
     pronosticos = con.execute("SELECT * FROM resultado_pronostico_precio").df()
-    con.close()
 
-    tablero = armar_tablero(precios, pronosticos)
-    SALIDA.mkdir(parents=True, exist_ok=True)
-    destino = SALIDA / "tablero.json"
-    destino.write_text(json.dumps(tablero, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"{destino.relative_to(RAIZ)}: {len(tablero['filas'])} filas, "
-          f"ultimo mes {tablero['ultimo_mes_texto']}, {destino.stat().st_size / 1024:.0f} KB")
+    _escribir("tablero.json", armar_tablero(precios, pronosticos))
+    _escribir("mapa.json", armar_mapa(con, precios))
+    _escribir("fuentes.json", armar_fuentes(con))
+    _escribir("colombia.json", simplificar(json.loads(GEOJSON.read_text(encoding="utf-8"))))
+    con.close()
     return 0
 
 

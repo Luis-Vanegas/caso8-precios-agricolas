@@ -47,3 +47,83 @@ export interface Tablero {
   umbrales: { amarilla: number; roja: number };
   filas: Fila[];
 }
+
+// --- public/datos/mapa.json ---------------------------------------------------------
+
+export interface LluviaEsperada {
+  periodo: number;
+  /** Milimetros en el mes: escenario seco, central y lluvioso. */
+  seco: number | null;
+  central: number | null;
+  lluvioso: number | null;
+  frente_a_lo_normal: number | null;
+}
+
+export interface Departamento {
+  codigo: string; // codigo DANE, con el cero a la izquierda
+  nombre: string;
+  /** Cambio % del precio frente al mismo mes del anio pasado, un valor por mes. null = sin mercado. */
+  precio: (number | null)[] | null;
+  /** Lluvia medida por sensores frente a lo normal, en %. null = sin sensores en la base. */
+  lluvia: (number | null)[] | null;
+  lluvia_mm: (number | null)[] | null;
+  estaciones: number;
+  lluvia_esperada: LluviaEsperada[] | null;
+}
+
+export interface Nino {
+  fase: string;
+  anomalia: number | null;
+  periodo: number;
+  trimestre: string;
+  provisional: boolean;
+  serie: { periodo: number; anomalia: number | null }[];
+}
+
+export interface DatosMapa {
+  periodos: number[];
+  departamentos: Departamento[];
+  estaciones: [number, number][]; // [longitud, latitud]
+  nino: Nino;
+}
+
+/** Un departamento ya convertido a dibujo: su contorno como trazo SVG. */
+export interface Contorno {
+  codigo: string;
+  trazo: string;
+  /** Centro aproximado, para ubicar etiquetas. */
+  centro: [number, number];
+}
+
+// --- public/datos/fuentes.json ------------------------------------------------------
+
+export interface Fuente {
+  nombre: string;
+  entidad: string;
+  origen: "nacional" | "internacional";
+  aporta: string;
+  frecuencia: string;
+  tablas: string[];
+  filas: number;
+  ultimo_dato: string;
+}
+
+export interface Huecos {
+  departamentos: number;
+  departamentos_con_precio: number;
+  departamentos_con_sensor: number;
+  meses_sin_precio: number;
+  productos: number;
+  productos_con_zona: number;
+  productos_comparables_fao: number;
+  pronosticos_confiables: number;
+  relaciones_clima: number;
+  relaciones_clima_firmes: number;
+  ultimo_precio: string;
+  ultimo_abastecimiento: string;
+}
+
+export interface DatosFuentes {
+  fuentes: Fuente[];
+  huecos: Huecos;
+}
