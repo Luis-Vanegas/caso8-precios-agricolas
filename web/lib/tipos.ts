@@ -56,7 +56,6 @@ export interface LluviaEsperada {
   seco: number | null;
   central: number | null;
   lluvioso: number | null;
-  frente_a_lo_normal: number | null;
 }
 
 export interface Departamento {
@@ -126,4 +125,45 @@ export interface Huecos {
 export interface DatosFuentes {
   fuentes: Fuente[];
   huecos: Huecos;
+}
+
+// --- public/datos/clima.json --------------------------------------------------------
+
+export interface Hallazgo {
+  producto: string | null;
+  departamento: string | null;
+  rezago_meses: number;
+  /** Negativo = cuando una sube, la otra baja. */
+  coeficiente: number | null;
+}
+
+/** Un paso de la cadena El Nino -> lluvia -> comida que llega -> precio. */
+export interface Eslabon {
+  eslabon: string;
+  desde: string;
+  hasta: string;
+  pregunta: string;
+  /** Cuantas relaciones se probaron y cuantas se sostienen (q-valor menor a 0,1). */
+  pruebas: number;
+  firmes: number;
+  hallazgos: Hallazgo[];
+}
+
+export interface Pista {
+  producto: string;
+  departamento: string;
+  rezago_meses: number;
+  mes_de_la_lluvia: number;
+  llovio_mas: boolean | null;
+  senal: "al alza" | "a la baja" | "sin dato";
+  /** Cuantas veces esta pista acerto la direccion del precio en el pasado. */
+  aciertos: number;
+  meses: number;
+}
+
+export interface DatosClima {
+  cadena: Eslabon[];
+  pistas: Pista[];
+  proximo_mes: number;
+  quiebres: { pruebas: number; firmes: number };
 }

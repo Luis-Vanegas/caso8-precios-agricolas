@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 
+import { CadenaClima } from "@/componentes/CadenaClima";
 import { ComoMideElSensor, ElNino, LluviaEsperada } from "@/componentes/Clima";
 import { MapaAnimado } from "@/componentes/MapaAnimado";
 import { contornos, crearProyeccion } from "@/lib/geo";
-import type { DatosMapa } from "@/lib/tipos";
+import type { DatosClima, DatosMapa } from "@/lib/tipos";
+import climaCrudo from "@/public/datos/clima.json";
 import colombia from "@/public/datos/colombia.json";
 import datosCrudos from "@/public/datos/mapa.json";
 
 export const metadata: Metadata = { title: "Mapa y clima · Caso 8" };
 
 const datos = datosCrudos as unknown as DatosMapa;
+const clima = climaCrudo as DatosClima;
 
 // El contorno de cada departamento se calcula una sola vez, al construir el sitio.
 const proyectar = crearProyeccion(colombia.features);
@@ -31,8 +34,10 @@ export default function MapaYClima() {
 
       <MapaAnimado datos={datos} contornos={dibujo} estaciones={estaciones} />
 
+      <CadenaClima datos={clima} />
+
       <section className="clima" aria-labelledby="titulo-clima">
-        <h2 id="titulo-clima">El clima, explicado</h2>
+        <h2 id="titulo-clima">El clima hoy y cómo lo medimos</h2>
         <div className="clima-rejilla">
           <ElNino nino={datos.nino} />
           <ComoMideElSensor estaciones={datos.estaciones.length} departamentos={conSensor} />

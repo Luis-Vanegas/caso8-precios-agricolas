@@ -1,5 +1,7 @@
-// Las tres piezas del clima: el fenomeno de El Nino, la lluvia que se espera
-// y como se mide la lluvia con sensores. No necesitan interaccion: son dibujo fijo.
+// Tres piezas del clima: el fenomeno de El Nino, la lluvia que se espera y
+// como se mide la lluvia con sensores. No necesitan interaccion: son dibujo fijo.
+
+import { CloudRain, Radio, Thermometer } from "lucide-react";
 
 import { mesCorto, mesLargo } from "@/lib/formato";
 import type { Departamento, Nino } from "@/lib/tipos";
@@ -12,7 +14,7 @@ const grados = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${un_decimal.f
 
 /** El Pacifico mes a mes: barras rojas cuando esta caliente (El Nino), azules cuando esta frio. */
 export function ElNino({ nino }: { nino: Nino }) {
-  const ancho = 640, alto = 220, m = { arriba: 14, derecha: 10, abajo: 30, izquierda: 44 };
+  const ancho = 640, alto = 230, m = { arriba: 14, derecha: 10, abajo: 30, izquierda: 48 };
   const serie = nino.serie.filter((s): s is { periodo: number; anomalia: number } => s.anomalia !== null);
   const tope = Math.max(2.5, ...serie.map((s) => Math.abs(s.anomalia)));
   const y = (v: number) => m.arriba + ((tope - v) * (alto - m.arriba - m.abajo)) / (2 * tope);
@@ -22,7 +24,7 @@ export function ElNino({ nino }: { nino: Nino }) {
 
   return (
     <article className="tarjeta-clima">
-      <p className="antetitulo">Fenómeno de El Niño · NOAA</p>
+      <p className="antetitulo con-icono"><Thermometer size={15} aria-hidden="true" /> Fenómeno de El Niño · NOAA</p>
       <h3>
         Hoy hay <span className={`fase fase-${clase}`}>{fase}</span>
         {nino.anomalia !== null && <>: el Pacífico está {grados(nino.anomalia)} frente a lo normal</>}
@@ -43,7 +45,7 @@ export function ElNino({ nino }: { nino: Nino }) {
           const tipo = s.anomalia >= UMBRAL_FASE ? "nino" : s.anomalia <= -UMBRAL_FASE ? "nina" : "neutral";
           const arriba = Math.min(y(s.anomalia), y(0));
           return (
-            <rect key={s.periodo} className={`barra-oni barra-${tipo}`} x={m.izquierda + i * paso + 1.5}
+            <rect key={s.periodo} className={`barra-oni barra-${tipo}`} x={m.izquierda + i * paso + 1.5} rx={2}
               y={arriba} width={paso - 3} height={Math.max(Math.abs(y(s.anomalia) - y(0)), 1)}
               style={{ animationDelay: `${i * 22}ms`, transformOrigin: `0 ${y(0)}px` }}>
               <title>{`${mesLargo(s.periodo)}: ${grados(s.anomalia)}`}</title>
@@ -57,62 +59,69 @@ export function ElNino({ nino }: { nino: Nino }) {
         ))}
       </svg>
       <p className="leyenda-clima">
-        <span className="muestra barra-nino" /> El Niño (más de +0,5 °C)
-        <span className="muestra barra-nina" /> La Niña (menos de −0,5 °C)
-        <span className="muestra barra-neutral" /> Neutral
+        <span><span className="muestra barra-nino" />El Niño (más de +0,5 °C)</span>
+        <span><span className="muestra barra-nina" />La Niña (menos de −0,5 °C)</span>
+        <span><span className="muestra barra-neutral" />Neutral</span>
       </p>
     </article>
   );
 }
 
-/** La lluvia que se espera en los proximos meses: un rango por mes, no un numero solo. */
+/**
+ * La lluvia que se espera, como una tabla: una fila por departamento y una
+ * columna por mes. El numero es el escenario central; la barra, el rango.
+ */
 export function LluviaEsperada({ departamentos }: { departamentos: Departamento[] }) {
-  const conPronostico = departamentos.filter((d) => d.lluvia_esperada);
-  const tope = Math.max(...conPronostico.flatMap((d) => d.lluvia_esperada!.map((f) => f.lluvioso ?? 0)));
-  const alto = 96, ancho = 250, base = 70, margen = 14;
+  const filas = departamentos.filter((d) => d.lluvia_esperada);
+  if (filas.length === 0) return null;
+  const mesesTabla = filas[0].lluvia_esperada!.map((f) => f.periodo);
+  const tope = Math.max(...filas.flatMap((d) => d.lluvia_esperada!.map((f) => f.lluvioso ?? 0)));
 
   return (
     <article className="tarjeta-clima">
-      <p className="antetitulo">Lluvia esperada · Open-Meteo</p>
+      <p className="antetitulo con-icono"><CloudRain size={15} aria-hidden="true" /> Lluvia esperada · Open-Meteo</p>
       <h3>Cuánto se espera que llueva en los próximos meses</h3>
       <p className="nota">
-        Cada barra va del escenario seco al lluvioso (8 de cada 10 escenarios caen ahí) y la raya es el
-        escenario central. Debajo, si eso es más o menos de lo normal para ese mes.
+        Milímetros de lluvia en el mes. El número es el escenario más probable y la barra muestra el
+        rango: del escenario seco al lluvioso (8 de cada 10 escenarios caen ahí). Celda más oscura, más lluvia.
       </p>
-      <div className="rejilla-lluvia">
-        {conPronostico.map((d) => {
-          const meses = d.lluvia_esperada!;
-          const paso = (ancho - 2 * margen) / meses.length;
-          const y = (mm: number) => base - (mm * (base - 8)) / tope;
-          return (
-            <figure key={d.codigo} className="lluvia-depto">
-              <figcaption>{d.nombre}</figcaption>
-              <svg viewBox={`0 0 ${ancho} ${alto}`} role="img"
-                aria-label={`Lluvia esperada en ${d.nombre}: ${meses.map((f) => `${mesCorto(f.periodo)} ${f.central} mm`).join(", ")}`}>
-                <line className="eje-cero" x1={margen} x2={ancho - margen} y1={base} y2={base} />
-                {meses.map((f, i) => {
-                  const x = margen + i * paso + paso / 2;
-                  const menos = (f.frente_a_lo_normal ?? 0) < 0;
+      <div className="tabla-desliza">
+        <table className="lluvia-tabla">
+          <thead>
+            <tr>
+              <th scope="col">Departamento</th>
+              {mesesTabla.map((p) => <th key={p} scope="col">{mesCorto(p)}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((d) => (
+              <tr key={d.codigo}>
+                <th scope="row">{d.nombre}</th>
+                {d.lluvia_esperada!.map((f) => {
+                  const central = f.central ?? 0, seco = f.seco ?? 0, lluvioso = f.lluvioso ?? 0;
+                  // La intensidad del fondo sigue la cantidad de lluvia (un solo color, de claro a oscuro).
+                  const intensidad = Math.round((central / tope) * 100);
                   return (
-                    <g key={f.periodo}>
-                      <rect className="rango-lluvia" x={x - 9} y={y(f.lluvioso ?? 0)} width={18} rx={4}
-                        height={Math.max(y(f.seco ?? 0) - y(f.lluvioso ?? 0), 2)} />
-                      <line className="central-lluvia" x1={x - 12} x2={x + 12} y1={y(f.central ?? 0)} y2={y(f.central ?? 0)} />
-                      <text className="eje" x={x} y={base + 12} textAnchor="middle">{mesCorto(f.periodo).split(" ")[0]}</text>
-                      <text className={`eje ${menos ? "texto-seco" : "texto-lluvia"}`} x={x} y={base + 24} textAnchor="middle">
-                        {f.frente_a_lo_normal === null ? "" : `${menos ? "▼" : "▲"}${Math.abs(f.frente_a_lo_normal)}`}
-                      </text>
-                    </g>
+                    <td key={f.periodo} className={intensidad > 55 ? "celda-oscura" : undefined}
+                      style={{ background: `color-mix(in srgb, var(--azul) ${Math.round(intensidad * 0.85)}%, var(--superficie))` }}
+                      title={`${d.nombre}, ${mesLargo(f.periodo)}: entre ${seco} y ${lluvioso} mm; lo más probable, ${central} mm`}>
+                      <span className="lluvia-valor">{central}</span>
+                      <span className="lluvia-rango" aria-hidden="true">
+                        <span style={{ left: `${(seco / tope) * 100}%`, width: `${Math.max(((lluvioso - seco) / tope) * 100, 3)}%` }} />
+                      </span>
+                      <span className="lluvia-entre">{seco}–{lluvioso}</span>
+                    </td>
                   );
                 })}
-              </svg>
-            </figure>
-          );
-        })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <p className="leyenda-clima">
-        <span className="texto-lluvia">▲ más lluvia de lo normal</span>
-        <span className="texto-seco">▼ menos lluvia de lo normal</span> · en milímetros por mes
+      <p className="nota">
+        <strong>Por qué no decimos «más» o «menos de lo normal».</strong> Este pronóstico sale de un modelo
+        y lo que llamamos normal sale de otro. Al restarlos, la diferencia mide más el desajuste entre
+        modelos que la lluvia: daba cifras imposibles. Mientras no se corrija, se muestra solo lo esperado.
       </p>
     </article>
   );
@@ -128,7 +137,7 @@ export function ComoMideElSensor({ estaciones, departamentos }: { estaciones: nu
   ];
   return (
     <article className="tarjeta-clima">
-      <p className="antetitulo">El sensor · IDEAM</p>
+      <p className="antetitulo con-icono"><Radio size={15} aria-hidden="true" /> El sensor · IDEAM</p>
       <h3>
         {estaciones} estaciones en {departamentos} departamentos miden la lluvia en tierra
       </h3>

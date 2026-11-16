@@ -3,14 +3,16 @@
 // El tablero de semaforos: una fila por producto con su precio, sus dos
 // comparaciones (mes pasado y mismo mes del anio pasado), su estado y su pronostico.
 
+import { ArrowDownRight, ArrowUpRight, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Contador } from "@/componentes/Contador";
 import { GraficaDetalle, Minigrafica } from "@/componentes/Graficas";
 import {
-  cambioEsperado, direccion, estadoGeneral, FLECHA, mesLargo, motivoEstado,
+  cambioEsperado, direccion, estadoGeneral, mesLargo, motivoEstado,
   NOMBRE_ESTADO, pesos, porcentaje, urgencia,
 } from "@/lib/formato";
+import type { Direccion } from "@/lib/formato";
 import type { Fila, Tablero as DatosTablero } from "@/lib/tipos";
 
 type Orden = "urgencia" | "producto" | "precio" | "mes" | "anio";
@@ -35,13 +37,23 @@ function ordenar(filas: Fila[], orden: Orden): Fila[] {
   }
 }
 
+/** El icono de la direccion: sube, baja o se mantiene. Lleva el color; el numero va en tinta. */
+function IconoDireccion({ d, grande = false }: { d: Direccion; grande?: boolean }) {
+  const Icono = d === "sube" ? ArrowUpRight : d === "baja" ? ArrowDownRight : Minus;
+  return (
+    <span className={`icono-direccion icono-${d}${grande ? " icono-grande" : ""}`} aria-hidden="true">
+      <Icono size={grande ? 22 : 15} strokeWidth={2.4} />
+    </span>
+  );
+}
+
 /** Flecha, porcentaje y color de una comparacion. El color nunca va solo: lleva flecha y signo. */
 function Cambio({ valor }: { valor: number | null }) {
   const d = direccion(valor);
   if (d === "sin dato") return <span className="apagado">sin dato</span>;
   return (
     <span className={`cambio cambio-${d}`}>
-      <span className="flecha" aria-hidden="true">{FLECHA[d]}</span> {porcentaje(valor)}
+      <IconoDireccion d={d} />{porcentaje(valor)}
       <span className="solo-lector"> ({d})</span>
     </span>
   );
@@ -65,7 +77,7 @@ function ProximoMes({ fila }: { fila: Fila }) {
   return (
     <span className="proximo">
       <span className={`cambio cambio-${d}`}>
-        <span className="flecha" aria-hidden="true">{FLECHA[d]}</span>{" "}
+        <IconoDireccion d={d} />
         {d === "igual" ? "se mantiene" : d === "sube" ? "sube" : "baja"}
       </span>
       <span className="numero">≈ {pesos(proximo.valor)}</span>
@@ -144,11 +156,11 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
     <section aria-labelledby="titulo-tablero">
       <div className="resumen">
         <div className="cifra">
-          <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> <Contador valor={suben} /></span>
+          <span className="cifra-numero"><IconoDireccion d="sube" grande /><Contador valor={suben} /></span>
           <span className="cifra-texto">subieron frente al mes pasado</span>
         </div>
         <div className="cifra">
-          <span className="cifra-numero cambio-baja"><span className="flecha" aria-hidden="true">▼</span> <Contador valor={bajan} /></span>
+          <span className="cifra-numero"><IconoDireccion d="baja" grande /><Contador valor={bajan} /></span>
           <span className="cifra-texto">bajaron frente al mes pasado</span>
         </div>
         <div className="cifra">
@@ -157,7 +169,7 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
         </div>
         {esNacional && (
           <div className="cifra">
-            <span className="cifra-numero cambio-sube"><span className="flecha" aria-hidden="true">▲</span> <Contador valor={subiran} /></span>
+            <span className="cifra-numero"><IconoDireccion d="sube" grande /><Contador valor={subiran} /></span>
             <span className="cifra-texto">se espera que suban el próximo mes</span>
           </div>
         )}
@@ -206,7 +218,7 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
                   <th scope="row" data-titulo="Producto">
                     <button type="button" className="boton-producto" aria-expanded={estaAbierto}
                       onClick={() => setAbierto(estaAbierto ? null : fila.producto)}>
-                      <span className="flecha-abrir" aria-hidden="true">{estaAbierto ? "▾" : "▸"}</span>
+                      <span className="flecha-abrir" aria-hidden="true">{estaAbierto ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                       {fila.producto}
                     </button>
                   </th>

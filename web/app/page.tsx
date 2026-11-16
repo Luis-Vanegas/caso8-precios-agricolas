@@ -1,3 +1,5 @@
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+
 import { Tablero } from "@/componentes/Tablero";
 import type { Tablero as DatosTablero } from "@/lib/tipos";
 import datosCrudos from "@/public/datos/tablero.json";
@@ -24,7 +26,7 @@ export default function Inicio() {
         <h2 id="titulo-leyenda">Cómo leer esta tabla</h2>
         <dl>
           <div>
-            <dt><span className="cambio cambio-sube">▲ sube</span> · <span className="cambio cambio-baja">▼ baja</span></dt>
+            <dt className="con-icono"><span className="icono-direccion icono-sube" aria-hidden="true"><ArrowUpRight size={15} strokeWidth={2.4} /></span> sube · <span className="icono-direccion icono-baja" aria-hidden="true"><ArrowDownRight size={15} strokeWidth={2.4} /></span> baja</dt>
             <dd>La dirección del precio. Rojo es que subió, azul que bajó. Un cambio de menos de 1 % se muestra como «=».</dd>
           </div>
           <div>

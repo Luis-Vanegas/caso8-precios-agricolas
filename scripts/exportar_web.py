@@ -218,9 +218,11 @@ def armar_mapa(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
             "lluvia": _serie_por_mes(s, "lluvia_pct", periodos, 0) if not s.empty else None,
             "lluvia_mm": _serie_por_mes(s, "valor", periodos, 0) if not s.empty else None,
             "estaciones": int((estaciones["dpto_codigo"] == d.dpto_codigo).sum()),
+            # No se exporta anomalia_p50: resta el pronostico (un modelo) contra lo observado
+            # (otro modelo), y esa diferencia mide mas el desajuste entre modelos que la lluvia.
+            # Medido el 2026-11-15: da -317 mm para Tolima, donde ni llueve tanto.
             "lluvia_esperada": [{"periodo": int(f.periodo), "seco": _numero(f.precip_p10, 0),
-                                 "central": _numero(f.precip_p50, 0), "lluvioso": _numero(f.precip_p90, 0),
-                                 "frente_a_lo_normal": _numero(f.anomalia_p50, 0)}
+                                 "central": _numero(f.precip_p50, 0), "lluvioso": _numero(f.precip_p90, 0)}
                                 for f in futuro.itertuples()] or None,
         })
 
@@ -237,6 +239,62 @@ def armar_mapa(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
                  "serie": [{"periodo": int(f.periodo), "anomalia": _numero(f.anomalia, 2)}
                            for f in nino.itertuples()]},
     }
+
+
+# --- El clima mueve los precios? ------------------------------------------------------
+
+# Los cuatro eslabones de la cadena, en el orden en que se cuentan en pantalla.
+ESLABONES = [
+    ("oni->lluvia", "El Niño", "Lluvia", "¿El Niño cambia la lluvia?"),
+    ("lluvia->oferta", "Lluvia", "Comida que llega", "¿La lluvia cambia cuánta comida llega?"),
+    ("oferta->precio", "Comida que llega", "Precio", "¿Si llega menos comida, sube el precio?"),
+    ("lluvia->precio", "Lluvia", "Precio", "De un salto: ¿la lluvia cambia el precio?"),
+]
+Q_FIRME = 0.1      # la regla del proyecto: una relacion se sostiene si su q-valor es menor
+
+
+def armar_clima(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
+    """Que tanto se sostiene cada eslabon entre el clima y el precio, y las pistas del mes."""
+    efecto = con.execute("SELECT * FROM resultado_efecto_clima").df()
+    cadena = []
+    for clave, desde, hasta, pregunta in ESLABONES:
+        pruebas = efecto[efecto["eslabon"] == clave]
+        firmes = pruebas[pruebas["q_valor"] < Q_FIRME]
+        # De cada producto o zona se muestra solo su relacion mas clara, no todos sus rezagos.
+        llave = "departamento" if clave == "oni->lluvia" else "producto"
+        mejores = firmes.sort_values("q_valor").drop_duplicates(llave).head(6)
+        cadena.append({
+            "eslabon": clave, "desde": desde, "hasta": hasta, "pregunta": pregunta,
+            "pruebas": int(len(pruebas)), "firmes": int(len(firmes)),
+            "hallazgos": [{"producto": None if pd.isna(h.producto) else nombre_producto(h.producto),
+                           "departamento": None if pd.isna(h.departamento) else TILDES.get(h.departamento, h.departamento),
+                           "rezago_meses": int(h.rezago_meses), "coeficiente": _numero(h.coeficiente, 3)}
+                          for h in mejores.itertuples()],
+        })
+
+    # Pistas para el mes que viene: relaciones fuertes entre la lluvia pasada y el precio.
+    ret = vigilancia.retornos_nacionales(precios)
+    clima = con.execute("SELECT * FROM mundo_clima_zona_mensual").df()
+    zonas = con.execute("SELECT * FROM catalogo_zona_productora WHERE producto_sipsa IS NOT NULL").df()
+    correlaciones = vigilancia.correlacion_lluvia(ret, clima, zonas)
+    ultimo = int(precios.loc[precios["mes_cerrado"], "periodo"].max())
+    proximo = _sumar_meses(ultimo, 1)
+    senales = vigilancia.senales(correlaciones, clima, zonas, proximo)
+    aciertos = vigilancia.acierto_historico(ret, clima, zonas, correlaciones)
+    pistas = []
+    for s in senales.merge(aciertos, on=["producto", "departamento", "rezago"]).itertuples():
+        pistas.append({
+            "producto": nombre_producto(s.producto),
+            "departamento": TILDES.get(s.departamento, s.departamento),
+            "rezago_meses": int(s.rezago), "mes_de_la_lluvia": int(s.periodo_lluvia),
+            "llovio_mas": None if pd.isna(s.anomalia) else bool(s.anomalia > 0),
+            "senal": s.senal,                                  # "al alza", "a la baja" o "sin dato"
+            "aciertos": int(s.aciertos), "meses": int(s.meses),
+        })
+
+    quiebres = con.execute("SELECT count(*), count(*) FILTER (WHERE hay_quiebre) FROM resultado_quiebres").fetchone()
+    return {"cadena": cadena, "pistas": pistas, "proximo_mes": proximo,
+            "quiebres": {"pruebas": int(quiebres[0]), "firmes": int(quiebres[1])}}
 
 
 # --- Fuentes y huecos -----------------------------------------------------------------
@@ -336,6 +394,7 @@ def main() -> int:
 
     _escribir("tablero.json", armar_tablero(precios, pronosticos))
     _escribir("mapa.json", armar_mapa(con, precios))
+    _escribir("clima.json", armar_clima(con, precios))
     _escribir("fuentes.json", armar_fuentes(con))
     _escribir("colombia.json", simplificar(json.loads(GEOJSON.read_text(encoding="utf-8"))))
     con.close()

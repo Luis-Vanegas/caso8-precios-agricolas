@@ -14,7 +14,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.exportar_web import MESES_DEL_MAPA, armar_fuentes, armar_mapa, simplificar
+from scripts.exportar_web import MESES_DEL_MAPA, armar_clima, armar_fuentes, armar_mapa, simplificar
 from src.common.rutas import BASE_DUCKDB
 
 
@@ -83,3 +83,33 @@ def test_las_fuentes_van_separadas_y_los_huecos_son_coherentes(con):
     assert h["pronosticos_confiables"] <= h["productos"]
     assert h["relaciones_clima_firmes"] <= h["relaciones_clima"]
     assert h["meses_sin_precio"] == 13          # el hueco de SIPSA: 2021-01 a 2022-01
+
+
+def test_la_cadena_del_clima_cuenta_lo_que_se_sostiene_sin_inflarlo(con):
+    precios = con.execute("SELECT * FROM col_precio_mayorista_mensual").df()
+    clima = armar_clima(con, precios)
+
+    assert [e["eslabon"] for e in clima["cadena"]] == [
+        "oni->lluvia", "lluvia->oferta", "oferta->precio", "lluvia->precio"]
+    for e in clima["cadena"]:
+        # Lo que se muestra como hallazgo tiene que salir de las pruebas que se sostienen.
+        esperado = con.execute(
+            "SELECT count(*), count(*) FILTER (WHERE q_valor < 0.1) FROM resultado_efecto_clima "
+            "WHERE eslabon = ?", [e["eslabon"]]).fetchone()
+        assert (e["pruebas"], e["firmes"]) == esperado
+        assert len(e["hallazgos"]) <= e["firmes"]
+    # Una pista nunca puede acertar mas veces de las que se probo.
+    assert all(0 <= p["aciertos"] <= p["meses"] for p in clima["pistas"])
+    assert all(p["senal"] in {"al alza", "a la baja", "sin dato"} for p in clima["pistas"])
+
+
+def test_la_lluvia_esperada_no_trae_la_resta_contra_lo_normal(con):
+    """Esa resta mezcla dos modelos y daba cifras imposibles: no se exporta."""
+    precios = con.execute("SELECT * FROM col_precio_mayorista_mensual").df()
+    mapa = armar_mapa(con, precios)
+    con_pronostico = [d for d in mapa["departamentos"] if d["lluvia_esperada"]]
+    assert con_pronostico
+    for d in con_pronostico:
+        for mes in d["lluvia_esperada"]:
+            assert set(mes) == {"periodo", "seco", "central", "lluvioso"}
+            assert mes["seco"] <= mes["central"] <= mes["lluvioso"]

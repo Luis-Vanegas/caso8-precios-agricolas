@@ -42,11 +42,13 @@ variable `NEXT_PUBLIC_BASE_PATH`. En local va vacía y no hay que hacer nada.
 | `app/datos/page.tsx` | Módulo Los datos |
 | `app/layout.tsx` | Fuentes, franja tricolor y menú |
 | `app/globals.css` | Colores, tipografías y estilos del tablero (vienen de `DESIGN.md`, en la raíz) |
+| `app/clima.css` | Iconos, la cadena del clima y la tabla de lluvia esperada |
 | `app/modulos.css` | Estilos del menú, el mapa, el clima, la página de datos y las animaciones |
 | `componentes/Tablero.tsx` | La tabla de semáforos, los filtros y el detalle de cada producto |
 | `componentes/Graficas.tsx` | Minigráfica de cada fila y gráfica del detalle (SVG, sin librerías) |
 | `componentes/MapaAnimado.tsx` | El mapa plano, el reproductor de meses y el ranking |
 | `componentes/Mapa3D.tsx` | La vista 3D del mapa (deck.gl); se descarga solo si alguien la pide |
+| `componentes/CadenaClima.tsx` | «¿El clima mueve los precios?»: la cadena El Niño → lluvia → comida que llega → precio, con cuánto se sostiene cada paso, y las pistas del mes |
 | `componentes/Clima.tsx` | El Niño, la lluvia esperada y cómo mide el sensor |
 | `componentes/Navegacion.tsx` | El menú de los tres módulos |
 | `componentes/Contador.tsx` | El número que cuenta hasta su valor |
@@ -57,7 +59,7 @@ variable `NEXT_PUBLIC_BASE_PATH`. En local va vacía y no hay que hacer nada.
 
 ## Librerías
 
-Solo una fuera de Next.js y React: **deck.gl**, para la vista 3D del mapa. Dibujar un país
+Dos fuera de Next.js y React. **lucide-react** trae los iconos (flechas, lluvia, termómetro): dibujados a mano se veían distintos en cada navegador. **deck.gl** hace la vista 3D del mapa. Dibujar un país
 en 3D con WebGL a mano sería mucho código difícil de explicar. Todo lo demás (mapa plano,
 gráficas, animaciones) está hecho con SVG y CSS, sin librerías.
 

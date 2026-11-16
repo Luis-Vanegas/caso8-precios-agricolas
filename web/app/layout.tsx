@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "./modulos.css";
+import "./clima.css";
 
 import { Navegacion } from "@/componentes/Navegacion";
 

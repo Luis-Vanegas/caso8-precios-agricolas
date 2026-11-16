@@ -177,3 +177,9 @@ Lo que la web agrega y por qué:
 - **Movimiento.** Entradas de 0,35 a 0,6 s, una sola vez. El mapa cambia de color en 0,6 s al
   cambiar de mes. Nada late ni se repite. `prefers-reduced-motion` deja todo en su estado final.
 - **Sin franjas laterales de color** en tarjetas o avisos: el estado se dice con palabras.
+- **El icono lleva el color; el número va en tinta.** En el tablero la dirección se dice con un
+  icono (flecha arriba en `ROJO`, abajo en `AZUL`) y el porcentaje queda en `TINTA`, que se lee mejor.
+- **La firmeza de un hallazgo se ve tres veces:** en la palabra ("Se sostiene", "Solo en algunos
+  casos", "No se encontró"), en la línea del eslabón (continua, a trazos, punteada) y en el medidor.
+- **Lluvia esperada como tabla**, no como gráficas pequeñas: un solo color de claro a oscuro según
+  los milímetros, con el número siempre visible.

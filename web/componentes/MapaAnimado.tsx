@@ -3,6 +3,7 @@
 // El mapa de Colombia: cada departamento se pinta segun como va su precio o su
 // lluvia, mes a mes. Se puede reproducir como una pelicula de los ultimos 12 meses.
 
+import { Box, CloudRain, Map as IconoMapa, Pause, Play, Tag } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
@@ -105,13 +106,14 @@ export function MapaAnimado({ datos, contornos, estaciones }: Props) {
           <div className="conmutador" role="group" aria-label="Qué mostrar">
             {(Object.keys(CAPAS) as Capa[]).map((c) => (
               <button key={c} type="button" aria-pressed={capa === c} onClick={() => setCapa(c)}>
+                {c === "precio" ? <Tag size={15} aria-hidden="true" /> : <CloudRain size={15} aria-hidden="true" />}
                 {CAPAS[c].titulo}
               </button>
             ))}
           </div>
           <div className="conmutador" role="group" aria-label="Tipo de vista">
-            <button type="button" aria-pressed={vista === "2d"} onClick={() => setVista("2d")}>Plano</button>
-            <button type="button" aria-pressed={vista === "3d"} onClick={() => setVista("3d")}>3D</button>
+            <button type="button" aria-pressed={vista === "2d"} onClick={() => setVista("2d")}><IconoMapa size={15} aria-hidden="true" />Plano</button>
+            <button type="button" aria-pressed={vista === "3d"} onClick={() => setVista("3d")}><Box size={15} aria-hidden="true" />3D</button>
           </div>
         </div>
       </div>
@@ -161,7 +163,7 @@ export function MapaAnimado({ datos, contornos, estaciones }: Props) {
         <div className="mapa-lectura">
           <div className="reproductor">
             <button type="button" className="boton-reproducir" onClick={alternarPelicula}>
-              <span aria-hidden="true">{reproduciendo ? "❚❚" : "▶"}</span>
+              {reproduciendo ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
               {reproduciendo ? "Pausar" : "Ver los últimos 12 meses"}
             </button>
             <p className="mes-actual" aria-live="polite">{mesLargo(datos.periodos[mes])}</p>

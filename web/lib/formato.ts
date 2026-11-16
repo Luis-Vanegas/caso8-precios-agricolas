@@ -42,7 +42,6 @@ export function direccion(cambio: number | null): Direccion {
   return cambio > 0 ? "sube" : "baja";
 }
 
-export const FLECHA: Record<Direccion, string> = { sube: "▲", baja: "▼", igual: "=", "sin dato": "" };
 
 const GRAVEDAD: Record<Estado, number> = { "sin dato": 0, verde: 1, amarilla: 2, roja: 3 };
 
