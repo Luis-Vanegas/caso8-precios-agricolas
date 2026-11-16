@@ -33,8 +33,8 @@ from src.indicators import vigilancia
 
 FIGURAS = RAIZ / "docs" / "figuras"
 SALIDA = RAIZ / "docs" / "exploracion.md"
-HECHOS = ["fact_precio_mayorista", "fact_precio_productor", "fact_clima",
-          "fact_comercio", "fact_produccion", "fact_insumos", "fact_enso"]
+HECHOS = ["col_precio_mayorista_mensual", "mundo_fao_colombia", "mundo_clima_zona_mensual",
+          "mundo_precio_fertilizantes", "mundo_fenomeno_nino"]
 
 
 def _guardar(fig, nombre: str) -> str:
@@ -80,13 +80,13 @@ def faltantes(con) -> tuple[pd.DataFrame, str]:
 
 def retornos_nacionales(con) -> pd.DataFrame:
     """Mediana nacional por producto y mes y su retorno (calculo compartido con la app)."""
-    return vigilancia.retornos_nacionales(con.execute("SELECT * FROM fact_precio_mayorista").fetchdf())
+    return vigilancia.retornos_nacionales(con.execute("SELECT * FROM col_precio_mayorista_mensual").fetchdf())
 
 
 def huecos_sipsa(con) -> pd.DataFrame:
     """Meses sin ningun dato de SIPSA entre el primero y el ultimo publicado."""
     meses = con.execute("""
-        SELECT DISTINCT periodo FROM fact_precio_mayorista ORDER BY periodo""").fetchdf()
+        SELECT DISTINCT periodo FROM col_precio_mayorista_mensual ORDER BY periodo""").fetchdf()
     todos = pd.period_range(
         pd.Period(str(meses["periodo"].min()), "M"), pd.Period(str(meses["periodo"].max()), "M"), freq="M"
     )
@@ -118,7 +118,7 @@ def atipicos(ret: pd.DataFrame) -> tuple[pd.DataFrame, str]:
 
 
 def completitud(con) -> tuple[pd.DataFrame, str]:
-    df = con.execute("SELECT dias_con_dato FROM fact_precio_mayorista").fetchdf()
+    df = con.execute("SELECT dias_con_dato FROM col_precio_mayorista_mensual").fetchdf()
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.hist(df["dias_con_dato"], bins=range(0, 33), color="#55A868", edgecolor="white")
     ax.set_xlabel("Dias con precio reportado en el mes")
@@ -154,9 +154,10 @@ def correlaciones(con, ret: pd.DataFrame) -> tuple[pd.DataFrame, str]:
     Pearson se deja arrastrar por los meses extremos. El calculo vive en
     src/indicators/vigilancia.py, que tambien usa la app.
     """
-    puente = con.execute("SELECT * FROM puente_zona_sipsa").fetchdf()
-    clima = con.execute("SELECT * FROM fact_clima").fetchdf()
-    enso = con.execute("SELECT anio * 100 + mes AS periodo, anomalia AS oni FROM fact_enso").fetchdf()
+    puente = con.execute(
+        "SELECT * FROM catalogo_zona_productora WHERE producto_sipsa IS NOT NULL").fetchdf()
+    clima = con.execute("SELECT * FROM mundo_clima_zona_mensual").fetchdf()
+    enso = con.execute("SELECT anio * 100 + mes AS periodo, anomalia AS oni FROM mundo_fenomeno_nino").fetchdf()
 
     lluvia = vigilancia.correlacion_lluvia(ret, clima, puente)
     # El ONI es uno solo para todo el pais: se correlaciona por producto y se

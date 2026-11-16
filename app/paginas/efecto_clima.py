@@ -1,9 +1,9 @@
 """¿Cuanto afecta el clima? La respuesta al reto, con lo que se pudo medir.
 
 Lee dos tablas de indicadores (docs/contrato_datos.md):
-- indicador_sensibilidad_clima: 4 eslabones de la cadena El Nino -> lluvia ->
+- resultado_efecto_clima: 4 eslabones de la cadena El Nino -> lluvia ->
   toneladas -> precio. Solo cuenta como hallazgo q_valor < 0,1.
-- indicador_quiebres: si el precio cambio de comportamiento cuando empezo una
+- resultado_quiebres: si el precio cambio de comportamiento cuando empezo una
   fase de El Nino o La Nina.
 Y trae la grafica de la antigua pagina "La cadena" (app/secciones/cadena.py).
 
@@ -35,9 +35,9 @@ estilo.para_presentar(
     "causas; correlación no es causalidad, y lo decimos en la página."
 )
 
-if not (tabla_existe("indicador_sensibilidad_clima") and tabla_existe("indicador_quiebres")):
+if not (tabla_existe("resultado_efecto_clima") and tabla_existe("resultado_quiebres")):
     st.info(
-        "Esta página lee `indicador_sensibilidad_clima` e `indicador_quiebres`, que todavía no "
+        "Esta página lee `resultado_efecto_clima` e `resultado_quiebres`, que todavía no "
         "están en la base. Las calcula `scripts/integrar.py`."
     )
     estilo.pie()

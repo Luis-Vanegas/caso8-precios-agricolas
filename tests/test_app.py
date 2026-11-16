@@ -221,7 +221,7 @@ def test_la_canasta_familiar_usa_el_precio_semanal_y_declara_su_periodo():
 
     con = duckdb.connect(str(BASE), read_only=True)
     desde, hasta = con.execute(
-        "SELECT min(semana_inicio), max(semana_inicio) FROM fact_precio_semanal WHERE en_canasta"
+        "SELECT min(semana_inicio), max(semana_inicio) FROM col_precio_mayorista_semanal WHERE en_canasta"
     ).fetchone()
     con.close()
 
@@ -367,7 +367,7 @@ def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
     import duckdb
     con = duckdb.connect(str(BASE), read_only=True)
     articulos = con.execute(
-        "SELECT count(DISTINCT art_id) FROM fact_precio_semanal WHERE en_canasta").fetchone()[0]
+        "SELECT count(DISTINCT art_id) FROM col_precio_mayorista_semanal WHERE en_canasta").fetchone()[0]
     con.close()
     assert f"{articulos} artículos" in pantalla
     assert "33 productos" not in pantalla
@@ -409,16 +409,16 @@ def test_la_pagina_del_efecto_del_clima_dice_lo_que_midio():
     oni_total, oni_hallazgos, oni_positivos = con.execute("""
         SELECT count(*), count(*) FILTER (q_valor < 0.1),
                count(*) FILTER (q_valor < 0.1 AND coeficiente > 0)
-        FROM indicador_sensibilidad_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
+        FROM resultado_efecto_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
     lluvia_precio = con.execute("""
-        SELECT producto, departamento, rezago_meses FROM indicador_sensibilidad_clima
+        SELECT producto, departamento, rezago_meses FROM resultado_efecto_clima
         WHERE eslabon = 'lluvia->precio' AND q_valor < 0.1""").fetchall()
     oferta_baja = [p for (p,) in con.execute("""
-        SELECT producto FROM indicador_sensibilidad_clima
+        SELECT producto FROM resultado_efecto_clima
         WHERE eslabon = 'oferta->precio' AND q_valor < 0.1 AND coeficiente < 0""").fetchall()]
     productos_nino, quiebres_nino = con.execute("""
         SELECT count(DISTINCT producto), count(DISTINCT producto) FILTER (q_valor < 0.1)
-        FROM indicador_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
+        FROM resultado_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
     con.close()
 
     app = _abrir("efecto_clima")

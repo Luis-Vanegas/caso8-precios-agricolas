@@ -101,9 +101,9 @@ def inicios_de_fase(enso: pd.DataFrame, desde: int) -> pd.DataFrame:
 def construir(con) -> pd.DataFrame:
     """Ritmo y volatilidad de cada producto (mediana nacional) en cada fecha candidata."""
     precios = con.execute(
-        "SELECT producto, periodo, median(precio_cop_kg) AS precio FROM fact_precio_mayorista "
+        "SELECT producto, periodo, median(precio_cop_kg) AS precio FROM col_precio_mayorista_mensual "
         "WHERE mes_cerrado GROUP BY producto, periodo").df()
-    enso = con.execute("SELECT anio, mes, fase FROM fact_enso").df()
+    enso = con.execute("SELECT anio, mes, fase FROM mundo_fenomeno_nino").df()
     fechas = candidatos(inicios_de_fase(enso, int(precios["periodo"].min())), precios["periodo"])
     cambios = cambios_sin_temporada(precios)
 

@@ -79,10 +79,10 @@ def test_cada_horizonte_conserva_su_propio_veredicto():
     precios = serie.assign(mercado="BOGOTA", producto="Papa", precio_cop_kg=np.exp(serie["log_precio"]),
                            mes_cerrado=True)
     con.register("p", precios)
-    con.execute("CREATE TABLE fact_precio_mayorista AS SELECT * FROM p")
-    con.execute("CREATE TABLE fact_enso AS SELECT 2020 AS anio, 1 AS mes, 0.0 AS anomalia")
-    con.execute("CREATE TABLE puente_zona_sipsa AS SELECT 'x' AS producto_sipsa, 'x' AS producto_zona, 'x' AS departamento")
-    con.execute("CREATE TABLE fact_clima AS SELECT 'x' AS producto, 'x' AS departamento, 202001 AS periodo, 0.0 AS precipitacion_anomalia")
+    con.execute("CREATE TABLE col_precio_mayorista_mensual AS SELECT * FROM p")
+    con.execute("CREATE TABLE mundo_fenomeno_nino AS SELECT 2020 AS anio, 1 AS mes, 0.0 AS anomalia")
+    con.execute("CREATE TABLE catalogo_zona_productora AS SELECT 'x' AS producto_sipsa, 'x' AS producto_zona, 'x' AS departamento")
+    con.execute("CREATE TABLE mundo_clima_zona_mensual AS SELECT 'x' AS producto, 'x' AS departamento, 202001 AS periodo, 0.0 AS precipitacion_anomalia")
 
     tabla = pronostico.construir(con)
     futuro = tabla[tabla["tipo"] == "pronostico"].sort_values("horizonte")

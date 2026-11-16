@@ -39,7 +39,7 @@ Aunque los 33 códigos calzan, **3 de los 33 nombres no calzan** con los de la b
 | `88` | `ARCHIPIELAGO DE SAN ANDRES PROVIDENCIA Y SANTA CATALINA` | `San Andres` |
 
 Unir por nombre perdería esos tres departamentos en silencio: el mapa los dibujaría grises como
-si no tuvieran datos. **Siempre se une `DPTO` contra `dpto_codigo`** (de `dim_mercado` o de
+si no tuvieran datos. **Siempre se une `DPTO` contra `dpto_codigo`** (de `catalogo_mercado` o de
 `config/departamentos.csv`). La prueba `test_el_geojson_cruza_con_los_departamentos_de_la_base`
 en `tests/test_app.py` falla si esa correspondencia se rompe.
 

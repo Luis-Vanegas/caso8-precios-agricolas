@@ -51,7 +51,7 @@ def consultar(sql: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=TTL)
 def precios_mayoristas() -> pd.DataFrame:
-    return consultar("SELECT * FROM fact_precio_mayorista")
+    return consultar("SELECT * FROM col_precio_mayorista_mensual")
 
 
 @st.cache_data(ttl=TTL)
@@ -78,17 +78,20 @@ def frescura() -> pd.DataFrame:
 
 @st.cache_data(ttl=TTL)
 def puente() -> pd.DataFrame:
-    return consultar("SELECT * FROM puente_producto ORDER BY producto_sipsa")
+    # El resto de la app conoce esta columna como producto_sipsa.
+    return consultar("SELECT producto AS producto_sipsa, item_codigo_fao, item_fao, "
+                     "tipo_correspondencia, permite_comparar_precio "
+                     "FROM catalogo_producto ORDER BY producto")
 
 
 @st.cache_data(ttl=TTL)
 def enso() -> pd.DataFrame:
-    return consultar("SELECT * FROM fact_enso ORDER BY anio, mes")
+    return consultar("SELECT * FROM mundo_fenomeno_nino ORDER BY anio, mes")
 
 
 @st.cache_data(ttl=TTL)
 def clima() -> pd.DataFrame:
-    return consultar("SELECT * FROM fact_clima ORDER BY anio, mes")
+    return consultar("SELECT * FROM mundo_clima_zona_mensual ORDER BY anio, mes")
 
 
 def aviso_cache() -> None:
@@ -120,9 +123,9 @@ def ultimo_mes_cerrado() -> int:
     que la portada muestra el ultimo mes completo. Si la base es anterior a la
     columna `mes_cerrado`, usa el ultimo periodo disponible.
     """
-    columnas = consultar("DESCRIBE fact_precio_mayorista")["column_name"].tolist()
+    columnas = consultar("DESCRIBE col_precio_mayorista_mensual")["column_name"].tolist()
     filtro = "WHERE mes_cerrado" if "mes_cerrado" in columnas else ""
-    return int(consultar(f"SELECT max(periodo) AS p FROM fact_precio_mayorista {filtro}")["p"][0])
+    return int(consultar(f"SELECT max(periodo) AS p FROM col_precio_mayorista_mensual {filtro}")["p"][0])
 
 
 SEVERIDAD = {"verde": 0, "amarilla": 1, "roja": 2}
@@ -210,7 +213,7 @@ _MES_ANTERIOR = "CASE WHEN {p} % 100 = 1 THEN {p} - 89 ELSE {p} - 1 END"
 _PRECIO_MENSUAL = """
     SELECT art_id, articulo, dpto_codigo, departamento, mercado, periodo,
            median(precio) AS precio, any_value(unidad) AS unidad
-    FROM fact_precio_semanal
+    FROM col_precio_mayorista_semanal
     GROUP BY art_id, articulo, dpto_codigo, departamento, mercado, periodo
 """
 
@@ -221,7 +224,7 @@ def articulos_del_mapa() -> pd.DataFrame:
     return consultar(f"""
         SELECT art_id, any_value(articulo) AS articulo, any_value(unidad) AS unidad,
                count(DISTINCT dpto_codigo) AS departamentos
-        FROM fact_precio_semanal
+        FROM col_precio_mayorista_semanal
         GROUP BY art_id
         HAVING count(DISTINCT dpto_codigo) >= {MINIMO_DEPARTAMENTOS}
         ORDER BY articulo
@@ -241,7 +244,7 @@ def periodos_semanal() -> pd.DataFrame:
     """
     df = consultar("""
         SELECT periodo, count(DISTINCT semana_inicio) AS semanas
-        FROM fact_precio_semanal
+        FROM col_precio_mayorista_semanal
         GROUP BY periodo ORDER BY periodo
     """)
     df = df.iloc[1:].copy()
@@ -299,7 +302,7 @@ def cobertura_canasta() -> pd.Series:
     return consultar("""
         SELECT min(semana_inicio) AS desde, max(semana_inicio) AS hasta,
                count(DISTINCT art_id) AS articulos, count(DISTINCT mercado) AS mercados
-        FROM fact_precio_semanal
+        FROM col_precio_mayorista_semanal
         WHERE en_canasta
     """).iloc[0]
 
@@ -320,7 +323,7 @@ def variacion_canasta() -> pd.DataFrame:
             SELECT art_id, mercado, periodo, median(precio) AS precio,
                    any_value(articulo) AS articulo, any_value(grupo_dane) AS grupo_dane,
                    any_value(unidad) AS unidad
-            FROM fact_precio_semanal
+            FROM col_precio_mayorista_semanal
             WHERE en_canasta
             GROUP BY art_id, mercado, periodo
         ), comparado AS (
@@ -345,7 +348,7 @@ def variacion_canasta() -> pd.DataFrame:
 # El precio de la cadena puede salir de dos fuentes:
 # - el precio SEMANAL: tiene el mismo art_id que el abastecimiento, pero solo
 #   unos 13 meses (ventana movil del DANE);
-# - el precio DIARIO (fact_precio_mayorista): desde 2020, pero con otros nombres.
+# - el precio DIARIO (col_precio_mayorista_mensual): desde 2020, pero con otros nombres.
 #   Solo se usa cuando el nombre coincide exacto con el del abastecimiento
 #   (`mapa_articulos` de src/indicators/sensibilidad.py, 24 productos). Asi no se
 #   mezclan variedades: "Papa negra*" agrupa varias papas y no se empareja.
@@ -356,8 +359,8 @@ def pares_diario() -> pd.DataFrame:
     """Articulo del abastecimiento -> producto del precio diario, solo nombres identicos."""
     from src.indicators.sensibilidad import mapa_articulos
 
-    productos = consultar("SELECT DISTINCT producto FROM fact_precio_mayorista")["producto"]
-    articulos = consultar("SELECT DISTINCT art_id, articulo FROM fact_abastecimiento")
+    productos = consultar("SELECT DISTINCT producto FROM col_precio_mayorista_mensual")["producto"]
+    articulos = consultar("SELECT DISTINCT art_id, articulo FROM col_abastecimiento_mensual")
     return mapa_articulos(productos, articulos)
 
 
@@ -412,15 +415,15 @@ def articulos_cadena() -> pd.DataFrame:
         meses_con_precio AS (
             SELECT p.art_id, m.periodo
             FROM pares p
-            JOIN (SELECT DISTINCT producto, periodo FROM fact_precio_mayorista) m USING (producto)
+            JOIN (SELECT DISTINCT producto, periodo FROM col_precio_mayorista_mensual) m USING (producto)
             UNION
-            SELECT DISTINCT art_id, periodo FROM fact_precio_semanal
+            SELECT DISTINCT art_id, periodo FROM col_precio_mayorista_semanal
             WHERE art_id NOT IN (SELECT art_id FROM pares WHERE art_id IS NOT NULL)
         )
         SELECT a.art_id, any_value(a.articulo) AS articulo,
                count(DISTINCT m.periodo) AS meses_comparables,
                sum(a.toneladas) AS toneladas
-        FROM fact_abastecimiento a
+        FROM col_abastecimiento_mensual a
         LEFT JOIN meses_con_precio m ON a.art_id = m.art_id AND a.periodo = m.periodo
         WHERE a.art_id IN (SELECT art_id FROM meses_con_precio)
         GROUP BY a.art_id
@@ -438,9 +441,9 @@ def departamentos_cadena(art_id: int) -> pd.DataFrame:
     """
     zonas = consultar(f"""
         SELECT DISTINCT a.departamento, a.dpto_codigo
-        FROM fact_abastecimiento a
+        FROM col_abastecimiento_mensual a
         WHERE a.art_id = {int(art_id)}
-          AND a.dpto_codigo IN (SELECT DISTINCT dpto_codigo FROM fact_clima_diario)
+          AND a.dpto_codigo IN (SELECT DISTINCT dpto_codigo FROM mundo_clima_diario)
     """)
     zonas["meses_comparables"] = [
         len(cadena(art_id, c, fuente_precio(art_id, c))
@@ -465,12 +468,12 @@ def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
     departamento. El eslabon `lluvia->precio` se calculo sobre los nombres de
     los precios diarios, que usan otros codigos, asi que no se cruza por art_id.
     """
-    if not tabla_existe("indicador_sensibilidad_clima"):
+    if not tabla_existe("resultado_efecto_clima"):
         return pd.DataFrame()
     dpto = departamento.replace("'", "''")
     return consultar(f"""
         SELECT eslabon, variable, rezago_meses, coeficiente, p_valor, q_valor, n, metodo
-        FROM indicador_sensibilidad_clima
+        FROM resultado_efecto_clima
         WHERE (eslabon = 'oferta->precio' AND art_id = {int(art_id)})
            OR (eslabon = 'lluvia->oferta' AND art_id = {int(art_id)}
                AND departamento = '{dpto}')
@@ -479,7 +482,7 @@ def sensibilidad_cadena(art_id: int, departamento: str) -> pd.DataFrame:
     """)
 
 
-# --- ¿Cuanto afecta el clima? (indicador_sensibilidad_clima e indicador_quiebres) ---
+# --- ¿Cuanto afecta el clima? (resultado_efecto_clima e resultado_quiebres) ---
 
 
 @st.cache_data(ttl=TTL)
@@ -498,7 +501,7 @@ def sensibilidad_resumen() -> pd.DataFrame:
                count(DISTINCT departamento) AS departamentos,
                count(DISTINCT departamento) FILTER (q_valor < {UMBRAL_Q}) AS departamentos_hallazgo,
                count(DISTINCT producto) AS productos
-        FROM indicador_sensibilidad_clima
+        FROM resultado_efecto_clima
         GROUP BY eslabon
     """).set_index("eslabon")
 
@@ -508,7 +511,7 @@ def sensibilidad_hallazgos() -> pd.DataFrame:
     """Solo las relaciones que se sostienen (q < UMBRAL_Q), de la mas segura a la menos."""
     return consultar(f"""
         SELECT eslabon, producto, departamento, rezago_meses, coeficiente, q_valor, n, metodo
-        FROM indicador_sensibilidad_clima
+        FROM resultado_efecto_clima
         WHERE q_valor < {UMBRAL_Q}
         ORDER BY CASE eslabon WHEN 'oni->lluvia' THEN 1 WHEN 'lluvia->oferta' THEN 2
                               WHEN 'oferta->precio' THEN 3 ELSE 4 END, q_valor
@@ -520,7 +523,7 @@ def oni_lluvia_por_zona() -> pd.DataFrame:
     """Correlacion entre El Nino (ONI) y la lluvia de cada zona, por rezago de 0 a 6 meses."""
     return consultar("""
         SELECT departamento, rezago_meses, coeficiente, q_valor, n
-        FROM indicador_sensibilidad_clima
+        FROM resultado_efecto_clima
         WHERE eslabon = 'oni->lluvia'
         ORDER BY departamento, rezago_meses
     """)
@@ -536,7 +539,7 @@ def lluvia_de_zona(departamento: str) -> pd.DataFrame:
     dpto = departamento.replace("'", "''")
     return consultar(f"""
         SELECT anio, mes, avg(precipitacion_anomalia) AS anomalia
-        FROM fact_clima WHERE departamento = '{dpto}'
+        FROM mundo_clima_zona_mensual WHERE departamento = '{dpto}'
         GROUP BY anio, mes ORDER BY anio, mes
     """)
 
@@ -557,7 +560,7 @@ def quiebres_resumen() -> pd.DataFrame:
                count(*) FILTER (que_cambia = 'volatilidad' AND q_valor < {UMBRAL_Q}) AS volatilidad,
                count(*) FILTER (que_cambia = 'ritmo' AND p_valor < 0.05) AS ritmo_p,
                count(*) FILTER (que_cambia = 'volatilidad' AND p_valor < 0.05) AS volatilidad_p
-        FROM indicador_quiebres
+        FROM resultado_quiebres
         GROUP BY periodo_quiebre
         ORDER BY periodo_quiebre
     """)
@@ -579,26 +582,26 @@ def cadena(art_id: int, dpto_codigo: str, producto_diario: str | None = None) ->
     if mercados:
         precio = f"""
             SELECT periodo, median(precio_cop_kg) AS precio, 'kg' AS unidad
-            FROM fact_precio_mayorista
+            FROM col_precio_mayorista_mensual
             WHERE producto = {_sql_texto(producto_diario)}
               AND mercado IN ({", ".join(_sql_texto(m) for m in mercados)})
             GROUP BY periodo"""
     else:
         precio = f"""
             SELECT periodo, median(precio) AS precio, any_value(unidad) AS unidad
-            FROM fact_precio_semanal
+            FROM col_precio_mayorista_semanal
             WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
             GROUP BY periodo"""
     return consultar(f"""
         WITH lluvia AS (
             SELECT anio * 100 + mes AS periodo, sum(precipitacion_mm) AS lluvia_mm
             FROM (SELECT year(fecha) AS anio, month(fecha) AS mes, precipitacion_mm
-                  FROM fact_clima_diario
+                  FROM mundo_clima_diario
                   WHERE dpto_codigo = '{dpto_codigo}' AND tipo = 'observado')
             GROUP BY anio, mes
         ), toneladas AS (
             SELECT periodo, sum(toneladas) AS toneladas
-            FROM fact_abastecimiento
+            FROM col_abastecimiento_mensual
             WHERE art_id = {int(art_id)} AND dpto_codigo = '{dpto_codigo}'
             GROUP BY periodo
         ), precio AS ({precio}
@@ -624,7 +627,7 @@ def departamentos_clima() -> pd.DataFrame:
     """Zonas productoras con clima descargado."""
     return consultar("""
         SELECT DISTINCT departamento, dpto_codigo
-        FROM fact_clima_diario ORDER BY departamento
+        FROM mundo_clima_diario ORDER BY departamento
     """)
 
 
@@ -636,10 +639,10 @@ def clima_diario(dpto_codigo: str, dias: int = 60) -> pd.DataFrame:
     """
     return consultar(f"""
         SELECT fecha, precipitacion_mm, temp_max, temp_min, tipo
-        FROM fact_clima_diario
+        FROM mundo_clima_diario
         WHERE dpto_codigo = '{dpto_codigo}'
           AND (tipo = 'pronostico'
-               OR fecha >= (SELECT max(fecha) FROM fact_clima_diario
+               OR fecha >= (SELECT max(fecha) FROM mundo_clima_diario
                             WHERE tipo = 'observado') - INTERVAL '{int(dias)} days')
         ORDER BY fecha
     """)
@@ -650,7 +653,7 @@ def pronostico_estacional(dpto_codigo: str) -> pd.DataFrame:
     """Lluvia esperada por mes (p10/p50/p90) y su diferencia con el promedio historico."""
     return consultar(f"""
         SELECT periodo, anio, mes, precip_p10, precip_p50, precip_p90, anomalia_p50
-        FROM fact_pronostico_estacional
+        FROM mundo_pronostico_lluvia
         WHERE dpto_codigo = '{dpto_codigo}'
         ORDER BY periodo
     """)

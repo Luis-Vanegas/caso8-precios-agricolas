@@ -66,7 +66,7 @@ else:
 # c) La canasta familiar (precio semanal): cuantos articulos subieron en el
 #    ultimo mes cerrado de esa fuente.
 canasta = None
-if tabla_existe("fact_precio_semanal"):
+if tabla_existe("col_precio_mayorista_semanal"):
     meses_semanal = periodos_semanal()
     variacion = variacion_canasta()
     cerrados = [p for p in meses_semanal[~meses_semanal["parcial"]]["periodo"]
@@ -194,7 +194,7 @@ with st.expander(f"Ver los {len(termometro)} productos en el termómetro"):
 if oni >= 0.5:
     # Lo que medimos nosotros, leido de la base: no se afirma nada que la pagina de clima no muestre.
     medido = ""
-    if tabla_existe("indicador_sensibilidad_clima"):
+    if tabla_existe("resultado_efecto_clima"):
         r = sensibilidad_resumen()
         if "oni->lluvia" in r.index and "lluvia->precio" in r.index and "oferta->precio" in r.index:
             lluvia_zonas = r.loc["oni->lluvia"]

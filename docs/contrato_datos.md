@@ -46,7 +46,7 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 
 ## Tablas que entrega Claude 1
 
-### `fact_abastecimiento` (mensual)
+### `col_abastecimiento_mensual` (mensual)
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `mercado` | texto | Nombre SIPSA de la central, ej. `Bogotá, D.C., Corabastos` |
@@ -59,7 +59,7 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 | `anio`, `mes`, `periodo` | entero | Mes |
 | `toneladas` | decimal | Toneladas que entraron a la central ese mes |
 
-### `fact_precio_semanal`
+### `col_precio_mayorista_semanal`
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `mercado`, `ciudad`, `departamento`, `dpto_codigo` | texto | Igual que arriba |
@@ -70,7 +70,7 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 | `precio`, `precio_min`, `precio_max` | decimal | Pesos por `unidad` |
 | `unidad` | texto | `kg`, `unidad` o `litro` |
 
-### `fact_clima_diario`
+### `mundo_clima_diario`
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `departamento`, `dpto_codigo` | texto | Zona productora |
@@ -80,7 +80,7 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 | `tipo` | texto | `observado` o `pronostico` |
 | `fuente` | texto | `open-meteo` |
 
-### `fact_pronostico_estacional` (mensual)
+### `mundo_pronostico_lluvia` (mensual)
 | Columna | Tipo | Descripción |
 |---|---|---|
 | `departamento`, `dpto_codigo` | texto | Zona productora |
@@ -88,7 +88,7 @@ Grupo DANE (8 oficiales)      Tubérculos, raíces y plátanos
 | `precip_p10`, `precip_p50`, `precip_p90` | decimal | Lluvia del mes (mm) según los miembros del ensamble |
 | `anomalia_p50` | decimal | `precip_p50` menos el promedio histórico de ese mes |
 
-### `indicador_sensibilidad_clima`
+### `resultado_efecto_clima`
 Una fila por eslabón, producto, departamento y rezago. Responde "¿qué tanto afecta el clima?".
 Método y razones en `src/indicators/sensibilidad.py`. **Lo que cuenta como hallazgo es `q_valor < 0,1`**, no el p-valor solo.
 | Columna | Tipo | Descripción |
@@ -104,7 +104,7 @@ Método y razones en `src/indicators/sensibilidad.py`. **Lo que cuenta como hall
 | `q_valor` | decimal | p-valor corregido por pruebas múltiples (Benjamini-Hochberg, dentro de cada eslabón) |
 | `metodo` | texto | `correlacion_pearson`, `regresion_estacional` o `panel_efectos_fijos` |
 
-### `indicador_quiebres` (Chow y Brown-Forsythe)
+### `resultado_quiebres` (Chow y Brown-Forsythe)
 Una fila por producto, fecha candidata (inicio de fase ENSO) y tipo de cambio. Método y las tres trampas que evita en `src/indicators/quiebres.py`.
 | Columna | Tipo | Descripción |
 |---|---|---|
@@ -116,7 +116,7 @@ Una fila por producto, fecha candidata (inicio de fase ENSO) y tipo de cambio. M
 | `n_antes`, `n_despues` | entero | Meses usados en cada tramo |
 | `hay_quiebre` | booleano | `q_valor < 0,1` |
 
-### `pronostico_precio`
+### `resultado_pronostico_precio`
 Una fila por producto y mes. Método y reglas de honestidad en `src/indicators/pronostico.py`.
 | Columna | Tipo | Descripción |
 |---|---|---|
@@ -131,7 +131,7 @@ Una fila por producto y mes. Método y reglas de honestidad en `src/indicators/p
 | `gana_al_ingenuo` | booleano | `mae_modelo` al menos 5 % menor que `mae_ingenuo`. Si es falso, `modelo` es el ingenuo |
 
 ### Cambio en una tabla existente
-- `dim_mercado` gana la columna `dpto_codigo` (código DANE de 2 dígitos) para unir con el mapa.
+- `catalogo_mercado` gana la columna `dpto_codigo` (código DANE de 2 dígitos) para unir con el mapa.
 
 ## Archivos que entrega Claude 2 y consume Claude 1
 

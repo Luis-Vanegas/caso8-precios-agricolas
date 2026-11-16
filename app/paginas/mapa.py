@@ -38,7 +38,7 @@ meses = periodos_semanal()
 
 if articulos.empty or meses.empty:
     st.info(
-        "El mapa necesita la tabla `fact_precio_semanal`, que llega con la fuente de precios "
+        "El mapa necesita la tabla `col_precio_mayorista_semanal`, que llega con la fuente de precios "
         "semanales. Todavía no está en la base."
     )
     st.stop()

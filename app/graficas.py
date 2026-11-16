@@ -114,7 +114,7 @@ def oni(enso: pd.DataFrame, desde: int) -> go.Figure:
 def pronostico_con_banda(df: pd.DataFrame) -> go.Figure:
     """Precio real, lo que el modelo habria dicho en el pasado, y el pronostico.
 
-    Espera las columnas de `pronostico_precio` (docs/contrato_datos.md):
+    Espera las columnas de `resultado_pronostico_precio` (docs/contrato_datos.md):
     `periodo`, `tipo` ('real', 'prueba' o 'pronostico'), `valor`, `lim_inf`,
     `lim_sup`. La banda se dibuja primero para que quede detras de las lineas.
 

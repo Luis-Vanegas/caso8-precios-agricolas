@@ -6,25 +6,25 @@ Generado por `scripts/exploracion.py` sobre `caso8.duckdb`. Solo cifras; la lect
 
 | tabla                 |   filas |   columnas |   numericas |   texto |
 |:----------------------|--------:|-----------:|------------:|--------:|
-| dim_estacion_ideam    |     450 |          9 |           3 |       5 |
+| col_estacion_ideam    |     450 |          9 |           3 |       5 |
 | dim_item_fao          |     497 |          6 |           1 |       2 |
-| dim_mercado           |      20 |          2 |           1 |       1 |
-| dim_producto_sipsa    |      33 |          5 |           2 |       3 |
+| catalogo_mercado           |      20 |          2 |           1 |       1 |
+| catalogo_producto    |      33 |          5 |           2 |       3 |
 | dim_tiempo            |     801 |          4 |           3 |       0 |
 | dim_zona_productora   |       9 |          5 |           3 |       2 |
 | fact_balance          |   24399 |          8 |           4 |       3 |
-| fact_clima            |    3861 |         10 |           7 |       3 |
+| mundo_clima_zona_mensual            |    3861 |         10 |           7 |       3 |
 | fact_comercio         |   79395 |          8 |           4 |       3 |
-| fact_enso             |     919 |          6 |           3 |       2 |
-| fact_insumos          |   50383 |          6 |           4 |       2 |
-| fact_precio_mayorista |   33953 |         13 |           8 |       3 |
+| mundo_fenomeno_nino             |     919 |          6 |           3 |       2 |
+| mundo_precio_fertilizantes          |   50383 |          6 |           4 |       2 |
+| col_precio_mayorista_mensual |   33953 |         13 |           8 |       3 |
 | fact_precio_productor |   13489 |         10 |           5 |       4 |
 | fact_produccion       |   20468 |          8 |           4 |       3 |
-| fact_sensor_ideam     |     600 |          8 |           6 |       2 |
+| col_sensor_ideam_mensual     |     600 |          8 |           6 |       2 |
 | fact_tasa_cambio      |     511 |          9 |           4 |       5 |
 | fact_valor_produccion |   20820 |          8 |           4 |       3 |
 | puente_producto       |      33 |          5 |           1 |       3 |
-| puente_zona_sipsa     |       9 |          3 |           0 |       3 |
+| catalogo_zona_productora     |       9 |          3 |           0 |       3 |
 
 ## 2. Faltantes
 
@@ -32,10 +32,10 @@ Generado por `scripts/exploracion.py` sobre `caso8.duckdb`. Solo cifras; la lect
 
 | tabla                 | columna         |   pct_nulos |
 |:----------------------|:----------------|------------:|
-| fact_clima            | dias_con_dato   |       99.77 |
+| mundo_clima_zona_mensual            | dias_con_dato   |       99.77 |
 | fact_precio_productor | mes             |       60.2  |
 | fact_precio_productor | unidad          |       26.29 |
-| fact_precio_mayorista | item_codigo_fao |        6.34 |
+| col_precio_mayorista_mensual | item_codigo_fao |        6.34 |
 
 ## 3. Atipicos (regla de Tukey sobre retornos mensuales)
 

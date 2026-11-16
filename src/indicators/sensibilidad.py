@@ -213,13 +213,15 @@ def construir(con) -> pd.DataFrame:
     """Lee el modelo, calcula los cuatro eslabones y agrega el q-valor por eslabon."""
     leer = lambda sql: con.execute(sql).df()
     precios = leer("SELECT mercado, producto, anio, mes, periodo, precio_cop_kg, mes_cerrado "
-                   "FROM fact_precio_mayorista")
+                   "FROM col_precio_mayorista_mensual")
     precios = precios[precios["mes_cerrado"]]          # el mes en curso todavia no es definitivo
-    clima = leer("SELECT departamento, periodo, precipitacion_anomalia FROM fact_clima")
-    enso = leer("SELECT anio, mes, anomalia FROM fact_enso")
-    puente = leer("SELECT producto_sipsa, departamento FROM puente_zona_sipsa")
-    mercados = leer("SELECT mercado, dpto_codigo FROM dim_mercado")
-    abas = leer("SELECT art_id, articulo, dpto_codigo, periodo, toneladas FROM fact_abastecimiento")
+    clima = leer("SELECT departamento, periodo, precipitacion_anomalia FROM mundo_clima_zona_mensual")
+    enso = leer("SELECT anio, mes, anomalia FROM mundo_fenomeno_nino")
+    # Las zonas sin precio en SIPSA (arroz, cafe) no entran: no hay precio que explicar.
+    puente = leer("SELECT producto_sipsa, departamento FROM catalogo_zona_productora "
+                  "WHERE producto_sipsa IS NOT NULL")
+    mercados = leer("SELECT mercado, dpto_codigo FROM catalogo_mercado")
+    abas = leer("SELECT art_id, articulo, dpto_codigo, periodo, toneladas FROM col_abastecimiento_mensual")
     mapa = mapa_articulos(precios["producto"], abas[["art_id", "articulo"]])
 
     filas = (oni_lluvia(enso, clima) + lluvia_oferta(abas, clima, puente, mapa)
