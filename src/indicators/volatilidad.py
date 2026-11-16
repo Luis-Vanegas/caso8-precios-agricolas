@@ -91,15 +91,52 @@ def alertas(df: pd.DataFrame) -> pd.DataFrame:
     df["media_hist"] = media
     df["desv_hist"] = desviacion
     df["z_score"] = (df["retorno_log"] - media) / desviacion.replace(0, np.nan)
-    df["alerta"] = pd.cut(
-        df["z_score"].abs(),
+    df["alerta"] = _semaforo(df["z_score"])
+    df["direccion"] = np.where(df["retorno_log"] > 0, "alza", "baja")
+    return df
+
+
+def _semaforo(z: pd.Series) -> pd.Series:
+    """Verde, amarilla o roja segun que tan lejos de lo normal esta el z-score."""
+    alerta = pd.cut(
+        z.abs(),
         bins=[-np.inf, UMBRAL_AMARILLA, UMBRAL_ROJA, np.inf],
         labels=["verde", "amarilla", "roja"],
     )
     # Sin z-score no hay alerta; dejarlo en "verde" seria afirmar que esta bien
     # cuando en realidad no se sabe.
-    df.loc[df["z_score"].isna(), "alerta"] = None
-    df["direccion"] = np.where(df["retorno_log"] > 0, "alza", "baja")
+    return alerta.where(z.notna())
+
+
+def comparacion_anual(df: pd.DataFrame, columna: str = "precio_cop_kg") -> pd.DataFrame:
+    """Agrega el cambio frente al MISMO MES del anio pasado y que tan raro es.
+
+    Comparar con el mismo mes quita la temporada: en cosecha el precio siempre
+    baja, y eso no es noticia. La noticia es estar mucho mas caro (o barato)
+    que en la cosecha del anio pasado.
+
+    El anio pasado se busca por fecha (periodo - 100), no contando 12 filas
+    hacia atras: con el hueco de 2021 de SIPSA, 12 filas atras es otro mes.
+    """
+    hace_un_anio = (
+        df[CLAVES_SERIE + ["periodo", columna]]
+        .assign(periodo=lambda d: d["periodo"] + 100)          # 202403 queda etiquetado como 202503
+        .rename(columns={columna: "precio_anio_anterior"})
+    )
+    df = (df.merge(hace_un_anio, on=CLAVES_SERIE + ["periodo"], how="left")
+          .sort_values(CLAVES_SERIE + ["periodo"]))
+    valido = (df[columna] > 0) & (df["precio_anio_anterior"] > 0)
+    # Se anula ANTES del logaritmo: asi nunca se calcula log(0)
+    df["retorno_anual"] = np.log((df[columna] / df["precio_anio_anterior"]).where(valido))
+    df["cambio_anual_pct"] = (np.exp(df["retorno_anual"]) - 1) * 100
+
+    # Igual que en alertas(): se compara contra la historia de la propia serie,
+    # usando solo lo que se sabia hasta ese mes.
+    agrupado = df.groupby(CLAVES_SERIE, dropna=False)["retorno_anual"]
+    media = agrupado.transform(lambda s: s.expanding(MINIMO_OBSERVACIONES).mean())
+    desviacion = agrupado.transform(lambda s: s.expanding(MINIMO_OBSERVACIONES).std())
+    df["z_anual"] = (df["retorno_anual"] - media) / desviacion.replace(0, np.nan)
+    df["alerta_anual"] = _semaforo(df["z_anual"])
     return df
 
 

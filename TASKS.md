@@ -25,6 +25,7 @@ Lista detallada y reparto entre Claude 1 y Claude 2: `odd/tasks/clima-oferta-pre
 - Ya existen en `data/interim/` (correr `preparar.py` en tu carpeta no hace falta: llegan con la base cuando fusione C1-05): `sipsa_semanal`, `sipsa_abastecimiento`, `clima_diario`, `clima_estacional`.
 
 ## Pendientes técnicos
+- [ ] **`mundo_pronostico_lluvia.anomalia_p50` mezcla dos modelos** (medido el 2026-11-15): resta el pronóstico estacional de Open-Meteo contra un "normal" calculado con su archivo histórico, que es otro modelo. Da cifras imposibles (Tolima −317 mm en noviembre, cuando los sensores del IDEAM miden 155 mm ese mes). La web ya no la muestra; `app/secciones/clima_hoy.py` todavía sí. Arreglo correcto: calcular lo normal con el mismo modelo estacional (su histórico de pronósticos) o quitar la columna. Está en `src/cleaning/clima_open_meteo.py`, función `limpiar_estacional`.
 - [ ] Validar la lista de vigilancia fuera de muestra (calcular rho con datos hasta 2024 y medir el acierto en 2025-2026)
 - [ ] Completar `faostat_api.py` cuando haya token
 - [ ] Validar las alertas contra eventos conocidos de desabastecimiento

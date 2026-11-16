@@ -156,3 +156,30 @@ Escala:
 - No agregar librerías de UI: Streamlit + Plotly alcanzan. Si hace falta una, se pide en `TASKS.md`.
 - Correlación no es causalidad: toda página que cruce clima y precio lo dice en pantalla.
 - Verificar cada página en el navegador (puerto 8502) antes de darla por terminada.
+
+## La web (`web/`, Next.js)
+
+La web pública usa esta misma identidad: mismos colores, mismas tres tipografías, mismos radios y
+la franja tricolor. Los tokens están en `web/app/globals.css`; si cambia uno aquí, cambia allá.
+
+Lo que la web agrega y por qué:
+
+- **Dos señales separadas en el tablero.** La flecha y su color dicen hacia dónde fue el precio
+  (rojo sube, azul baja). El estado (Normal, Atención, Anormal) dice si eso es raro para ese
+  producto. A nivel nacional casi todo es "Normal": si el color dependiera solo del estado, la
+  tabla saldría toda verde y no diría nada.
+- **Escalas del mapa.** Precio: `AZUL` → blanco → `ROJO`, centrada en 0, tope ±40 %. Lluvia:
+  `TIERRA` → blanco → `AZUL`, tope ±60 %. Sin dato: trama diagonal, nunca un color liso.
+- **La barra de la escala lleva degradado.** Es una leyenda de datos, no un adorno: es la única
+  excepción a "no agregar gradientes".
+- **Vista 3D.** La altura repite lo que ya dice el color (qué tan lejos de cero), así nadie
+  depende de ella para leer el dato. La vista plana es la principal.
+- **Movimiento.** Entradas de 0,35 a 0,6 s, una sola vez. El mapa cambia de color en 0,6 s al
+  cambiar de mes. Nada late ni se repite. `prefers-reduced-motion` deja todo en su estado final.
+- **Sin franjas laterales de color** en tarjetas o avisos: el estado se dice con palabras.
+- **El icono lleva el color; el número va en tinta.** En el tablero la dirección se dice con un
+  icono (flecha arriba en `ROJO`, abajo en `AZUL`) y el porcentaje queda en `TINTA`, que se lee mejor.
+- **La firmeza de un hallazgo se ve tres veces:** en la palabra ("Se sostiene", "Solo en algunos
+  casos", "No se encontró"), en la línea del eslabón (continua, a trazos, punteada) y en el medidor.
+- **Lluvia esperada como tabla**, no como gráficas pequeñas: un solo color de claro a oscuro según
+  los milímetros, con el número siempre visible.
