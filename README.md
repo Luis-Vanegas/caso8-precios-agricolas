@@ -22,6 +22,7 @@ Cada carpeta tiene un `LEEME.md` corto que explica su contenido. Los términos t
 | [`powerquery/`](powerquery/LEEME.md) | Consultas de Power Query (entregable en Excel) | Para el paso de integración en Excel |
 | [`scripts/`](scripts/LEEME.md) | Los comandos que se ejecutan: descargar, limpiar, integrar | Para actualizar los datos |
 | [`src/`](src/LEEME.md) | El código del pipeline, una subcarpeta por etapa | Para entender o cambiar cómo se procesan los datos |
+| [`web/`](web/README.md) | **El tablero público** en Next.js: semáforo de precios, comparaciones y pronóstico | Para ver o cambiar lo que ve el público |
 | [`tests/`](tests/LEEME.md) | Pruebas automáticas (ninguna usa internet) | Para comprobar que nada se rompió |
 
 **La base de datos** es `data/processed/caso8.duckdb`. Para consultarla desde la terminal
