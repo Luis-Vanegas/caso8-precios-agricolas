@@ -24,10 +24,10 @@ estilo.para_presentar(
     "le gana a lo más simple, publicarlo sería inventar certeza."
 )
 
-if not tabla_existe("pronostico_precio"):
+if not tabla_existe("resultado_pronostico_precio"):
     st.info(
         "**Disponible cuando se integre el modelo de pronóstico.** "
-        "Esta página lee la tabla `pronostico_precio`, que todavía no está en la base."
+        "Esta página lee la tabla `resultado_pronostico_precio`, que todavía no está en la base."
     )
     estilo.pie()
     st.stop()
@@ -40,9 +40,9 @@ estilo.explicacion(
     "<b>lo que se publica es el ingenuo</b>, no el modelo."
 )
 
-productos = consultar("SELECT DISTINCT producto FROM pronostico_precio ORDER BY producto")
+productos = consultar("SELECT DISTINCT producto FROM resultado_pronostico_precio ORDER BY producto")
 if productos.empty:
-    st.info("La tabla `pronostico_precio` existe pero está vacía.")
+    st.info("La tabla `resultado_pronostico_precio` existe pero está vacía.")
     estilo.pie()
     st.stop()
 
@@ -55,7 +55,7 @@ nombre = producto.replace("*", "")
 df = consultar(f"""
     SELECT periodo, horizonte, tipo, valor, lim_inf, lim_sup, modelo,
            mae_modelo, mae_ingenuo, gana_al_ingenuo
-    FROM pronostico_precio
+    FROM resultado_pronostico_precio
     WHERE producto = '{producto.replace("'", "''")}'
     ORDER BY periodo, horizonte
 """)

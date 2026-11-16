@@ -86,6 +86,10 @@ def alertas(df: pd.DataFrame) -> pd.DataFrame:
     media = agrupado.transform(lambda s: s.expanding(MINIMO_OBSERVACIONES).mean())
     desviacion = agrupado.transform(lambda s: s.expanding(MINIMO_OBSERVACIONES).std())
 
+    # Se guardan para poder dibujar la banda de lo normal (media +- k desviaciones):
+    # un retorno fuera de la banda de 2 desviaciones es exactamente una alerta.
+    df["media_hist"] = media
+    df["desv_hist"] = desviacion
     df["z_score"] = (df["retorno_log"] - media) / desviacion.replace(0, np.nan)
     df["alerta"] = pd.cut(
         df["z_score"].abs(),

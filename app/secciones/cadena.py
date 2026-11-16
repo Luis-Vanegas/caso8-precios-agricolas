@@ -16,10 +16,10 @@ from datos import (UMBRAL_Q, articulos_cadena, cadena, departamentos_cadena, fec
 
 def mostrar() -> None:
     """Lluvia, toneladas y precio de un articulo en un departamento, mes a mes."""
-    if not (tabla_existe("fact_abastecimiento") and tabla_existe("fact_clima_diario")):
+    if not (tabla_existe("col_abastecimiento_mensual") and tabla_existe("mundo_clima_diario")):
         st.info(
-            "Esta página necesita `fact_abastecimiento`, `fact_clima_diario` y "
-            "`fact_precio_semanal`. Alguna todavía no está en la base."
+            "Esta página necesita `col_abastecimiento_mensual`, `mundo_clima_diario` y "
+            "`col_precio_mayorista_semanal`. Alguna todavía no está en la base."
         )
         return
 
@@ -136,7 +136,7 @@ def mostrar() -> None:
 
     if medido.empty:
         st.info(
-            "Para esta combinación no hay ninguna medición en `indicador_sensibilidad_clima`. "
+            "Para esta combinación no hay ninguna medición en `resultado_efecto_clima`. "
             "La gráfica de arriba sirve para explorar, no para concluir."
         )
     else:

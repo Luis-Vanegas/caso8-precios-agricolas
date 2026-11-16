@@ -27,7 +27,7 @@ Cerrar la app antes de `integrar.py`: tiene la base abierta y Windows bloquea la
 ## Estructura
 
 - `src/acquisition/` un modulo por fuente, todos con `estado()` y `descargar()` (contrato en `src/common/modelos.py`)
-- `src/cleaning/` limpieza por fuente; `src/integration/modelo.py` el modelo estrella (SQL sobre parquet)
+- `src/cleaning/` limpieza por fuente; `src/integration/modelo.py` el modelo (SQL sobre parquet): 18 tablas con prefijo por origen (`col_` Colombia, `mundo_` fuente internacional, `resultado_` calculos, `catalogo_`), descritas en `docs/diccionario_datos.md`
 - `src/indicators/volatilidad.py` retorno log, volatilidad, z-score y alertas
 - `src/indicators/vigilancia.py` correlaciones con rezago y lista de vigilancia (pistas, no prediccion)
 - `app/streamlit_app.py` solo el menu; paginas en `app/paginas/`; estilo en `app/estilo.py`; graficas en `app/graficas.py`; datos en `app/datos.py`

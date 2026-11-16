@@ -200,7 +200,7 @@ mes abierto con pocos días; la app lo advierte. No lo uses en la demo.
 ## Cómo explicar cada gráfica
 
 Formato: **qué muestra**, **cómo se lee**, **lo que decís**. Los ejemplos salen de la base
-(`alertas()` de `src/indicators/volatilidad.py` sobre `fact_precio_mayorista`).
+(`alertas()` de `src/indicators/volatilidad.py` sobre `col_precio_mayorista_mensual`).
 
 ### Inicio
 

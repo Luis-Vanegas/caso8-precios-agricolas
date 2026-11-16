@@ -16,9 +16,11 @@ def mostrar() -> None:
         "precio interno sube cuando sube el dólar o el precio internacional."
     )
 
-    comercio = consultar("SELECT * FROM fact_comercio")
-    produccion = consultar("SELECT * FROM fact_produccion")
-    items = consultar("SELECT item_codigo, item FROM dim_item_fao")
+    # Los cinco dominios de FAOSTAT viven en una sola tabla; `dominio` los separa.
+    comercio = consultar("SELECT * FROM mundo_fao_colombia WHERE dominio = 'comercio'")
+    produccion = consultar("SELECT * FROM mundo_fao_colombia WHERE dominio = 'produccion'")
+    items = consultar("SELECT item_codigo, any_value(item) AS item FROM mundo_fao_colombia "
+                      "WHERE dominio IN ('comercio', 'produccion') GROUP BY item_codigo")
     dep = dependencia_importaciones(comercio, produccion).merge(items, on="item_codigo", how="left")
     # Solo productos que Colombia produce y consume en cantidad (> 1.000 t). Los agregados
     # de la FAO ("Non-edible Crude Materials", "Food preparations") no tienen produccion

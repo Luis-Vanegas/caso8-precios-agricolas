@@ -15,24 +15,23 @@ from datos import TTL, conexion
 
 # Que es cada tabla, en una linea. Las que no esten aqui se listan igual.
 DESCRIPCION = {
-    "fact_precio_mayorista": "Precio mensual $/kg por producto y mercado (SIPSA). La tabla central.",
-    "fact_precio_semanal": "Precio semanal por artículo (cada variedad por separado) y mercado.",
-    "fact_abastecimiento": "Toneladas que llegan a cada central de abastos por mes.",
-    "fact_clima": "Lluvia y temperatura mensual en las zonas productoras (NASA POWER + IDEAM).",
-    "fact_clima_diario": "Clima diario por departamento: observado y pronóstico (Open-Meteo).",
-    "fact_pronostico_estacional": "Lluvia esperada para los próximos meses (50 escenarios resumidos).",
-    "fact_enso": "Índice El Niño / La Niña (ONI) por mes.",
-    "fact_sensor_ideam": "Lluvia medida por estaciones del IDEAM.",
-    "fact_precio_productor": "Precio al productor de la FAO (anual).",
-    "fact_produccion": "Producción agrícola de la FAO (anual).",
-    "fact_comercio": "Importaciones y exportaciones de la FAO (anual).",
-    "dim_mercado": "Catálogo de mercados: ciudad, departamento y código DANE.",
-    "dim_producto_sipsa": "Catálogo de productos SIPSA y su grupo.",
-    "dim_tiempo": "Calendario: año, mes y si el mes ya cerró.",
-    "puente_zona_sipsa": "Qué departamento produce cada producto (une precio con clima).",
-    "indicador_sensibilidad_clima": "Resultado del análisis: cuánto mueve el clima a la oferta y al precio.",
-    "indicador_quiebres": "Resultado de la prueba de Chow: si cambió el comportamiento de un precio.",
-    "pronostico_precio": "Pronóstico a 1, 2 y 3 meses con su banda y su error contra el pasado.",
+    "col_precio_mayorista_mensual": "Precio mensual $/kg por producto y mercado (SIPSA). La tabla central.",
+    "col_precio_mayorista_semanal": "Precio semanal por artículo (cada variedad por separado) y mercado.",
+    "col_abastecimiento_mensual": "Toneladas que llegan a cada central de abastos por mes.",
+    "mundo_clima_zona_mensual": "Lluvia y temperatura mensual en las zonas productoras (NASA POWER + IDEAM).",
+    "mundo_clima_diario": "Clima diario por departamento: observado y pronóstico (Open-Meteo).",
+    "mundo_pronostico_lluvia": "Lluvia esperada para los próximos meses (50 escenarios resumidos).",
+    "mundo_fenomeno_nino": "Índice El Niño / La Niña (ONI) por mes.",
+    "col_sensor_ideam_mensual": "Lluvia medida por estaciones del IDEAM.",
+    "mundo_fao_colombia": "Los cinco dominios de la FAO para Colombia: precio al productor, producción, "
+                          "comercio, balance alimentario y valor de la producción (anual).",
+    "mundo_precio_fertilizantes": "Precio internacional de los fertilizantes (Banco Mundial, mensual).",
+    "catalogo_mercado": "Catálogo de mercados: ciudad, departamento y código DANE.",
+    "catalogo_producto": "Catálogo de productos SIPSA y su equivalente en la FAO.",
+    "catalogo_zona_productora": "Qué departamento produce cada producto (une precio con clima).",
+    "resultado_efecto_clima": "Resultado del análisis: cuánto mueve el clima a la oferta y al precio.",
+    "resultado_quiebres": "Resultado de la prueba de Chow: si cambió el comportamiento de un precio.",
+    "resultado_pronostico_precio": "Pronóstico a 1, 2 y 3 meses con su banda y su error contra el pasado.",
 }
 LIMITE_EXCEL = 200_000  # filas; mas que eso, Excel se vuelve lento: mejor el CSV
 

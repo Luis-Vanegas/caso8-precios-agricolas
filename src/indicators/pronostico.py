@@ -148,14 +148,16 @@ def pronosticar(serie: pd.DataFrame, horizontes=(1, 2, 3)) -> pd.DataFrame:
 def construir(con) -> pd.DataFrame:
     """Para cada producto (mediana nacional): historia real, backtest a 1 mes y pronostico."""
     precios = con.execute(
-        "SELECT producto, periodo, median(precio_cop_kg) AS precio FROM fact_precio_mayorista "
+        "SELECT producto, periodo, median(precio_cop_kg) AS precio FROM col_precio_mayorista_mensual "
         "WHERE mes_cerrado GROUP BY producto, periodo").df()
     precios["log_precio"] = np.log(precios["precio"])
-    oni = con.execute("SELECT anio * 100 + mes AS periodo, anomalia AS oni FROM fact_enso").df()
+    oni = con.execute("SELECT anio * 100 + mes AS periodo, anomalia AS oni FROM mundo_fenomeno_nino").df()
     lluvia = con.execute(
         "SELECT p.producto_sipsa AS producto, c.periodo, avg(c.precipitacion_anomalia) AS lluvia "
-        "FROM puente_zona_sipsa p JOIN fact_clima c "
-        "ON c.producto = p.producto_zona AND c.departamento = p.departamento GROUP BY 1, 2").df()
+        "FROM catalogo_zona_productora p JOIN mundo_clima_zona_mensual c "
+        "ON c.producto = p.producto_zona AND c.departamento = p.departamento "
+        # Las zonas sin precio en SIPSA (arroz, cafe) no tienen producto que pronosticar.
+        "WHERE p.producto_sipsa IS NOT NULL GROUP BY 1, 2").df()
 
     tablas = []
     for producto, serie in precios.groupby("producto"):

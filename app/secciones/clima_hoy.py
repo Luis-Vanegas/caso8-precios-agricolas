@@ -17,9 +17,9 @@ from datos import (clima_diario, departamentos_clima, fecha, pronostico_estacion
 
 def mostrar() -> None:
     """Clima de los ultimos dias y lo que se espera en una zona productora."""
-    if not tabla_existe("fact_clima_diario"):
+    if not tabla_existe("mundo_clima_diario"):
         st.info(
-            "Esta página necesita las tablas `fact_clima_diario` y `fact_pronostico_estacional`, "
+            "Esta página necesita las tablas `mundo_clima_diario` y `mundo_pronostico_lluvia`, "
             "que llegan con la fuente Open-Meteo. Todavía no están en la base: corré "
             "`scripts/actualizar.py` y `scripts/integrar.py`."
         )
@@ -75,8 +75,8 @@ def mostrar() -> None:
     # --- Pronostico estacional ---------------------------------------------------
     st.subheader("Lluvia esperada en los próximos meses")
 
-    if not tabla_existe("fact_pronostico_estacional"):
-        st.info("El pronóstico estacional llega con la tabla `fact_pronostico_estacional`.")
+    if not tabla_existe("mundo_pronostico_lluvia"):
+        st.info("El pronóstico estacional llega con la tabla `mundo_pronostico_lluvia`.")
     else:
         estacional = pronostico_estacional(codigo)
         if estacional.empty:

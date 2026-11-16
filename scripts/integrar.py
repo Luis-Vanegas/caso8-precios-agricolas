@@ -39,9 +39,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {tabla:24} {filas:>10,} filas")
 
         # Indicadores estadisticos: se calculan sobre el modelo ya construido.
-        for nombre, calcular in (("indicador_sensibilidad_clima", sensibilidad.construir),
-                                 ("indicador_quiebres", quiebres.construir),
-                                 ("pronostico_precio", pronostico.construir)):
+        for nombre, calcular in (("resultado_efecto_clima", sensibilidad.construir),
+                                 ("resultado_quiebres", quiebres.construir),
+                                 ("resultado_pronostico_precio", pronostico.construir)):
             try:
                 tabla = calcular(con)
                 con.execute(f"CREATE OR REPLACE TABLE {nombre} AS SELECT * FROM tabla")
