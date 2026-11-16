@@ -170,7 +170,7 @@ p { margin: 0; }
 .leyenda dd { margin: 0; color: var(--gris); font-size: 0.95rem; }
 
 /* --- Celular: cada producto es una tarjeta ------------------------------ */
-@media (max-width: 860px) {
+@media (max-width: 1080px) {
   .pagina { padding: 1.6rem 1rem 3rem; }
   .controles select { min-width: 0; width: 100%; }
   .controles label { flex: 1 1 100%; }
@@ -203,7 +203,7 @@ p { margin: 0; }
    monoespaciada salian mas grandes que el numero que acompanan. */
 .flecha { font-family: system-ui, sans-serif; font-size: 0.72em; display: inline-block; transform: translateY(-0.08em); }
 
-@media (max-width: 860px) {
+@media (max-width: 1080px) {
   /* El nombre del dato va en la fuente de texto aunque la celda sea un numero. */
   .tablero .fila > td::before { font-family: var(--fuente-texto), system-ui, sans-serif; font-weight: 400; }
 }
