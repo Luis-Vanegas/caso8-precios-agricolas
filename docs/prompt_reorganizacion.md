@@ -58,7 +58,7 @@ de Datos). Esto es el piso; lo demás es mejora y nunca lo reemplaza:
 | Dos tablas dicen lo mismo | `dim_producto_sipsa` y `puente_producto`: 33 filas, las mismas columnas. `dim_zona_productora` y `puente_zona_sipsa`: 9 filas cada una |
 | "Artículo" y "producto" son dos niveles del mismo catálogo | 351 artículos (`art_id`, variedad y presentación) se agrupan en 136 productos en el precio semanal; el precio mensual usa 33 productos |
 | `flag` es el código de FAO | A = oficial, E = estimado, I = imputado, X = cifra de organismo internacional. Ya existe la columna `imputado` derivada de él |
-| El pronóstico no siempre sirve | De 43 series producto-mercado, el modelo le gana al pronóstico ingenuo ("el mes que viene será igual") en 14 |
+| El pronóstico no siempre sirve | De 33 productos, el modelo le gana al mejor pronóstico ingenuo en 11 a un mes, 8 a dos meses y 4 a tres (capítulo 7 del notebook) |
 | No existe ningún notebook | Los cálculos están en `src/indicators/` (5 archivos, ~850 líneas) |
 
 ---

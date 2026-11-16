@@ -17,6 +17,7 @@ Cada carpeta tiene un `LEEME.md` corto que explica su contenido. Los términos t
 | [`data/`](data/LEEME.md) | Los datos: crudos, intermedios y la base final | Para consultar la base o revisar qué se descargó |
 | [`docs/`](docs/LEEME.md) | Documentación técnica, guías y material de sustentación | Para entender una decisión o preparar la sustentación |
 | [`documentos/`](documentos/LEEME.md) | Material de consulta: artículos, guía del curso, presentaciones, borradores del informe | Para buscar bibliografía o el material del curso |
+| [`notebooks/`](notebooks/LEEME.md) | **Los cálculos paso a paso**: cada fórmula con su ejemplo a mano, la función real y su gráfica | Para entender o explicar de dónde sale un número |
 | [`odd/`](odd/LEEME.md) | Listas de tareas del proyecto | Para saber qué falta y quién lo hace |
 | [`powerquery/`](powerquery/LEEME.md) | Consultas de Power Query (entregable en Excel) | Para el paso de integración en Excel |
 | [`scripts/`](scripts/LEEME.md) | Los comandos que se ejecutan: descargar, limpiar, integrar | Para actualizar los datos |

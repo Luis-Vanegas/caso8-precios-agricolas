@@ -293,14 +293,15 @@ El Niño → lluvia → oferta → precio. **Son pistas, no causas probadas.**
 ### `resultado_quiebres`
 Calculado en `src/indicators/quiebres.py` con la prueba de Chow: ¿el precio se comportó
 distinto antes y después de que empezara una fase de El Niño o La Niña?
+Hoy ninguna de las 198 pruebas se sostiene (`hay_quiebre` es falso en todas).
 
 | Columna | Qué es | Ejemplo |
 |---|---|---|
 | `producto`, `mercado` | Serie analizada (`mercado` es siempre `nacional`) | `Habichuela`, `nacional` |
 | `periodo_quiebre` | Mes en que empieza la fase | `202405` |
 | `fase_que_empieza` | `El Nino`, `La Nina` o `Neutral` | `Neutral` |
-| `que_cambia` | Qué se compara: el `nivel` del precio o su `volatilidad` | `volatilidad` |
-| `valor_antes_pct`, `valor_despues_pct` | La medida antes y después del quiebre (%) | `20.2`, `17.0` |
+| `que_cambia` | Qué se compara: el `ritmo` (cambio mensual promedio) o la `volatilidad` | `volatilidad` |
+| `valor_antes_pct`, `valor_despues_pct` | La medida antes y después de la fecha, en % por mes | `20.2`, `17.0` |
 | `n_antes`, `n_despues` | Meses a cada lado | `36`, `29` |
 | `f_chow`, `p_valor`, `q_valor` | Estadístico de la prueba y su probabilidad de azar (ver `resultado_efecto_clima`) | `0.685`, `0.408`, `0.977` |
 | `hay_quiebre` | Verdadero si el cambio se sostiene tras la corrección | `False` |
