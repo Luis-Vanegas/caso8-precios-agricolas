@@ -1,19 +1,23 @@
-"""Modelo estrella en DuckDB, construido con SQL sobre los parquet de interim.
+"""Modelo de datos en DuckDB, construido con SQL sobre los parquet de interim.
 
 DuckDB lee parquet directo, asi que no hay que pasar los datos por pandas para
 cargarlos. Cada sentencia es un CREATE TABLE AS SELECT.
 
-Decision de diseño: **dos dimensiones de producto, no una**.
+El nombre de cada tabla dice de donde viene el dato:
 
-SIPSA y FAOSTAT miden cosas distintas con vocabularios distintos. Forzarlos a
-una sola dimension obliga a elegir un grano y pierde el otro. En su lugar hay
-`dim_producto_sipsa` (33 productos comerciales colombianos) y `dim_item_fao`
-(items de la clasificacion internacional), unidos por `puente_producto`, que
-declara explicitamente que tan valida es cada correspondencia.
+- `catalogo_`  listas de referencia (productos, mercados, zonas productoras).
+- `col_`       dato medido en Colombia (SIPSA del DANE, sensores del IDEAM).
+- `mundo_`     dato de una fuente internacional (FAO, NASA, NOAA, Banco Mundial,
+               Open-Meteo), aunque hable de Colombia.
+- `resultado_` lo que calcula este proyecto (las crea scripts/integrar.py).
 
-Consecuencia practica: solo las filas del puente con `tipo_correspondencia =
-'exacta'` habilitan comparar precio mayorista contra precio productor. Las
-demas sirven para ubicar el producto en la jerarquia, no para calcular margenes.
+Decision de diseño: SIPSA y FAOSTAT nombran los productos distinto y miden cosas
+distintas. `catalogo_producto` tiene una fila por producto de SIPSA y dice cual
+es su item equivalente en FAO y que tan valida es esa equivalencia. Solo las
+filas con `permite_comparar_precio` sirven para comparar precio mayorista contra
+precio al productor; las demas ubican el producto, no calculan margenes.
+
+El diccionario completo esta en docs/diccionario_datos.md.
 """
 
 from __future__ import annotations
@@ -29,6 +33,18 @@ log = logging.getLogger(__name__)
 # Los codigos de mes de FAOSTAT son 7000 + numero de mes; 7021 es el agregado anual.
 _MES_FAO = "(mes_codigo - 7000)"
 
+# Los fertilizantes del Pink Sheet (Banco Mundial). El archivo trae 71 materias
+# primas (petroleo, te, madera...); solo estas son insumo de los cultivos.
+_FERTILIZANTES = ("Urea", "DAP", "TSP", "Potassium chloride **", "Phosphate rock")
+
+# Codigos de calidad de FAOSTAT traducidos a palabras, para no obligar a nadie
+# a memorizar que significa una letra.
+_CALIDAD_FAO = """CASE flag WHEN 'A' THEN 'oficial'
+                           WHEN 'E' THEN 'estimado'
+                           WHEN 'I' THEN 'imputado'
+                           WHEN 'X' THEN 'organismo internacional'
+                           ELSE 'otro (' || coalesce(flag, 'sin codigo') || ')' END"""
+
 
 def _p(ruta: str) -> str:
     """Ruta a un parquet de interim, lista para meter en el SQL."""
@@ -40,32 +56,27 @@ def _c(archivo: str) -> str:
     return f"read_csv('{(CONFIG / archivo).as_posix()}', all_varchar = true)"
 
 
-# El orden importa: las dimensiones antes que los hechos.
-SENTENCIAS: dict[str, str] = {
-    # --- Dimensiones --------------------------------------------------------
-    "dim_tiempo": f"""
-        SELECT DISTINCT anio, mes,
-               anio * 100 + mes AS periodo,
-               CAST(anio || '-' || lpad(CAST(mes AS VARCHAR), 2, '0') || '-01' AS DATE) AS primer_dia
-        FROM (
-            SELECT anio, mes FROM {_p('sipsa/sipsa_mensual.parquet')}
-            UNION
-            SELECT anio, {_MES_FAO} AS mes FROM {_p('faostat/faostat_pp.parquet')}
-                WHERE frecuencia = 'mensual'
-            UNION
-            SELECT anio, mes FROM {_p('clima/clima.parquet')}
-            UNION
-            SELECT anio, mes FROM {_p('insumos/insumos.parquet')}
-        )
-        WHERE anio IS NOT NULL AND mes BETWEEN 1 AND 12
-        ORDER BY anio, mes
-    """,
+def _fao(archivo: str, dominio: str, mes: str = "NULL::INTEGER") -> str:
+    """Un dominio de FAOSTAT con las mismas columnas que los otros cuatro.
 
+    Los cinco dominios llegan con la misma forma, asi que se apilan en una sola
+    tabla y la columna `dominio` dice de cual viene cada fila.
+    """
+    return f"""
+        SELECT '{dominio}' AS dominio, item_codigo, item, elemento_codigo, elemento,
+               unidad, anio, {mes} AS mes, valor, {_CALIDAD_FAO} AS calidad_dato
+        FROM {_p(archivo)}
+        WHERE valor IS NOT NULL"""
+
+
+# El orden importa: los catalogos antes que los datos.
+SENTENCIAS: dict[str, str] = {
+    # --- Catalogos ----------------------------------------------------------
     # El departamento y su codigo DANE son la llave del mapa (une con el GeoJSON).
-    "dim_mercado": f"""
-        SELECT s.mercado, s.series, m.departamento, d.dpto_codigo
+    "catalogo_mercado": f"""
+        SELECT s.mercado, s.productos_con_precio, m.departamento, d.dpto_codigo
         FROM (
-            SELECT mercado, count(*) AS series
+            SELECT mercado, count(*) AS productos_con_precio
             FROM (SELECT DISTINCT mercado, producto FROM {_p('sipsa/sipsa_mensual.parquet')})
             GROUP BY mercado
         ) s
@@ -74,115 +85,66 @@ SENTENCIAS: dict[str, str] = {
         ORDER BY s.mercado
     """,
 
-    "dim_producto_sipsa": f"""
+    # Una fila por producto de SIPSA. Las columnas *_fao son el puente con
+    # FAOSTAT, y llevan escrito cuanto se puede confiar en cada equivalencia.
+    "catalogo_producto": f"""
         SELECT DISTINCT producto, producto_codigo,
-               item_codigo_fao, item_fao, tipo_correspondencia
+               item_codigo_fao, item_fao, tipo_correspondencia,
+               tipo_correspondencia = 'exacta' AS permite_comparar_precio
         FROM {_p('sipsa/sipsa_mensual.parquet')}
         ORDER BY producto
     """,
 
-    "dim_item_fao": f"""
-        SELECT item_codigo, any_value(item) AS item, any_value(item_cpc) AS item_cpc,
-               bool_or(dominio = 'PP') AS tiene_precio_productor,
-               bool_or(dominio = 'QCL') AS tiene_produccion,
-               bool_or(dominio = 'TCL') AS tiene_comercio
-        FROM (
-            SELECT item_codigo, item, item_cpc, dominio FROM {_p('faostat/faostat_pp.parquet')}
-            UNION ALL
-            SELECT item_codigo, item, item_cpc, dominio FROM {_p('faostat/faostat_qcl.parquet')}
-            UNION ALL
-            SELECT item_codigo, item, item_cpc, dominio FROM {_p('faostat/faostat_tcl.parquet')}
-        )
-        GROUP BY item_codigo
-        ORDER BY item_codigo
-    """,
-
-    # El puente es la unica via legitima entre los dos vocabularios, y lleva
-    # escrito cuanto se puede confiar en cada fila.
-    "puente_producto": f"""
-        SELECT DISTINCT producto AS producto_sipsa, item_codigo_fao, item_fao,
-               tipo_correspondencia,
-               tipo_correspondencia = 'exacta' AS permite_comparar_precio
-        FROM {_p('sipsa/sipsa_mensual.parquet')}
-        ORDER BY producto_sipsa
-    """,
-
-    "dim_zona_productora": f"""
-        SELECT DISTINCT producto, departamento, lat, lon, elevacion_grilla_m
-        FROM {_p('clima/clima.parquet')}
-        ORDER BY producto, departamento
-    """,
-
-    # Una zona climatica sirve a varios productos de SIPSA (papa negra y papa
-    # criolla comparten zona) y un producto puede tener varias zonas: es una
-    # relacion de muchos a muchos y por eso va en su propia tabla.
+    # Donde se cultiva cada producto y con que nombre aparece en SIPSA.
     #
-    # Sin este puente el cruce clima-SIPSA devuelve CERO filas, porque la config
-    # dice "Papa" donde SIPSA dice "Papa negra*". Fallo silencioso: el join
-    # corre sin error y no une nada.
-    "puente_zona_sipsa": f"""
-        SELECT producto_sipsa, producto_zona, departamento
-        FROM {_p('zonas/zonas_puente.parquet')}
-        ORDER BY producto_sipsa, departamento
+    # Una zona sirve a varios productos de SIPSA (papa negra y papa criolla
+    # comparten zona) y un producto puede tener varias zonas. Las zonas que no
+    # tienen precio en SIPSA (arroz, cafe) quedan con producto_sipsa vacio.
+    #
+    # Sin la columna producto_sipsa el cruce clima-SIPSA devuelve CERO filas,
+    # porque la zona dice "Papa" donde SIPSA dice "Papa negra*". Fallo
+    # silencioso: el join corre sin error y no une nada.
+    "catalogo_zona_productora": f"""
+        SELECT p.producto_sipsa,
+               coalesce(z.producto, p.producto_zona) AS producto_zona,
+               coalesce(z.departamento, p.departamento) AS departamento,
+               z.lat, z.lon
+        FROM (SELECT DISTINCT producto, departamento, lat, lon FROM {_p('clima/clima.parquet')}) z
+        FULL JOIN {_p('zonas/zonas_puente.parquet')} p
+               ON p.producto_zona = z.producto AND p.departamento = z.departamento
+        ORDER BY producto_zona, departamento, producto_sipsa
     """,
 
-    # --- Hechos de precio (dos, a su propio grano) --------------------------
-    "fact_precio_mayorista": f"""
+    # --- Colombia: precio mayorista (SIPSA, DANE) ---------------------------
+    # Ningun precio se imputa: un mes sin dato no tiene fila.
+    "col_precio_mayorista_mensual": f"""
         SELECT mercado, producto, anio, mes, anio * 100 + mes AS periodo,
                precio_cop_kg, precio_min, precio_max, dias_con_dato,
-               item_codigo_fao, tipo_correspondencia, mes_cerrado,
-               FALSE AS imputado
+               item_codigo_fao, tipo_correspondencia, mes_cerrado
         FROM {_p('sipsa/sipsa_mensual.parquet')}
     """,
 
-    "fact_precio_productor": f"""
-        SELECT item_codigo, elemento_codigo, elemento, unidad, anio,
-               CASE WHEN frecuencia = 'mensual' THEN {_MES_FAO} END AS mes,
-               frecuencia, valor, flag,
-               FALSE AS imputado
-        FROM {_p('faostat/faostat_pp.parquet')}
-        WHERE valor IS NOT NULL
+    # --- Mundo: los cinco dominios de FAOSTAT para Colombia -----------------
+    # `producto_en_sipsa` marca los items que tienen un producto equivalente con
+    # precio mayorista; los balances usan codigos agregados y no enlazan.
+    "mundo_fao_colombia": f"""
+        SELECT f.*,
+               f.item_codigo IN (
+                   SELECT DISTINCT item_codigo_fao FROM {_p('sipsa/sipsa_mensual.parquet')}
+                   WHERE item_codigo_fao IS NOT NULL
+               ) AS producto_en_sipsa
+        FROM (
+            {_fao('faostat/faostat_pp.parquet', 'precio_productor',
+                  f"CASE WHEN frecuencia = 'mensual' THEN {_MES_FAO} END")}
+            UNION ALL {_fao('faostat/faostat_qcl.parquet', 'produccion')}
+            UNION ALL {_fao('faostat/faostat_tcl.parquet', 'comercio')}
+            UNION ALL {_fao('faostat/faostat_fbs.parquet', 'balance_alimentario')}
+            UNION ALL {_fao('faostat/faostat_qv.parquet', 'valor_produccion')}
+        ) f
     """,
 
-    # --- Hechos anuales de FAOSTAT ------------------------------------------
-    "fact_produccion": f"""
-        SELECT item_codigo, elemento_codigo, elemento, unidad, anio, valor, flag,
-               FALSE AS imputado
-        FROM {_p('faostat/faostat_qcl.parquet')}
-        WHERE valor IS NOT NULL
-    """,
-
-    "fact_comercio": f"""
-        SELECT item_codigo, elemento_codigo, elemento, unidad, anio, valor, flag,
-               FALSE AS imputado
-        FROM {_p('faostat/faostat_tcl.parquet')}
-        WHERE valor IS NOT NULL
-    """,
-
-    "fact_balance": f"""
-        SELECT item_codigo, elemento_codigo, elemento, unidad, anio, valor, flag,
-               FALSE AS imputado
-        FROM {_p('faostat/faostat_fbs.parquet')}
-        WHERE valor IS NOT NULL
-    """,
-
-    "fact_valor_produccion": f"""
-        SELECT item_codigo, elemento_codigo, elemento, unidad, anio, valor, flag,
-               FALSE AS imputado
-        FROM {_p('faostat/faostat_qv.parquet')}
-        WHERE valor IS NOT NULL
-    """,
-
-    "fact_tasa_cambio": f"""
-        SELECT elemento_codigo, elemento, moneda_iso, unidad, anio,
-               CASE WHEN frecuencia = 'mensual' THEN {_MES_FAO} END AS mes,
-               frecuencia, valor, flag
-        FROM {_p('faostat/faostat_pe.parquet')}
-        WHERE valor IS NOT NULL
-    """,
-
-    # --- Hechos complementarios ---------------------------------------------
-    "fact_clima": f"""
+    # --- Mundo: clima e insumos ---------------------------------------------
+    "mundo_clima_zona_mensual": f"""
         SELECT producto, departamento, anio, mes, anio * 100 + mes AS periodo,
                PRECTOTCORR AS precipitacion_mm_dia,
                T2M AS temperatura_c,
@@ -191,15 +153,15 @@ SENTENCIAS: dict[str, str] = {
         FROM {_p('clima/clima.parquet')}
     """,
 
-    "fact_enso": f"""
+    "mundo_fenomeno_nino": f"""
         SELECT anio, trimestre, mes_central AS mes, anomalia, fase, provisional
         FROM {_p('enso/enso.parquet')}
     """,
 
-    "fact_insumos": f"""
-        SELECT commodity, unidad, anio, mes, anio * 100 + mes AS periodo, valor_usd
+    "mundo_precio_fertilizantes": f"""
+        SELECT commodity AS insumo, unidad, anio, mes, anio * 100 + mes AS periodo, valor_usd
         FROM {_p('insumos/insumos.parquet')}
-        WHERE valor_usd IS NOT NULL
+        WHERE valor_usd IS NOT NULL AND commodity IN {_FERTILIZANTES}
     """,
 }
 
@@ -208,7 +170,7 @@ SENTENCIAS: dict[str, str] = {
 # su parquet existe, para que el modelo no se caiga por una fuente nueva.
 OPCIONALES: dict[str, tuple[str, str]] = {
     # La estacion es la unidad fisica de captura: codigo, sensor y ubicacion.
-    "dim_estacion_ideam": ("ideam/ideam_estaciones.parquet", f"""
+    "col_estacion_ideam": ("ideam/ideam_estaciones.parquet", f"""
         SELECT codigoestacion, codigosensor,
                any_value(nombreestacion) AS nombre, any_value(departamento) AS departamento,
                any_value(municipio) AS municipio,
@@ -219,38 +181,55 @@ OPCIONALES: dict[str, tuple[str, str]] = {
         GROUP BY codigoestacion, codigosensor
         ORDER BY departamento, codigoestacion
     """),
-    # Mismo grano que fact_clima (departamento, anio, mes): esa es la variable de
-    # integracion entre el sensor y el resto del modelo.
-    "fact_sensor_ideam": ("ideam/ideam_depto.parquet", f"""
-        SELECT variable, departamento, anio, mes, anio * 100 + mes AS periodo,
+    # Mismo grano que mundo_clima_zona_mensual (departamento, anio, mes): esa es
+    # la variable de integracion entre el sensor y el resto del modelo.
+    "col_sensor_ideam_mensual": ("ideam/ideam_depto.parquet", f"""
+        SELECT variable, departamento,
+               -- El parquet trae anio y mes con decimales (2023.0): se dejan enteros.
+               CAST(anio AS INTEGER) AS anio, CAST(mes AS INTEGER) AS mes,
+               CAST(anio * 100 + mes AS INTEGER) AS periodo,
                valor, anomalia, n_estaciones
         FROM {_p('ideam/ideam_depto.parquet')}
     """),
 
     # --- Fase clima -> oferta -> precio (ver docs/contrato_datos.md) ----------
     # Llave del articulo: art_id. Nunca se promedian articulos distintos.
-    "fact_precio_semanal": ("sipsa/sipsa_semanal.parquet", f"""
+    "col_precio_mayorista_semanal": ("sipsa/sipsa_semanal.parquet", f"""
         SELECT mercado, ciudad, departamento, dpto_codigo, fuen_id,
                art_id, articulo, producto, grupo_dane, en_canasta,
                semana_inicio, anio, mes, periodo,
                precio, precio_min, precio_max, unidad
         FROM {_p('sipsa/sipsa_semanal.parquet')}
     """),
-    "fact_abastecimiento": ("sipsa/sipsa_abastecimiento.parquet", f"""
+    "col_abastecimiento_mensual": ("sipsa/sipsa_abastecimiento.parquet", f"""
         SELECT mercado, ciudad, departamento, dpto_codigo, fuen_id,
                art_id, articulo, producto, grupo_dane,
                anio, mes, periodo, toneladas
         FROM {_p('sipsa/sipsa_abastecimiento.parquet')}
     """),
-    "fact_clima_diario": ("clima/clima_diario.parquet", f"""
+    "mundo_clima_diario": ("clima/clima_diario.parquet", f"""
         SELECT departamento, dpto_codigo, fecha, precipitacion_mm,
                temp_max, temp_min, tipo, fuente
         FROM {_p('clima/clima_diario.parquet')}
     """),
-    "fact_pronostico_estacional": ("clima/clima_estacional.parquet", f"""
+    "mundo_pronostico_lluvia": ("clima/clima_estacional.parquet", f"""
         SELECT * FROM {_p('clima/clima_estacional.parquet')}
     """),
 }
+
+# Prefijos de los nombres que tenia el modelo antes de reorganizarlo. Una base
+# construida con la version anterior los conserva, porque CREATE OR REPLACE solo
+# toca las tablas que nombra; por eso se borran al reconstruir.
+_PREFIJOS_VIEJOS = ("dim_", "fact_", "puente_", "indicador_")
+
+
+def borrar_tablas_viejas(con: duckdb.DuckDBPyConnection) -> list[str]:
+    """Borra las tablas con nombres de la version anterior. Devuelve cuales borro."""
+    nombres = [f[0] for f in con.execute("SELECT table_name FROM duckdb_tables()").fetchall()]
+    viejas = [n for n in nombres if n.startswith(_PREFIJOS_VIEJOS) or n == "pronostico_precio"]
+    for nombre in viejas:
+        con.execute(f'DROP TABLE "{nombre}"')
+    return viejas
 
 
 def compactar(ruta) -> tuple[float, float]:
@@ -291,15 +270,17 @@ def construir(con: duckdb.DuckDBPyConnection) -> dict[str, int]:
     `meta_actualizacion` no se toca: es historico y lo escribe `actualizar.py`.
     """
     conteos: dict[str, int] = {}
+    for nombre in borrar_tablas_viejas(con):
+        log.info("%-28s borrada (nombre anterior)", nombre)
     for tabla, consulta in SENTENCIAS.items():
         con.execute(f"CREATE OR REPLACE TABLE {tabla} AS {consulta}")
         conteos[tabla] = con.execute(f"SELECT count(*) FROM {tabla}").fetchone()[0]
-        log.info("%-24s %8d filas", tabla, conteos[tabla])
+        log.info("%-28s %8d filas", tabla, conteos[tabla])
     for tabla, (parquet, consulta) in OPCIONALES.items():
         if not (INTERMEDIO / parquet).exists():
-            log.warning("%-24s omitida: falta %s", tabla, parquet)
+            log.warning("%-28s omitida: falta %s", tabla, parquet)
             continue
         con.execute(f"CREATE OR REPLACE TABLE {tabla} AS {consulta}")
         conteos[tabla] = con.execute(f"SELECT count(*) FROM {tabla}").fetchone()[0]
-        log.info("%-24s %8d filas", tabla, conteos[tabla])
+        log.info("%-28s %8d filas", tabla, conteos[tabla])
     return conteos

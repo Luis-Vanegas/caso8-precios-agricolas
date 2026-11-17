@@ -42,8 +42,8 @@ pestana_familiar, pestana_diaria, pestana_detalle = st.tabs([
 
 # --- Pestana 1: canasta familiar con el precio semanal -------------------------------
 with pestana_familiar:
-    if not tabla_existe("fact_precio_semanal"):
-        st.info("Esta vista necesita la tabla `fact_precio_semanal`, que todavía no está en la base.")
+    if not tabla_existe("col_precio_mayorista_semanal"):
+        st.info("Esta vista necesita la tabla `col_precio_mayorista_semanal`, que todavía no está en la base.")
     else:
         cobertura = cobertura_canasta()
         variacion = variacion_canasta()

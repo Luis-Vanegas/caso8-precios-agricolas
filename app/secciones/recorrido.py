@@ -128,7 +128,7 @@ open("data/raw/ideam/2026-09-22/precipitacion.json", "w").write(respuesta.text)'
     diario = pd.read_csv(EJEMPLOS / "sipsa_diario_papa_bogota_2026_08.csv", parse_dates=["fecha"])
     mensual = consultar(
         "SELECT periodo, precio_cop_kg, precio_min, precio_max, dias_con_dato "
-        "FROM fact_precio_mayorista WHERE producto = 'Papa negra*' "
+        "FROM col_precio_mayorista_mensual WHERE producto = 'Papa negra*' "
         "AND mercado = 'BOGOTÁ, D.C.' AND periodo = 202608"
     )
     c1, c2 = st.columns([1.4, 1])
@@ -224,12 +224,12 @@ open("data/raw/ideam/2026-09-22/precipitacion.json", "w").write(respuesta.text)'
        p.precio_cop_kg              AS precio_papa_bogota,
        c.precipitacion_anomalia     AS lluvia_vs_normal_mm_dia,
        e.anomalia                   AS oni_el_nino
-FROM fact_precio_mayorista p
-JOIN puente_zona_sipsa z  ON z.producto_sipsa = p.producto        -- producto -> zona productora
-LEFT JOIN fact_clima c    ON c.departamento = z.departamento      -- zona -> clima (NASA POWER)
+FROM col_precio_mayorista_mensual p
+JOIN catalogo_zona_productora z  ON z.producto_sipsa = p.producto        -- producto -> zona productora
+LEFT JOIN mundo_clima_zona_mensual c    ON c.departamento = z.departamento      -- zona -> clima (NASA POWER)
                          AND c.producto = z.producto_zona
                          AND c.anio = p.anio AND c.mes = p.mes    -- mismo año y mes
-LEFT JOIN fact_enso e     ON e.anio = p.anio AND e.mes = p.mes    -- mismo año y mes -> El Niño
+LEFT JOIN mundo_fenomeno_nino e     ON e.anio = p.anio AND e.mes = p.mes    -- mismo año y mes -> El Niño
 WHERE p.producto = 'Papa negra*' AND p.mercado = 'BOGOTÁ, D.C.'
   AND z.departamento = 'Cundinamarca'
 ORDER BY p.anio, p.mes"""
@@ -248,7 +248,7 @@ ORDER BY p.anio, p.mes"""
     )
     st.caption(
         "El endpoint mensual de NASA POWER publica con meses de rezago; los meses más recientes se "
-        "completan con su endpoint diario (columna fuente = diario en fact_clima). El sensor del IDEAM "
+        "completan con su endpoint diario (columna fuente = diario en mundo_clima_zona_mensual). El sensor del IDEAM "
         "llega casi en tiempo real."
     )
 

@@ -14,7 +14,7 @@ def mostrar() -> None:
     meses = consultar("""
     SELECT CAST(anio || '-' || lpad(CAST(mes AS VARCHAR), 2, '0') || '-01' AS DATE) AS fecha,
            count(*) AS series, median(dias_con_dato) AS dias
-    FROM fact_precio_mayorista GROUP BY ALL ORDER BY fecha
+    FROM col_precio_mayorista_mensual GROUP BY ALL ORDER BY fecha
 """)
     fig = go.Figure(go.Bar(x=meses["fecha"], y=meses["series"], marker_color=estilo.VERDE,
                            customdata=meses["dias"],
@@ -57,8 +57,8 @@ def mostrar() -> None:
     st.subheader("Productos que la FAO mezcla en un solo código")
     colisiones = consultar("""
     SELECT item_codigo_fao AS "código FAO", any_value(item_fao) AS "nombre FAO",
-           count(*) AS "productos SIPSA", string_agg(producto_sipsa, ' + ' ORDER BY producto_sipsa) AS cuáles
-    FROM puente_producto WHERE item_codigo_fao IS NOT NULL
+           count(*) AS "productos SIPSA", string_agg(producto, ' + ' ORDER BY producto) AS cuáles
+    FROM catalogo_producto WHERE item_codigo_fao IS NOT NULL
     GROUP BY item_codigo_fao HAVING count(*) > 1 ORDER BY 3 DESC
 """)
     st.dataframe(colisiones, width="stretch", hide_index=True)

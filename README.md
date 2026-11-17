@@ -17,10 +17,12 @@ Cada carpeta tiene un `LEEME.md` corto que explica su contenido. Los términos t
 | [`data/`](data/LEEME.md) | Los datos: crudos, intermedios y la base final | Para consultar la base o revisar qué se descargó |
 | [`docs/`](docs/LEEME.md) | Documentación técnica, guías y material de sustentación | Para entender una decisión o preparar la sustentación |
 | [`documentos/`](documentos/LEEME.md) | Material de consulta: artículos, guía del curso, presentaciones, borradores del informe | Para buscar bibliografía o el material del curso |
+| [`notebooks/`](notebooks/LEEME.md) | **Los cálculos paso a paso**: cada fórmula con su ejemplo a mano, la función real y su gráfica | Para entender o explicar de dónde sale un número |
 | [`odd/`](odd/LEEME.md) | Listas de tareas del proyecto | Para saber qué falta y quién lo hace |
 | [`powerquery/`](powerquery/LEEME.md) | Consultas de Power Query (entregable en Excel) | Para el paso de integración en Excel |
 | [`scripts/`](scripts/LEEME.md) | Los comandos que se ejecutan: descargar, limpiar, integrar | Para actualizar los datos |
 | [`src/`](src/LEEME.md) | El código del pipeline, una subcarpeta por etapa | Para entender o cambiar cómo se procesan los datos |
+| [`web/`](web/README.md) | **El tablero público** en Next.js: semáforo de precios, comparaciones y pronóstico | Para ver o cambiar lo que ve el público |
 | [`tests/`](tests/LEEME.md) | Pruebas automáticas (ninguna usa internet) | Para comprobar que nada se rompió |
 
 **La base de datos** es `data/processed/caso8.duckdb`. Para consultarla desde la terminal
@@ -103,7 +105,7 @@ pendientes están en `TASKS.md`.
 1. Traer      scripts/actualizar.py   descarga cada fuente a data/raw/  (sin modificarla)
 2. Limpiar    scripts/preparar.py     limpia, lleva todo a meses, perfila -> data/interim/
 3. Homologar  config/homologacion_productos.csv  (revisado con OpenRefine)
-4. Unir       scripts/integrar.py     arma el modelo estrella en DuckDB y corre 19 chequeos
+4. Unir       scripts/integrar.py     arma la base en DuckDB (18 tablas, ver docs/diccionario_datos.md) y corre 29 chequeos
 5. Detectar   src/indicators/volatilidad.py  retorno, volatilidad, z-score y alerta
 ```
 

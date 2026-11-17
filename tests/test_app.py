@@ -221,7 +221,7 @@ def test_la_canasta_familiar_usa_el_precio_semanal_y_declara_su_periodo():
 
     con = duckdb.connect(str(BASE), read_only=True)
     desde, hasta = con.execute(
-        "SELECT min(semana_inicio), max(semana_inicio) FROM fact_precio_semanal WHERE en_canasta"
+        "SELECT min(semana_inicio), max(semana_inicio) FROM col_precio_mayorista_semanal WHERE en_canasta"
     ).fetchone()
     con.close()
 
@@ -328,17 +328,37 @@ def _abrir(nombre: str):
 
 
 @pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
+def test_la_pagina_del_clima_muestra_la_correlacion_con_su_guia():
+    """La pagina dice que El Nino cambia la lluvia: tiene que mostrarlo. Tres graficas
+    (El Nino vs lluvia, zona x rezago, eslabones) y una guia de lectura por cada una."""
+    import json
+
+    app = _abrir("efecto_clima")
+    figuras = [json.loads(g.proto.spec) for g in app.get("plotly_chart")]
+    assert len(figuras) >= 3
+    # La matriz zona x rezago muestra los 7 rezagos (0 a 6 meses).
+    matrices = [f for f in figuras if f["data"] and f["data"][0]["type"] == "heatmap"]
+    assert matrices and len(matrices[0]["data"][0]["x"]) == 7
+    assert (_textos(app) + _html(app)).count("Cómo leer esta gráfica") >= 3
+
+
+@pytest.mark.skipif(not BASE.exists(), reason="falta la base DuckDB")
 def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
-    """C2-22: maximo 5 filas, un producto no se repite (antes salia el platano
-    3 veces, una por mercado), y ni rastro de `z`."""
+    """C2-22: un producto no se repite en el termometro (antes salia el platano
+    3 veces, una por mercado), la grafica trae su guia de lectura y ni rastro de `z`."""
+    import json
+
     app = _abrir("inicio")
 
-    tabla = app.dataframe[0].value
-    assert 1 <= len(tabla) <= 5
-    assert tabla["Producto"].is_unique
-    assert tabla["Qué pasó con el precio"].str.match(r"^[▲▼] (subió|bajó) \d+ %$").all()
+    # El termometro es la primera grafica: una fila por producto, maximo 12.
+    figura = json.loads(app.get("plotly_chart")[0].proto.spec)
+    filas = figura["layout"]["yaxis"]["ticktext"]
+    productos = [f.split(" · ")[0] for f in filas]
+    assert 1 <= len(productos) <= 12
+    assert len(set(productos)) == len(productos)
 
     pantalla = _textos(app) + _html(app)
+    assert "Cómo leer esta gráfica" in pantalla
     assert "z =" not in pantalla and "z-score" not in pantalla.lower()
     # El ONI dice en palabras que es, en la misma tarjeta.
     assert "°C más caliente de lo normal" in pantalla or "°C más frío de lo normal" in pantalla \
@@ -347,7 +367,7 @@ def test_el_inicio_muestra_una_fila_por_producto_y_sin_jerga():
     import duckdb
     con = duckdb.connect(str(BASE), read_only=True)
     articulos = con.execute(
-        "SELECT count(DISTINCT art_id) FROM fact_precio_semanal WHERE en_canasta").fetchone()[0]
+        "SELECT count(DISTINCT art_id) FROM col_precio_mayorista_semanal WHERE en_canasta").fetchone()[0]
     con.close()
     assert f"{articulos} artículos" in pantalla
     assert "33 productos" not in pantalla
@@ -389,16 +409,16 @@ def test_la_pagina_del_efecto_del_clima_dice_lo_que_midio():
     oni_total, oni_hallazgos, oni_positivos = con.execute("""
         SELECT count(*), count(*) FILTER (q_valor < 0.1),
                count(*) FILTER (q_valor < 0.1 AND coeficiente > 0)
-        FROM indicador_sensibilidad_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
+        FROM resultado_efecto_clima WHERE eslabon = 'oni->lluvia'""").fetchone()
     lluvia_precio = con.execute("""
-        SELECT producto, departamento, rezago_meses FROM indicador_sensibilidad_clima
+        SELECT producto, departamento, rezago_meses FROM resultado_efecto_clima
         WHERE eslabon = 'lluvia->precio' AND q_valor < 0.1""").fetchall()
     oferta_baja = [p for (p,) in con.execute("""
-        SELECT producto FROM indicador_sensibilidad_clima
+        SELECT producto FROM resultado_efecto_clima
         WHERE eslabon = 'oferta->precio' AND q_valor < 0.1 AND coeficiente < 0""").fetchall()]
     productos_nino, quiebres_nino = con.execute("""
         SELECT count(DISTINCT producto), count(DISTINCT producto) FILTER (q_valor < 0.1)
-        FROM indicador_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
+        FROM resultado_quiebres WHERE fase_que_empieza = 'El Nino'""").fetchone()
     con.close()
 
     app = _abrir("efecto_clima")

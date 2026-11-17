@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -18,6 +19,7 @@ from src.indicators.volatilidad import (
     MINIMO_OBSERVACIONES,
     UMBRAL_AMARILLA,
     alertas,
+    comparacion_anual,
     dependencia_importaciones,
     retornos,
     volatilidad,
@@ -179,3 +181,35 @@ def test_dependencia_ignora_unidades_que_no_son_toneladas():
         _fao([(1, "Production", 2020, "t", 100.0)]),
     )
     assert d.iloc[0]["importacion"] == 50.0
+
+
+# --- Comparacion con el mismo mes del anio pasado --------------------------------
+
+def _serie_mensual(periodos, precios):
+    return pd.DataFrame({"mercado": "BOGOTA", "producto": "Papa", "periodo": periodos,
+                         "precio_cop_kg": precios})
+
+
+def test_comparacion_anual_compara_con_el_mismo_mes_del_anio_pasado():
+    df = _serie_mensual([202401, 202402, 202501, 202502], [1000.0, 2000.0, 1500.0, 1000.0])
+    salida = comparacion_anual(df).set_index("periodo")
+    assert salida.loc[202501, "precio_anio_anterior"] == 1000.0
+    assert salida.loc[202501, "cambio_anual_pct"] == pytest.approx(50.0)
+    assert salida.loc[202502, "cambio_anual_pct"] == pytest.approx(-50.0)
+    # El primer anio no tiene contra que compararse: queda vacio, no en cero.
+    assert pd.isna(salida.loc[202401, "cambio_anual_pct"])
+
+
+def test_comparacion_anual_busca_por_fecha_y_no_por_filas():
+    """Con el hueco de 2021, 12 filas atras NO es el mismo mes del anio pasado."""
+    periodos = [202001 + i for i in range(12)] + [202202, 202203]
+    df = _serie_mensual(periodos, [1000.0] * 12 + [3000.0, 3000.0])
+    salida = comparacion_anual(df).set_index("periodo")
+    # Febrero de 2021 no existe: no hay comparacion, aunque haya 12 filas antes.
+    assert pd.isna(salida.loc[202202, "cambio_anual_pct"])
+    assert pd.isna(salida.loc[202202, "alerta_anual"])
+
+
+def test_comparacion_anual_no_cambia_el_numero_de_filas():
+    df = _serie_mensual([202401, 202402, 202501], [1000.0, 1100.0, 1200.0])
+    assert len(comparacion_anual(df)) == len(df)

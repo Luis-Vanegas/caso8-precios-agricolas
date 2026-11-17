@@ -72,7 +72,7 @@ Función `unir_clima`: pega los meses nuevos detrás de la serie mensual.
 - La anomalía se calcula **después** de unir, así los meses nuevos se comparan contra el
   mismo promedio histórico.
 
-En `src/integration/modelo.py`, la tabla `fact_clima` ahora trae `fuente` y `dias_con_dato`.
+En `src/integration/modelo.py`, la tabla `mundo_clima_zona_mensual` ahora trae `fuente` y `dias_con_dato`.
 
 ## Paso 6 — Probar
 

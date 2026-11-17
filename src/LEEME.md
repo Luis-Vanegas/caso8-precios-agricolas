@@ -8,7 +8,7 @@ Los nombres de las carpetas quedan en inglés porque de ellos dependen los impor
 | `cleaning/` | limpieza | Limpia cada fuente y homologa productos |
 | `profiling/` | perfilado | Describe cada tabla limpia (resultado en `docs/perfilado.md`) |
 | `integration/` | integración | Modelo estrella (`modelo.py`) y chequeos (`verificacion.py`) |
-| `indicators/` | indicadores | Volatilidad, alertas, vigilancia, sensibilidad, quiebres y pronóstico |
+| `indicators/` | indicadores | Volatilidad, alertas, vigilancia, sensibilidad, quiebres y pronóstico. Explicados paso a paso en `notebooks/calculos_paso_a_paso.ipynb` |
 | `common/` | común | Rutas, descargas HTTP, registro y el contrato de las fuentes (`modelos.py`) |
 
 Qué NO hacer: no renombrar carpetas ni módulos.

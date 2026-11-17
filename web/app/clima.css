@@ -1,0 +1,102 @@
+/* Iconos, la cadena "el clima mueve los precios" y la tabla de lluvia esperada.
+   Los tokens (colores, radios, sombra) estan definidos en globals.css. */
+
+/* ======================================================================
+   Iconos de direccion: el icono lleva el color, el numero va en tinta
+   ====================================================================== */
+.con-icono { display: inline-flex; align-items: center; gap: 0.4rem; }
+.conmutador button { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+.icono-direccion {
+  display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 6px;
+  vertical-align: -0.35rem; margin-right: 0.35rem; flex: none;
+}
+.icono-sube { color: var(--rojo); background: color-mix(in srgb, var(--rojo) 13%, var(--superficie)); }
+.icono-baja { color: var(--azul); background: color-mix(in srgb, var(--azul) 13%, var(--superficie)); }
+.icono-igual { color: var(--gris); background: var(--rejilla); }
+.icono-grande { width: 2.2rem; height: 2.2rem; border-radius: 9px; vertical-align: -0.4rem; margin-right: 0.55rem; }
+
+/* El numero ya no se pinta: su direccion la dice el icono (y el signo). */
+.cambio.cambio-sube, .cambio.cambio-baja, .cambio.cambio-igual { color: var(--tinta); }
+.cambio { display: inline-flex; align-items: center; }
+.derecha .cambio { justify-content: flex-end; }
+.flecha-abrir { display: inline-grid; place-items: center; }
+
+/* ======================================================================
+   La cadena: El Nino -> lluvia -> comida que llega -> precio
+   ====================================================================== */
+.cadena { margin-top: 3.2rem; }
+.cadena > h2 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 700; letter-spacing: -0.01em; }
+.respuesta { font-size: 1.15rem; line-height: 1.55; max-width: 62ch; margin: 0.8rem 0 1.6rem; }
+
+.eslabones { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 1rem; }
+.eslabon {
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra); padding: 1.2rem; display: flex; flex-direction: column;
+  animation: aparecer 0.55s ease-out both;
+}
+.eslabon-ruta { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem; }
+.nodo {
+  width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; flex: none;
+  background: var(--papel); border: 1px solid var(--borde); color: var(--tinta);
+}
+.conector { flex: 1; display: flex; align-items: center; justify-content: flex-end; color: var(--tinta); position: relative; }
+.conector::before { content: ""; position: absolute; left: 0; right: 14px; top: 50%; border-top: 2px solid currentColor; }
+/* Que tan firme es el paso se ve tambien en la linea: continua, a trazos o punteada. */
+.eslabon-parcial .conector::before { border-top-style: dashed; }
+.eslabon-nada .conector { color: #b9bdb3; }
+.eslabon-nada .conector::before { border-top-style: dotted; }
+.eslabon-nada .nodo:last-child { color: var(--gris); border-style: dashed; }
+
+.eslabon-nombres { color: var(--gris); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; }
+.eslabon h3 { font-size: 1.12rem; font-weight: 500; line-height: 1.3; margin: 0.25rem 0 0.7rem; }
+.veredicto { margin-bottom: 0.7rem; }
+.sello { display: inline-block; border-radius: 999px; padding: 0.15rem 0.75rem; font-size: 0.85rem; font-weight: 600; }
+.sello-firme { background: var(--verde); color: #ffffff; }
+.sello-parcial { background: var(--amarillo); color: var(--tinta); }
+.sello-nada { color: var(--gris); border: 1px dashed #b9bdb3; }
+
+.medidor { height: 8px; border-radius: 999px; background: var(--rejilla); overflow: hidden; }
+.medidor-lleno { display: block; height: 100%; border-radius: 999px; background: var(--tinta); transform-origin: left; animation: llenar 0.9s ease-out both; animation-delay: 0.3s; }
+.medidor-texto { color: var(--gris); font-size: 0.88rem; margin-top: 0.4rem; }
+.medidor-texto .numero { color: var(--tinta); }
+.hallazgos { list-style: none; margin: 0.9rem 0 0; padding: 0.8rem 0 0; border-top: 1px solid var(--rejilla); display: grid; gap: 0.35rem; font-size: 0.9rem; color: var(--gris); }
+
+.pistas { margin-top: 1.8rem; }
+.pistas h3 { font-size: 1.25rem; font-weight: 500; margin-bottom: 0.8rem; }
+.pistas ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; }
+.pistas li {
+  background: var(--fondo-suave); border-radius: var(--radio-tarjeta); padding: 1.1rem 1.2rem;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem 1rem; align-items: center;
+}
+.pista-producto { font-family: var(--fuente-titulos), Georgia, serif; font-size: 1.3rem; font-weight: 500; }
+.pista-senal { border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.88rem; font-weight: 600; white-space: nowrap; }
+.pista-sube { background: var(--rojo); color: #ffffff; }
+.pista-baja { background: var(--azul); color: #ffffff; }
+.pista-nada { border: 1px dashed #b9bdb3; color: var(--gris); }
+.pista-porque, .pista-acierto { grid-column: 1 / -1; font-size: 0.93rem; }
+.pista-acierto { color: var(--gris); }
+
+@keyframes llenar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ======================================================================
+   Lluvia esperada: una tabla, no ocho graficas pequenas
+   ====================================================================== */
+.tabla-desliza { overflow-x: auto; margin-top: 1rem; }
+.lluvia-tabla { width: 100%; min-width: 560px; border-collapse: separate; border-spacing: 3px; font-size: 0.92rem; }
+.lluvia-tabla thead th { color: var(--gris); font-size: 0.8rem; font-weight: 600; text-align: center; padding: 0.3rem 0.4rem; }
+.lluvia-tabla thead th:first-child, .lluvia-tabla tbody th { text-align: left; }
+.lluvia-tabla tbody th { font-weight: 600; padding: 0.5rem 0.8rem 0.5rem 0; white-space: nowrap; }
+.lluvia-tabla td { border-radius: 8px; padding: 0.55rem 0.6rem 0.45rem; text-align: center; min-width: 5.2rem; color: var(--tinta); }
+.lluvia-valor { display: block; font-family: var(--fuente-numeros), monospace; font-weight: 500; font-size: 1.15rem; line-height: 1.2; }
+.lluvia-rango { display: block; position: relative; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--tinta) 12%, transparent); margin: 0.35rem 0 0.25rem; }
+.lluvia-rango > span { position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--tinta); }
+.lluvia-entre { display: block; font-size: 0.72rem; opacity: 0.75; }
+/* Sobre las celdas mas oscuras el texto pasa a blanco para que se lea. */
+.celda-oscura { color: #ffffff !important; }
+.celda-oscura .lluvia-rango { background: rgb(255 255 255 / 30%); }
+.celda-oscura .lluvia-rango > span { background: #ffffff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .eslabon, .medidor-lleno { animation: none; opacity: 1; transform: none; }
+}

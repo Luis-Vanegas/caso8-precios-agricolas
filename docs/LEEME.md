@@ -16,6 +16,7 @@ Los archivos de esta carpeta **no se mueven ni se renombran**: el código y otro
 
 | Documento | De qué trata |
 |---|---|
+| [diccionario_datos.md](diccionario_datos.md) | **Empezar aquí:** las 18 tablas de la base, columna por columna, y cómo se conectan |
 | [contrato_datos.md](contrato_datos.md) | Las tablas que se intercambian entre el pipeline y la app (columnas y significado) |
 | [verificacion_api.md](verificacion_api.md) | Lo que se comprobó contra cada fuente real antes de escribir código |
 | [fuentes_y_referencias.md](fuentes_y_referencias.md) | Inventario de fuentes, APIs y referencias bibliográficas verificadas |

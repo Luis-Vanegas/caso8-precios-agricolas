@@ -18,6 +18,8 @@ tiene que poder explicarse en una sustentacion de 5 minutos.
 .venv\Scripts\python.exe scripts\integrar.py            # modelo estrella + 29 chequeos
 .venv\Scripts\python.exe scripts\exploracion.py         # figuras de exploracion -> docs/figuras
 .venv\Scripts\python.exe scripts\generar_ejemplos.py    # muestras reales para la app
+.venv\Scripts\python.exe scripts\exportar_web.py         # datos de la web -> web/public/datos (despues de integrar.py)
+npm --prefix web run dev                                # la web publica en Next.js (http://localhost:3000)
 .venv\Scripts\python.exe -m pytest tests -q             # ninguna prueba toca la red
 .venv\Scripts\python.exe -m streamlit run app\streamlit_app.py
 ```
@@ -27,7 +29,7 @@ Cerrar la app antes de `integrar.py`: tiene la base abierta y Windows bloquea la
 ## Estructura
 
 - `src/acquisition/` un modulo por fuente, todos con `estado()` y `descargar()` (contrato en `src/common/modelos.py`)
-- `src/cleaning/` limpieza por fuente; `src/integration/modelo.py` el modelo estrella (SQL sobre parquet)
+- `src/cleaning/` limpieza por fuente; `src/integration/modelo.py` el modelo (SQL sobre parquet): 18 tablas con prefijo por origen (`col_` Colombia, `mundo_` fuente internacional, `resultado_` calculos, `catalogo_`), descritas en `docs/diccionario_datos.md`
 - `src/indicators/volatilidad.py` retorno log, volatilidad, z-score y alertas
 - `src/indicators/vigilancia.py` correlaciones con rezago y lista de vigilancia (pistas, no prediccion)
 - `app/streamlit_app.py` solo el menu; paginas en `app/paginas/`; estilo en `app/estilo.py`; graficas en `app/graficas.py`; datos en `app/datos.py`

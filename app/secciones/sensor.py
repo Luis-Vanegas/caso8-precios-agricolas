@@ -26,7 +26,7 @@ EJEMPLOS = Path(__file__).resolve().parents[1] / "ejemplos"
 def mostrar() -> None:
     """La fuente de tipo sensor: de una gota de lluvia a una fila en la base."""
     # Si la fuente aun no se cargo, la pagina lo dice y no sigue (no hay nada que mostrar).
-    if not tabla_existe("fact_sensor_ideam") or not tabla_existe("dim_estacion_ideam"):
+    if not tabla_existe("col_sensor_ideam_mensual") or not tabla_existe("col_estacion_ideam"):
         st.info(
             "Todavía no se ha cargado. Correr en orden: `scripts/actualizar.py --solo ideam`, "
             "`scripts/preparar.py` y `scripts/integrar.py`."
@@ -77,9 +77,9 @@ def mostrar() -> None:
     SELECT count(DISTINCT departamento) AS departamentos,
            count(DISTINCT periodo) AS meses,
            min(periodo) AS primero, max(periodo) AS ultimo
-    FROM fact_sensor_ideam
+    FROM col_sensor_ideam_mensual
 """).iloc[0]
-    n_estaciones = int(consultar("SELECT count(*) AS n FROM dim_estacion_ideam")["n"][0])
+    n_estaciones = int(consultar("SELECT count(*) AS n FROM col_estacion_ideam")["n"][0])
     st.subheader("Lo que tenemos cargado")
     estilo.contadores([
         ("estaciones con lluvia válida", n_estaciones, "", estilo.AZUL),
@@ -93,7 +93,7 @@ def mostrar() -> None:
 
     # --- 3. Mapa de estaciones (sin internet: solo trazos de paises, sin teselas) ---------------
     st.subheader("Dónde se mide la lluvia y dónde se vende")
-    est = consultar("SELECT * FROM dim_estacion_ideam")
+    est = consultar("SELECT * FROM col_estacion_ideam")
     est["proporcion"] = (est["proporcion_meses_validos"] * 100).round(0).astype(int)
     est["municipio"] = est["municipio"].str.title()
     est["nombre"] = est["nombre"].str.title()
@@ -141,7 +141,7 @@ def mostrar() -> None:
     agregado_texto = (EJEMPLOS / "ideam_agregado_estacion_mes.json").read_text(encoding="utf-8")
     agregado = json.loads(agregado_texto)[0]
     tolima = consultar(
-        "SELECT * FROM fact_sensor_ideam WHERE departamento = 'Tolima' AND periodo = 202607"
+        "SELECT * FROM col_sensor_ideam_mensual WHERE departamento = 'Tolima' AND periodo = 202607"
     )
     izq, der = st.columns(2, gap="large")
     with izq:
@@ -165,7 +165,7 @@ def mostrar() -> None:
         )
     if not tolima.empty:
         f = tolima.iloc[0]
-        st.markdown("**3. Fila ya agregada por departamento** (`fact_sensor_ideam`, julio 2026, Tolima)")
+        st.markdown("**3. Fila ya agregada por departamento** (`col_sensor_ideam_mensual`, julio 2026, Tolima)")
         st.dataframe(tolima, hide_index=True, width="stretch")
         st.markdown(
             f"- `valor`: **{f['valor']:.2f} mm**, la *mediana* de la lluvia del mes entre las "
@@ -183,7 +183,7 @@ def mostrar() -> None:
 
     # --- 5. Grafica mensual por departamento -----------------------------------------------------
     st.subheader("La lluvia mes a mes")
-    s = consultar("SELECT * FROM fact_sensor_ideam WHERE variable = 'precipitacion' ORDER BY anio, mes")
+    s = consultar("SELECT * FROM col_sensor_ideam_mensual WHERE variable = 'precipitacion' ORDER BY anio, mes")
     depto = st.selectbox("Departamento", sorted(s["departamento"].unique()))
     d = s[s["departamento"] == depto].copy()
     d["fecha"] = pd.to_datetime(dict(year=d["anio"], month=d["mes"], day=1))

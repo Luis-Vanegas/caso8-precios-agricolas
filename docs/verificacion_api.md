@@ -305,7 +305,7 @@ rango de la OMM: WMO-No. 8 (2023), vol. I, cap. 6 y anexo 1.A.
 - El promedio de los días de cada mes coincide exactamente con el valor mensual
   (Boyacá 2025: enero 2,18 = 2,18; abril 12,77 = 12,77; julio 6,15 = 6,15; 2026: julio 7,69 = 7,69).
 - Decisión: `nasa_power_diario.py` baja el año en curso y `unir_clima` completa solo los meses que el
-  mensual no trae (columna `fuente` en `fact_clima`).
+  mensual no trae (columna `fuente` en `mundo_clima_zona_mensual`).
 
 
 ---
