@@ -159,6 +159,26 @@ def resumen_por_producto(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def estacionalidad(df: pd.DataFrame, columna: str = "precio_cop_kg", min_anios: int = 3) -> pd.DataFrame:
+    """En que meses suele estar mas caro o mas barato cada producto.
+
+    Para cada anio con al menos 10 meses de precio se divide el precio de cada mes
+    por el promedio de ese anio: 1,10 quiere decir "10 % por encima de lo que costo
+    en promedio ese anio". La mediana de esos cocientes por mes del calendario es el
+    indice estacional. Se usa la mediana para que un anio raro no arrastre el resultado.
+    Un mes con menos de `min_anios` anios queda vacio: con dos anios no hay patron.
+    """
+    d = df[["producto", "periodo", columna]].dropna().copy()
+    d["anio"], d["mes"] = d["periodo"] // 100, d["periodo"] % 100
+    por_anio = d.groupby(["producto", "anio"])[columna]
+    d = d[por_anio.transform("size") >= 10]
+    d["cociente"] = d[columna] / d.groupby(["producto", "anio"])[columna].transform("mean")
+    salida = (d.groupby(["producto", "mes"])["cociente"]
+              .agg(mediana="median", anios="size").reset_index())
+    salida["indice_pct"] = ((salida["mediana"] - 1) * 100).where(salida["anios"] >= min_anios)
+    return salida[["producto", "mes", "indice_pct", "anios"]]
+
+
 def dependencia_importaciones(comercio: pd.DataFrame, produccion: pd.DataFrame) -> pd.DataFrame:
     """imp / (prod + imp - exp) * 100, por item y anio, solo en toneladas.
 

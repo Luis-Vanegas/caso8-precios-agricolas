@@ -150,14 +150,43 @@ export function MapaAnimado({ datos, contornos, estaciones }: Props) {
             <Mapa3D departamentos={datos.departamentos} capa={capa} mes={mes} elegido={elegido} alElegir={setElegido} />
           )}
 
-          <div className="escala" aria-hidden="true">
-            <span>{texto.menos}</span>
-            <span className={`escala-barra escala-${capa}`} />
-            <span>{texto.mas}</span>
+          {/* La leyenda nombra cada cosa que se dibuja: color, trama y puntos. */}
+          <div className="leyenda-mapa">
+            <h3>Cómo leer el mapa</h3>
+            <div className="leyenda-item">
+              <div className="leyenda-escala">
+                <div className="escala" aria-hidden="true">
+                  <span>{texto.menos}</span>
+                  <span className={`escala-barra escala-${capa}`} />
+                  <span>{texto.mas}</span>
+                </div>
+                <p className="escala-nota">−{TOPE[capa]} %  ·  0  ·  +{TOPE[capa]} % o más</p>
+              </div>
+              <p>
+                {capa === "precio"
+                  ? "Color: cuánto cambió el precio de los alimentos del departamento frente al mismo mes del año pasado. Es el cambio típico (la mediana) de los productos que se venden en su central mayorista."
+                  : "Color: cuánto llovió frente a lo normal de ese mes, según los sensores del IDEAM en el departamento."}
+              </p>
+            </div>
+            <div className="leyenda-item">
+              <span className="muestra-sin-dato" aria-hidden="true" />
+              <p>Rayado: {texto.sinDato}. No es cero: es que no hay dato.</p>
+            </div>
+            {capa === "lluvia" ? (
+              <div className="leyenda-item">
+                <span className="muestra-estacion" aria-hidden="true" />
+                <p>
+                  Cada punto es una estación del IDEAM ({estaciones.length} en total). Se descargaron solo las de los
+                  departamentos donde se cultivan los alimentos que estudiamos; por eso el resto del país está rayado.
+                </p>
+              </div>
+            ) : (
+              <div className="leyenda-item">
+                <span className="muestra-estacion muestra-apagada" aria-hidden="true" />
+                <p>Los puntos de las estaciones del IDEAM aparecen al cambiar a la capa «Lluvia».</p>
+              </div>
+            )}
           </div>
-          <p className="escala-nota">
-            de −{TOPE[capa]} % a +{TOPE[capa]} % · <span className="muestra-sin-dato" /> {texto.sinDato}
-          </p>
         </div>
 
         <div className="mapa-lectura">
