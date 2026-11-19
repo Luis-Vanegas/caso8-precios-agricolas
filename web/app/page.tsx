@@ -1,11 +1,16 @@
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
+import { HistoriaAlimento } from "@/componentes/HistoriaAlimento";
+import { PronosticoHonesto } from "@/componentes/PronosticoHonesto";
 import { Tablero } from "@/componentes/Tablero";
-import type { Tablero as DatosTablero } from "@/lib/tipos";
+import type { DatosHistoria, Tablero as DatosTablero } from "@/lib/tipos";
+import historiaCruda from "@/public/datos/historia.json";
 import datosCrudos from "@/public/datos/tablero.json";
 
 // El JSON lo escribe scripts/exportar_web.py; aqui solo se le pone el tipo.
 const datos = datosCrudos as DatosTablero;
+const historia = historiaCruda as DatosHistoria;
+const nacionales = datos.filas.filter((f) => f.mercado === "Nacional");
 
 export default function Inicio() {
   return (
@@ -58,6 +63,10 @@ export default function Inicio() {
           proyecto, no una norma oficial.
         </p>
       </section>
+
+      <HistoriaAlimento historia={historia} nacionales={nacionales} />
+
+      <PronosticoHonesto nacionales={nacionales} />
     </main>
   );
 }

@@ -233,6 +233,7 @@ def armar_mapa(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
         "periodos": periodos,
         "departamentos": filas,
         # Cada estacion es un punto [longitud, latitud]: son los sensores reales del IDEAM.
+        # Solo se descargaron las de los 8 departamentos donde se cultivan los productos con zona.
         "estaciones": [[round(float(e.lon), 3), round(float(e.lat), 3)] for e in estaciones.itertuples()],
         "nino": {"fase": hoy["fase"], "anomalia": _numero(hoy["anomalia"], 2), "periodo": int(hoy["periodo"]),
                  "trimestre": hoy["trimestre"], "provisional": bool(hoy["provisional"]),
@@ -295,6 +296,71 @@ def armar_clima(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
     quiebres = con.execute("SELECT count(*), count(*) FILTER (WHERE hay_quiebre) FROM resultado_quiebres").fetchone()
     return {"cadena": cadena, "pistas": pistas, "proximo_mes": proximo,
             "quiebres": {"pruebas": int(quiebres[0]), "firmes": int(quiebres[1])}}
+
+
+# --- La historia de cada alimento ------------------------------------------------------
+
+def armar_historia(precios: pd.DataFrame) -> dict:
+    """Toda la serie del precio nacional de cada producto y en que meses suele estar mas barato."""
+    nacional = vigilancia.retornos_nacionales(precios)[["producto", "periodo", "precio_cop_kg"]]
+    primero, ultimo = int(nacional["periodo"].min()), int(nacional["periodo"].max())
+    periodos = [primero]
+    while periodos[-1] < ultimo:
+        periodos.append(_sumar_meses(periodos[-1], 1))
+    estacional = volatilidad.estacionalidad(nacional)
+    productos = []
+    for producto, serie in nacional.groupby("producto"):
+        e = estacional[estacional["producto"] == producto].set_index("mes")
+        productos.append({
+            "producto": nombre_producto(producto),
+            # El hueco de SIPSA (2021) va como null: la grafica lo muestra cortado.
+            "serie": _serie_por_mes(serie, "precio_cop_kg", periodos, 0),
+            "estacionalidad": [_numero(e["indice_pct"].get(m)) for m in range(1, 13)],
+            "anios_estacionalidad": int(e["anios"].max()) if not e.empty else 0,
+        })
+    return {"periodos": periodos, "productos": productos}
+
+
+# --- Lo de afuera que toca a Colombia ---------------------------------------------------
+
+def armar_internacional(con: duckdb.DuckDBPyConnection, precios: pd.DataFrame) -> dict:
+    """Que parte de la comida viene de afuera, y el precio de los fertilizantes frente al de la comida."""
+    comercio = con.execute("SELECT * FROM mundo_fao_colombia WHERE dominio = 'comercio'").df()
+    produccion = con.execute("SELECT * FROM mundo_fao_colombia WHERE dominio = 'produccion'").df()
+    items = con.execute("SELECT item_codigo, any_value(item) AS item FROM mundo_fao_colombia "
+                        "GROUP BY item_codigo").df()
+    dep = volatilidad.dependencia_importaciones(comercio, produccion).merge(items, on="item_codigo")
+    # El mismo filtro de la app: solo lo que Colombia produce y consume en cantidad; los
+    # agregados de la FAO sin produccion daban dependencias de mas de 100 %.
+    dep = dep[dep["dependencia_pct"].between(0, 100) & (dep["produccion"] > 0) & (dep["consumo_aparente"] > 1000)]
+    anio = int(dep["anio"].max())
+    ultimo_anio = dep[dep["anio"] == anio]
+    sipsa = con.execute("SELECT producto, item_codigo_fao FROM catalogo_producto "
+                        "WHERE item_codigo_fao IS NOT NULL").df()
+    nuestros = (sipsa.merge(ultimo_anio, left_on="item_codigo_fao", right_on="item_codigo")
+                .sort_values("dependencia_pct", ascending=False).drop_duplicates("producto"))
+
+    # Indices base 100 = promedio de 2020, para comparar dos cosas con unidades distintas.
+    fert = con.execute("SELECT insumo, periodo, valor_usd FROM mundo_precio_fertilizantes "
+                       "WHERE insumo IN ('Urea', 'DAP') AND periodo >= 202001").df()
+    nacional = vigilancia.retornos_nacionales(precios)[["producto", "periodo", "precio_cop_kg"]]
+    base = nacional[nacional["periodo"] // 100 == 2020].groupby("producto")["precio_cop_kg"].mean()
+    nacional = nacional.assign(indice=lambda d: 100 * d["precio_cop_kg"] / d["producto"].map(base))
+    comida = nacional.groupby("periodo", as_index=False)["indice"].median()
+    periodos = sorted(set(fert["periodo"]) | set(comida["periodo"]))
+    insumos = {}
+    for insumo, serie in fert.groupby("insumo"):
+        b = serie.loc[serie["periodo"] // 100 == 2020, "valor_usd"].mean()
+        insumos[insumo] = _serie_por_mes(serie.assign(i=100 * serie["valor_usd"] / b), "i", periodos)
+    return {
+        "anio_fao": anio,
+        "dependencia_nuestros": [{"producto": nombre_producto(f.producto), "item_fao": f.item,
+                                  "dependencia_pct": _numero(f.dependencia_pct)} for f in nuestros.itertuples()],
+        "mas_importados": [{"item_fao": f.item, "dependencia_pct": _numero(f.dependencia_pct),
+                            "importacion_t": _numero(f.importacion, 0)}
+                           for f in ultimo_anio.nlargest(10, "dependencia_pct").itertuples()],
+        "indices": {"periodos": periodos, "comida": _serie_por_mes(comida, "indice", periodos), **insumos},
+    }
 
 
 # --- Fuentes y huecos -----------------------------------------------------------------
@@ -396,6 +462,8 @@ def main() -> int:
     _escribir("mapa.json", armar_mapa(con, precios))
     _escribir("clima.json", armar_clima(con, precios))
     _escribir("fuentes.json", armar_fuentes(con))
+    _escribir("historia.json", armar_historia(precios))
+    _escribir("internacional.json", armar_internacional(con, precios))
     _escribir("colombia.json", simplificar(json.loads(GEOJSON.read_text(encoding="utf-8"))))
     con.close()
     return 0

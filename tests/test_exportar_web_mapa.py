@@ -113,3 +113,23 @@ def test_la_lluvia_esperada_no_trae_la_resta_contra_lo_normal(con):
         for mes in d["lluvia_esperada"]:
             assert set(mes) == {"periodo", "seco", "central", "lluvioso"}
             assert mes["seco"] <= mes["central"] <= mes["lluvioso"]
+
+
+def test_la_historia_lleva_toda_la_serie_y_doce_meses_de_estacionalidad(con):
+    from scripts.exportar_web import armar_historia
+    precios = con.execute("SELECT * FROM col_precio_mayorista_mensual").df()
+    h = armar_historia(precios)
+    n = len(h["periodos"])
+    assert all(len(p["serie"]) == n and len(p["estacionalidad"]) == 12 for p in h["productos"])
+    # El hueco de 2021 va vacio en todos los productos: nunca se rellena.
+    i = h["periodos"].index(202106)
+    assert all(p["serie"][i] is None for p in h["productos"])
+
+
+def test_lo_internacional_tiene_porcentajes_validos(con):
+    from scripts.exportar_web import armar_internacional
+    precios = con.execute("SELECT * FROM col_precio_mayorista_mensual").df()
+    i = armar_internacional(con, precios)
+    assert all(0 <= d["dependencia_pct"] <= 100 for d in i["dependencia_nuestros"] + i["mas_importados"])
+    largo = len(i["indices"]["periodos"])
+    assert len(i["indices"]["comida"]) == largo and len(i["indices"]["Urea"]) == largo

@@ -167,3 +167,30 @@ export interface DatosClima {
   proximo_mes: number;
   quiebres: { pruebas: number; firmes: number };
 }
+
+// --- public/datos/historia.json ---------------------------------------------------------
+
+export interface HistoriaProducto {
+  producto: string;
+  /** Precio nacional de cada mes de `periodos`; null donde no hay dato (el hueco de 2021). */
+  serie: (number | null)[];
+  /** Enero a diciembre: % por encima (+) o por debajo (−) del promedio del año. null = pocos años. */
+  estacionalidad: (number | null)[];
+  anios_estacionalidad: number;
+}
+
+export interface DatosHistoria {
+  periodos: number[];
+  productos: HistoriaProducto[];
+}
+
+// --- public/datos/internacional.json ----------------------------------------------------
+
+export interface DatosInternacional {
+  anio_fao: number;
+  /** Nuestros productos: qué parte de lo que consume el país se importa. */
+  dependencia_nuestros: { producto: string; item_fao: string; dependencia_pct: number | null }[];
+  mas_importados: { item_fao: string; dependencia_pct: number | null; importacion_t: number | null }[];
+  /** Índices base 100 = promedio de 2020. */
+  indices: { periodos: number[]; comida: (number | null)[]; Urea?: (number | null)[]; DAP?: (number | null)[] };
+}
