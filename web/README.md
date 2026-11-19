@@ -4,9 +4,9 @@ La vitrina del proyecto, en tres módulos:
 
 | Módulo | Ruta | Qué responde |
 |---|---|---|
-| **Precios** | `/` | Qué alimentos subieron, cuáles bajaron, si es normal y qué se espera |
+| **Precios** | `/` | Qué alimentos subieron, cuáles bajaron, si es normal y qué se espera; la historia de cada alimento, sus meses más baratos y qué tan bien acierta el pronóstico |
 | **Mapa y clima** | `/mapa` | Dónde está más cara la comida, dónde llovió más o menos, El Niño y el sensor |
-| **Los datos** | `/datos` | De dónde sale cada número (fuentes nacionales e internacionales), cómo se hizo y qué falta |
+| **Los datos** | `/datos` | De dónde sale cada número (fuentes nacionales e internacionales), lo de afuera que toca a Colombia, cómo se hizo, qué falta y en qué nos fijamos |
 
 Es un sitio **estático**: no consulta la base de datos. Lee archivos JSON que escribe Python.
 
@@ -50,6 +50,9 @@ variable `NEXT_PUBLIC_BASE_PATH`. En local va vacía y no hay que hacer nada.
 | `componentes/Mapa3D.tsx` | La vista 3D del mapa (deck.gl); se descarga solo si alguien la pide |
 | `componentes/CadenaClima.tsx` | «¿El clima mueve los precios?»: la cadena El Niño → lluvia → comida que llega → precio, con cuánto se sostiene cada paso, y las pistas del mes |
 | `componentes/Clima.tsx` | El Niño, la lluvia esperada y cómo mide el sensor |
+| `componentes/HistoriaAlimento.tsx` | Todo el precio de un alimento, su pronóstico, sus meses más baratos y el mismo mes de cada año |
+| `componentes/PronosticoHonesto.tsx` | Error del pronóstico frente a «el precio sigue igual», producto por producto |
+| `componentes/Internacional.tsx` | Fertilizantes frente a comida (base 2020) y qué parte se importa (FAO) |
 | `componentes/Navegacion.tsx` | El menú de los tres módulos |
 | `componentes/Contador.tsx` | El número que cuenta hasta su valor |
 | `lib/formato.ts` | Cómo se escriben pesos, porcentajes y fechas, y cómo se lee el semáforo |

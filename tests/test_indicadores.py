@@ -213,3 +213,20 @@ def test_comparacion_anual_busca_por_fecha_y_no_por_filas():
 def test_comparacion_anual_no_cambia_el_numero_de_filas():
     df = _serie_mensual([202401, 202402, 202501], [1000.0, 1100.0, 1200.0])
     assert len(comparacion_anual(df)) == len(df)
+
+
+def test_estacionalidad_encuentra_el_mes_caro_y_exige_varios_anios():
+    import pandas as pd
+    from src.indicators.volatilidad import estacionalidad
+
+    filas = []
+    for anio in (2022, 2023, 2024):
+        for mes in range(1, 13):
+            # Diciembre cuesta el doble que el resto: tiene que salir arriba del promedio.
+            filas.append({"producto": "X", "periodo": anio * 100 + mes, "precio_cop_kg": 200 if mes == 12 else 100})
+    filas += [{"producto": "Y", "periodo": 202400 + m, "precio_cop_kg": 100} for m in range(1, 13)]
+    r = estacionalidad(pd.DataFrame(filas))
+    x = r[r["producto"] == "X"].set_index("mes")["indice_pct"]
+    assert x.idxmax() == 12 and x[12] > 0 and x[1] < 0
+    # Con un solo anio no hay patron: queda vacio, no en cero.
+    assert r.loc[r["producto"] == "Y", "indice_pct"].isna().all()

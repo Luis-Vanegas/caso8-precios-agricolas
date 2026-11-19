@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 
-import type { DatosFuentes, Fuente } from "@/lib/tipos";
+import { Internacional } from "@/componentes/Internacional";
+import type { DatosFuentes, DatosInternacional, Fuente } from "@/lib/tipos";
 import datosCrudos from "@/public/datos/fuentes.json";
+import internacionalCrudo from "@/public/datos/internacional.json";
 
 export const metadata: Metadata = { title: "Los datos · Caso 8" };
 
 const { fuentes, huecos } = datosCrudos as DatosFuentes;
+const internacional = internacionalCrudo as DatosInternacional;
 const REPO = "https://github.com/Luis-Vanegas/caso8-precios-agricolas/blob/main";
 const enteros = new Intl.NumberFormat("es-CO");
 
@@ -72,6 +75,8 @@ export default function LosDatos() {
         </div>
       </section>
 
+      <Internacional datos={internacional} />
+
       <section className="seccion" aria-labelledby="titulo-pasos">
         <h2 id="titulo-pasos">Cómo se hizo, en cinco pasos</h2>
         <ol className="pasos pasos-ancho">
@@ -101,6 +106,26 @@ export default function LosDatos() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section className="seccion" aria-labelledby="titulo-referentes">
+        <h2 id="titulo-referentes">En qué nos fijamos</h2>
+        <p className="nota">Herramientas reales que ya vigilan precios de alimentos. Tomamos ideas, no datos.</p>
+        <ul className="faltantes">
+          <li>
+            <span className="faltante-cifra"><a href="https://www.fao.org/giews/food-prices/price-tool/es/">FAO · FPMA</a></span>
+            <span>Vigila precios de más de 90 países y cuenta cuándo un precio es anómalo frente a su propia historia. Es la idea detrás de nuestro semáforo.</span>
+          </li>
+          <li>
+            <span className="faltante-cifra"><a href="https://dataviz.vam.wfp.org/economic_explorer/prices">PMA · Economic Explorer</a></span>
+            <span>Muestra un alimento en un mercado mes a mes. Es la idea detrás de «La historia de un alimento».</span>
+          </li>
+          <li>
+            <span className="faltante-cifra"><a href="https://www.dane.gov.co/index.php/estadisticas-por-tema/economia/precios-y-costos/sistema-de-informacion-de-precios-y-abastecimiento-del-sector-agropecuario-sipsa">DANE · SIPSA</a></span>
+            <span>Nuestra fuente principal. Sus boletines comparan con el mismo periodo del año anterior, como hace el tablero.</span>
+          </li>
+        </ul>
+        <p className="nota">Lo que agregamos: pronóstico puesto a prueba, meses más baratos, clima por zona de cultivo y lo internacional cruzado con lo nacional.</p>
       </section>
     </main>
   );
