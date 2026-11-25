@@ -73,6 +73,33 @@ export function urgencia(fila: Fila): number {
   return Math.max(Math.abs(fila.z_mes ?? 0), Math.abs(fila.z_anio ?? 0));
 }
 
+/** Mas de este % por encima o por debajo del precio tipico = caro o barato. Es una convencion de lectura. */
+export const UMBRAL_CARO = 10;
+
+export type Nivel = "barato" | "normal" | "caro" | "sin dato";
+
+/**
+ * Compara el precio de hoy con su precio tipico: la mediana de los 12 meses anteriores con dato.
+ * La mediana no se deja arrastrar por un mes raro. Pide al menos 6 meses para opinar.
+ */
+export function nivelPrecio(fila: Fila): { nivel: Nivel; frente_tipico: number | null; tipico: number | null } {
+  const iHoy = fila.serie.findLastIndex((v) => v !== null);
+  const hoy = iHoy >= 0 ? fila.serie[iHoy] : null;
+  const previos = fila.serie.slice(Math.max(0, iHoy - 12), Math.max(0, iHoy))
+    .filter((v): v is number => v !== null)
+    .sort((a, b) => a - b);
+  if (hoy === null || previos.length < 6) return { nivel: "sin dato", frente_tipico: null, tipico: null };
+  const m = Math.floor(previos.length / 2);
+  const tipico = previos.length % 2 ? previos[m] : (previos[m - 1] + previos[m]) / 2;
+  const frente_tipico = (hoy / tipico - 1) * 100;
+  const nivel = frente_tipico > UMBRAL_CARO ? "caro" : frente_tipico < -UMBRAL_CARO ? "barato" : "normal";
+  return { nivel, frente_tipico, tipico };
+}
+
+export const NOMBRE_NIVEL: Record<Nivel, string> = {
+  barato: "Barato", normal: "Normal", caro: "Caro", "sin dato": "Sin historia",
+};
+
 /** Cambio esperado, en %, entre el precio de hoy y el pronostico del proximo mes. */
 export function cambioEsperado(fila: Fila): number | null {
   const proximo = fila.pronostico?.meses[0]?.valor ?? null;
