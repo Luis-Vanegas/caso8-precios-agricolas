@@ -9,8 +9,8 @@ import { Fragment, useMemo, useState } from "react";
 import { Contador } from "@/componentes/Contador";
 import { GraficaDetalle, Minigrafica } from "@/componentes/Graficas";
 import {
-  cambioEsperado, direccion, estadoGeneral, mesLargo, motivoEstado,
-  NOMBRE_ESTADO, pesos, porcentaje, urgencia,
+  cambioEsperado, direccion, estadoGeneral, mesLargo, motivoEstado, nivelPrecio,
+  NOMBRE_ESTADO, NOMBRE_NIVEL, pesos, porcentaje, UMBRAL_CARO, urgencia,
 } from "@/lib/formato";
 import type { Direccion } from "@/lib/formato";
 import type { Fila, Tablero as DatosTablero } from "@/lib/tipos";
@@ -65,6 +65,17 @@ function Estado({ fila }: { fila: Fila }) {
     <span className="estado">
       <span className={`pastilla pastilla-${estado.replace(" ", "-")}`}>{NOMBRE_ESTADO[estado]}</span>
       <span className="motivo">{motivoEstado(fila)}</span>
+    </span>
+  );
+}
+
+/** ¿Esta caro? Color y palabra juntos; debajo, cuanto frente a su precio tipico. */
+function Nivel({ fila }: { fila: Fila }) {
+  const { nivel, frente_tipico, tipico } = nivelPrecio(fila);
+  return (
+    <span className="estado" title={tipico !== null ? `Precio típico del último año: ${pesos(tipico)}` : undefined}>
+      <span className={`pastilla nivel-${nivel.replace(" ", "-")}`}>{NOMBRE_NIVEL[nivel]}</span>
+      {frente_tipico !== null && <span className="motivo">{porcentaje(frente_tipico)} frente a lo de costumbre</span>}
     </span>
   );
 }
@@ -151,6 +162,8 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
   const bajan = filas.filter((f) => direccion(f.cambio_mes_pct) === "baja").length;
   const fuera = filas.filter((f) => ["amarilla", "roja"].includes(estadoGeneral(f))).length;
   const subiran = filas.filter((f) => direccion(cambioEsperado(f)) === "sube").length;
+  const caros = filas.filter((f) => nivelPrecio(f).nivel === "caro").length;
+  const baratos = filas.filter((f) => nivelPrecio(f).nivel === "barato").length;
 
   return (
     <section aria-labelledby="titulo-tablero">
@@ -162,6 +175,14 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
         <div className="cifra">
           <span className="cifra-numero"><IconoDireccion d="baja" grande /><Contador valor={bajan} /></span>
           <span className="cifra-texto">bajaron frente al mes pasado</span>
+        </div>
+        <div className="cifra">
+          <span className="cifra-numero"><span className="pastilla nivel-caro">Caro</span><Contador valor={caros} /></span>
+          <span className="cifra-texto">están más caros que de costumbre</span>
+        </div>
+        <div className="cifra">
+          <span className="cifra-numero"><span className="pastilla nivel-barato">Barato</span><Contador valor={baratos} /></span>
+          <span className="cifra-texto">están más baratos que de costumbre</span>
         </div>
         <div className="cifra">
           <span className="cifra-numero"><Contador valor={fuera} /></span>
@@ -202,6 +223,7 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
             <th scope="col" className="derecha">Precio por kilo</th>
             <th scope="col" className="derecha">Frente al mes pasado</th>
             <th scope="col" className="derecha">Frente a hace un año</th>
+            <th scope="col">¿Está caro?</th>
             <th scope="col">Estado</th>
             <th scope="col">Últimos 12 meses</th>
             {esNacional && <th scope="col">Próximo mes</th>}
@@ -225,6 +247,7 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
                   <td className="derecha numero" data-titulo="Precio por kilo">{pesos(fila.precio)}</td>
                   <td className="derecha" data-titulo="Frente al mes pasado"><Cambio valor={fila.cambio_mes_pct} /></td>
                   <td className="derecha" data-titulo="Frente a hace un año"><Cambio valor={fila.cambio_anio_pct} /></td>
+                  <td data-titulo="¿Está caro?"><Nivel fila={fila} /></td>
                   <td data-titulo="Estado"><Estado fila={fila} /></td>
                   <td data-titulo="Últimos 12 meses"><Minigrafica serie={fila.serie} /></td>
                   {esNacional && <td data-titulo="Próximo mes"><ProximoMes fila={fila} /></td>}
@@ -232,7 +255,7 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
                 </tr>
                 {estaAbierto && (
                   <tr className="fila-detalle">
-                    <td colSpan={esNacional ? 8 : 6}><Detalle fila={fila} datos={datos} /></td>
+                    <td colSpan={esNacional ? 9 : 7}><Detalle fila={fila} datos={datos} /></td>
                   </tr>
                 )}
               </Fragment>
@@ -240,6 +263,12 @@ export function Tablero({ datos }: { datos: DatosTablero }) {
           })}
         </tbody>
       </table>
+      <p className="nota">
+        <strong>¿Está caro?</strong> compara el precio de hoy con su precio de costumbre: la mediana de los 12 meses
+        anteriores. Más de {UMBRAL_CARO} % por encima es caro y más de {UMBRAL_CARO} % por debajo es barato. Ese{" "}
+        {UMBRAL_CARO} % es una convención para leer la tabla, no un resultado estadístico. El <strong>estado</strong>{" "}
+        responde otra cosa: si el movimiento es raro para ese producto.
+      </p>
       {!esNacional && (
         <p className="nota">El pronóstico solo se calcula para el promedio del país. Elige «Todo el país» para verlo.</p>
       )}
