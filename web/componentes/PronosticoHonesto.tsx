@@ -99,6 +99,24 @@ export function PronosticoHonesto({ nacionales }: { nacionales: Fila[] }) {
         </figcaption>
       </figure>
       <h3 className="subtitulo-pronostico">El resultado, alimento por alimento</h3>
+      <figure className="figura-prueba">
+        <a href={`${BASE}/figuras/modelo_vs_ingenuo.png`} target="_blank" rel="noopener">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`${BASE}/figuras/modelo_vs_ingenuo.png`}
+            alt="A la izquierda, error del modelo frente al de la apuesta simple para cada alimento; a la derecha, cuántos alimentos usan la regresión, el ingenuo estacional o el ingenuo sin cambio a 1, 2 y 3 meses"
+            width={1800}
+            height={810}
+            loading="lazy"
+          />
+        </a>
+        <figcaption>
+          Izquierda: cada punto es un alimento. Si queda debajo de la línea punteada, el modelo se equivoca al
+          menos 5 % menos que la apuesta simple y se usa (azul); si no, se usa la apuesta simple (gris). Derecha:
+          entre más lejos se pronostica, menos alimentos usan el modelo y más gana la temporada. Datos a octubre
+          de 2026.
+        </figcaption>
+      </figure>
       <div className="leyenda-errores" aria-hidden="true">
         <span><span className="muestra error-modelo" /> error del modelo</span>
         <span><span className="muestra error-ingenuo" /> error de «sigue igual»</span>
