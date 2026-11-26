@@ -261,6 +261,13 @@ a { color: var(--azul); text-underline-offset: 3px; }
 
 /* --- Pronostico: error del modelo frente a "sigue igual" ---------------- */
 .pronostico-honesto .bajada { margin-top: 0; }
+.subtitulo-pronostico { font-size: 1.15rem; font-weight: 500; margin: 1.8rem 0 0.4rem; }
+.figura-prueba {
+  margin: 1.4rem 0 0; background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta); padding: 1rem;
+}
+.figura-prueba img { display: block; width: 100%; height: auto; }
+.figura-prueba figcaption { color: var(--gris); font-size: 0.88rem; margin-top: 0.6rem; max-width: 80ch; }
 .leyenda-errores { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.85rem; margin: 1rem 0 0.6rem; }
 .leyenda-errores .muestra { display: inline-block; width: 18px; height: 8px; border-radius: 2px; vertical-align: 1px; }
 .pronostico-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
