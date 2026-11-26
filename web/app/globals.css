@@ -66,12 +66,15 @@ p { margin: 0; }
 .bajada { color: var(--gris); font-size: 1.05rem; max-width: 62ch; margin-top: 0.8rem; }
 
 /* --- Cifras de resumen -------------------------------------------------- */
-.resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.8rem; margin-bottom: 1.6rem; }
+/* Columnas fijas (3 y en celular 2): con auto-fit las 6 cifras quedaban 4 + 2 huerfanas. */
+.resumen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; margin-bottom: 1.6rem; }
 .cifra {
   background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio-tarjeta);
   box-shadow: var(--sombra); padding: 1rem 1.2rem;
 }
-.cifra-numero { display: block; font-size: 2rem; line-height: 1.1; }
+.cifra-numero { display: flex; align-items: center; gap: 0.55rem; font-size: 2rem; line-height: 1.1; }
+.cifra-numero .icono-grande { margin-right: 0; }
+.cifra-numero .pastilla { font-family: var(--fuente-texto), system-ui, sans-serif; }
 .cifra-texto { display: block; color: var(--gris); font-size: 0.92rem; margin-top: 0.3rem; }
 
 /* --- Controles ---------------------------------------------------------- */
@@ -194,11 +197,22 @@ p { margin: 0; }
     display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 0.8rem; align-items: center;
   }
   .tablero .fila > td::before { content: attr(data-titulo); color: var(--gris); font-size: 0.85rem; }
+  /* Sin esto el valor se estira a toda la celda y los cambios (%) quedaban pegados a la derecha. */
+  .tablero .fila > td > * { justify-self: start; }
+  .tablero .fila .cambio { justify-content: flex-start; }
   .boton-producto { font-size: 1.1rem; width: 100%; }
   .motivo { max-width: none; }
   .fila-abierta { border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
   .fila-detalle > td { padding: 0.8rem 0 1.6rem; background: none; }
   .detalle { grid-template-columns: minmax(0, 1fr); gap: 1.4rem; }
+}
+
+@media (max-width: 560px) {
+  .resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+  .cifra { padding: 0.8rem 0.9rem; }
+  .cifra-numero { font-size: 1.6rem; gap: 0.4rem; flex-wrap: wrap; }
+  .cifra-texto { font-size: 0.85rem; }
+  .tablero .fila > td { grid-template-columns: 7.5rem minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

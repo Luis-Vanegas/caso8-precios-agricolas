@@ -190,14 +190,21 @@ a { color: var(--azul); text-underline-offset: 3px; }
 
 @media (max-width: 860px) {
   .barra-interior { padding: 0 1rem; }
-  .marca { min-height: 44px; }
-  .barra nav { width: 100%; }
-  .modulo { flex: 1; padding: 0.4rem 0.3rem; align-items: center; text-align: center; min-height: 48px; }
+  /* Aire arriba de la marca y pestanas de una sola linea: antes "Mapa y clima" partia en dos y todo quedaba pegado. */
+  .marca { min-height: 44px; padding-top: 0.5rem; }
+  .barra nav { width: 100%; gap: 0.25rem; }
+  .modulo { flex: 1; padding: 0.5rem 0.4rem; align-items: center; text-align: center; min-height: 48px; }
+  .modulo-titulo { white-space: nowrap; font-size: 0.95rem; }
   .modulo-detalle { display: none; }
   .mapa-bloque { padding: 1rem; }
   .mapa-cuerpo { grid-template-columns: minmax(0, 1fr); gap: 1.2rem; }
   .mapa-3d { height: 420px; }
   .ranking li { grid-template-columns: 7.5rem minmax(0, 1fr) 4.6rem; }
+}
+
+@media (max-width: 380px) {
+  .modulo { padding: 0.5rem 0.2rem; }
+  .modulo-titulo { font-size: 0.86rem; }
 }
 
 /* Quien pidio menos movimiento ve todo en su estado final, quieto. */
@@ -215,7 +222,11 @@ a { color: var(--azul); text-underline-offset: 3px; }
 .leyenda-mapa h3 { font-family: var(--fuente-texto), sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--gris); }
 .leyenda-item { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.9rem; align-items: center; font-size: 0.88rem; }
 .leyenda-item > .muestra-sin-dato, .leyenda-item > .muestra-estacion { justify-self: center; }
-.leyenda-escala .escala { margin-top: 0; }
+/* En 9rem no caben dos palabras y la barra: la barra va arriba y las palabras debajo, a cada lado. */
+.leyenda-escala .escala { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.4rem; font-size: 0.78rem; line-height: 1.2; }
+.leyenda-escala .escala-barra { grid-column: 1 / -1; grid-row: 1; }
+.leyenda-escala .escala > span:last-child { text-align: right; }
+.leyenda-escala .escala-nota { font-size: 0.74rem; white-space: nowrap; }
 .muestra-estacion { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tinta); opacity: 0.6; }
 .muestra-apagada { opacity: 0.2; }
 .leyenda-mapa .muestra-sin-dato { width: 28px; height: 16px; }
