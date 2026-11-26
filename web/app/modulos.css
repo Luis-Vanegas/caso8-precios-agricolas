@@ -215,7 +215,11 @@ a { color: var(--azul); text-underline-offset: 3px; }
 .leyenda-mapa h3 { font-family: var(--fuente-texto), sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--gris); }
 .leyenda-item { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.9rem; align-items: center; font-size: 0.88rem; }
 .leyenda-item > .muestra-sin-dato, .leyenda-item > .muestra-estacion { justify-self: center; }
-.leyenda-escala .escala { margin-top: 0; }
+/* En 9rem no caben dos palabras y la barra: la barra va arriba y las palabras debajo, a cada lado. */
+.leyenda-escala .escala { margin-top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.4rem; font-size: 0.78rem; line-height: 1.2; }
+.leyenda-escala .escala-barra { grid-column: 1 / -1; grid-row: 1; }
+.leyenda-escala .escala > span:last-child { text-align: right; }
+.leyenda-escala .escala-nota { font-size: 0.74rem; white-space: nowrap; }
 .muestra-estacion { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--tinta); opacity: 0.6; }
 .muestra-apagada { opacity: 0.2; }
 .leyenda-mapa .muestra-sin-dato { width: 28px; height: 16px; }
