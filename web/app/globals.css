@@ -178,8 +178,22 @@ p { margin: 0; }
 .leyenda dt { font-weight: 600; margin-bottom: 0.3rem; }
 .leyenda dd { margin: 0; color: var(--gris); font-size: 0.95rem; }
 
+/* --- Escritorio: aire en la tabla --------------------------------------- */
+/* Nueve columnas en 1230 px quedaban apretadas: mas relleno, numeros sin partir
+   y un ancho minimo para las dos columnas de texto, que se partian en tres lineas. */
+@media (min-width: 1281px) {
+  .tablero thead th { padding: 0.85rem 1rem; line-height: 1.3; }
+  .tablero td, .tablero tbody th { padding: 1.05rem 1rem; }
+  .tablero td.derecha, .tablero .cambio { white-space: nowrap; }
+  .tablero td[data-titulo="¿Está caro?"] { min-width: 9.5rem; }
+  .tablero td[data-titulo="Estado"] { min-width: 11rem; }
+  .tablero .estado { gap: 0.35rem; }
+  .tablero .motivo { line-height: 1.4; max-width: 26ch; }
+  .tablero .proximo { gap: 0.25rem; }
+}
+
 /* --- Celular: cada producto es una tarjeta ------------------------------ */
-@media (max-width: 1080px) {
+@media (max-width: 1280px) {
   .pagina { padding: 1.6rem 1rem 3rem; }
   .controles select { min-width: 0; width: 100%; }
   .controles label { flex: 1 1 100%; }
@@ -223,7 +237,7 @@ p { margin: 0; }
    monoespaciada salian mas grandes que el numero que acompanan. */
 .flecha { font-family: system-ui, sans-serif; font-size: 0.72em; display: inline-block; transform: translateY(-0.08em); }
 
-@media (max-width: 1080px) {
+@media (max-width: 1280px) {
   /* El nombre del dato va en la fuente de texto aunque la celda sea un numero. */
   .tablero .fila > td::before { font-family: var(--fuente-texto), system-ui, sans-serif; font-weight: 400; }
 }
